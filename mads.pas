@@ -1,27 +1,11 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.0.7 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.0.9 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*                                                                            *)
 (*  support 6502, 65816, Sparta DOS X, virtual banks                          *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 02.11.2017                                                  *)
-(*----------------------------------------------------------------------------*)
-
-// Poetic License:
-//
-// This work 'as-is' we provide.
-// No warranty express or implied.
-// We've done our best,
-// to debug and test.
-// Liability for damages denied.
-//
-// Permission is granted hereby,
-// to copy, share, and modify.
-// Use as is fit,
-// free or for profit.
-// These rights, on this notice, rely.
-
+(*  last changes: 2019-05-12                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -34,7 +18,6 @@
 
 program MADS;
 
-{$APPTYPE CONSOLE}
 {$I-}
 
 //uses SysUtils;
@@ -46,6 +29,8 @@ type
 		_asize, _isize);
 
     t_Mads   = (__STACK_POINTER, __STACK_ADDRESS, __PROC_VARS_ADR);
+
+    t_MXinst =  (REP = $c2, SEP = $e2);
 
     t_Attrib = (__U, __R, __W, __RW);
 
@@ -290,14 +275,18 @@ var lst, lab, hhh, mmm: textfile;
 
     pass, status, memType, optDefault: byte;
 
-    opt : byte = opt_H or opt_O;               // OPT default value
-    atr : t_Attrib = __RW;                     // ATTRIBUTE default value Read/Write
+    opt : byte = opt_H or opt_O;		// OPT default value
+    atr : t_Attrib = __RW;			// ATTRIBUTE default value Read/Write
     atrDefault: t_Attrib = __U;
 
     asize	: byte = 8;
     isize	: byte = 8;
+    longa	: byte;
+    longi	: byte;
 
     margin	: byte = 32;
+
+    fvalue	: byte = $ff;
 
     __link_stack_pointer_old, __link_stack_address_old, __link_proc_vars_adr_old: cardinal;
     __link_stack_pointer, __link_stack_address, __link_proc_vars_adr: cardinal;
@@ -463,10 +452,6 @@ var lst, lab, hhh, mmm: textfile;
     list_mac    : Boolean = false;
     next_pass   : Boolean = false;
 
-    regA        : Boolean = true;       // rozmiar rejestrow dla OPT T+ (track sep rep)
-    regX        : Boolean = true;       // true = 8bit, false = 16bit
-    regY        : Boolean = true;
-
     first_lst   : Boolean = false;
     first_org   : Boolean = true;
     if_test     : Boolean = true;
@@ -603,7 +588,7 @@ var lst, lab, hhh, mmm: textfile;
 
 
 // komunikaty
- mes: array [0..3191] of char=(
+ mes: array [0..3249] of char=(
 {0}  chr(ord('V') + $80),'a','l','u','e',' ','o','u','t',' ','o','f',' ','r','a','n','g','e',
 {1}  chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','I','F',
 {2}  chr(ord('L') + $80),'a','b','e','l',' ',#9,' ','d','e','c','l','a','r','e','d',' ','t','w','i','c','e',
@@ -681,7 +666,7 @@ var lst, lab, hhh, mmm: textfile;
 {74} chr(ord('I') + $80),'n','c','o','r','r','e','c','t',' ','h','e','a','d','e','r',' ','f','o','r',' ','t','h','i','s',' ','f','i','l','e',' ','t','y','p','e',
 {75} chr(ord('I') + $80),'n','c','o','m','p','a','t','i','b','l','e',' ','s','t','a','c','k',' ','p','a','r','a','m','e','t','e','r','s',
 {76} chr(ord('Z') + $80),'e','r','o',' ','p','a','g','e',' ','R','E','L','O','C',' ','b','l','o','c','k',
-{77} chr(ord(' ') + $80),'(','B','A','N','K','=',        // od 77 kolejnosc wystapienia istotna
+{77} chr(ord(' ') + $80),'(','B','A','N','K','=',	// od 77 kolejnosc wystapienia istotna
 {78} chr(ord(' ') + $80),'(','B','L','O','K','=',
 {79} chr(ord('C') + $80),'o','u','l','d',' ','n','o','t',' ','u','s','e',' ',#9,' ','i','n',' ','t','h','i','s',' ','c','o','n','t','e','x','t',
 {80} chr(ord(')') + $80),' ','E','R','R','O','R',':',' ',
@@ -735,6 +720,7 @@ var lst, lab, hhh, mmm: textfile;
      '-','c',#9,#9,'L','a','b','e','l',' ','c','a','s','e',' ','s','e','n','s','i','t','i','v','i','t','y',#13,#10,
      '-','d',':','l','a','b','e','l','=','v','a','l','u','e',#9,'D','e','f','i','n','e',' ','a',' ','l','a','b','e','l',#13,#10,
      '-','f',#9,#9,'C','P','U',' ','c','o','m','m','a','n','d',' ','a','t',' ','f','i','r','s','t',' ','c','o','l','u','m','n',#13,#10,
+     '-','f','v',':','v','a','l','u','e',#9,'S','e','t',' ','r','a','w',' ','b','i','n','a','r','y',' ','f','i','l','l',' ','b','y','t','e',' ','t','o',' ','[','v','a','l','u','e',']',#13,#10,
      '-','h','c','[',':','f','i','l','e','n','a','m','e',']',#9,'H','e','a','d','e','r',' ','f','i','l','e',' ','f','o','r',' ','C','C','6','5',#13,#10,
      '-','h','m','[',':','f','i','l','e','n','a','m','e',']',#9,'H','e','a','d','e','r',' ','f','i','l','e',' ','f','o','r',' ','M','A','D','S',#13,#10,
      '-','i',':','p','a','t','h',#9,#9,'A','d','d','i','t','i','o','n','a','l',' ','i','n','c','l','u','d','e',' ','d','i','r','e','c','t','o','r','i','e','s',#13,#10,
@@ -743,7 +729,7 @@ var lst, lab, hhh, mmm: textfile;
      '-','m','l',':','v','a','l','u','e',#9,'m','a','r','g','i','n','-','l','e','f','t',' ','p','r','o','p','e','r','t','y',#13,#10,
      '-','o',':','f','i','l','e','n','a','m','e',#9,'S','e','t',' ','o','b','j','e','c','t',' ','f','i','l','e',' ','n','a','m','e',#13,#10,
      '-','p',#9,#9,'P','r','i','n','t',' ','f','u','l','l','y',' ','q','u','a','l','i','f','i','e','d',' ','f','i','l','e',' ','n','a','m','e','s',' ','i','n',' ','l','i','s','t','i','n','g',' ','a','n','d',' ','e','r','r','o','r',' ','m','e','s','s','a','g','e','s',#13,#10,
-     '-','s',#9,#9,'S','i','l','e','n','t',' ','m','o','d','e',#13,#10,
+     '-','s',#9,#9,'S','u','p','p','r','e','s','s',' ','i','n','f','o',' ','m','e','s','s','a','g','e','s',#13,#10,
      '-','t','[',':','f','i','l','e','n','a','m','e',']',#9,'L','i','s','t',' ','l','a','b','e','l',' ','t','a','b','l','e',#13,#10,
      '-','u',#9,#9,'W','a','r','n',' ','o','f',' ','u','n','u','s','e','d',' ','l','a','b','e','l','s',#13,#10,
      '-','v','u',#9,#9,'V','e','r','i','f','y',' ','c','o','d','e',' ','i','n','s','i','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',#13,#10,
@@ -753,7 +739,7 @@ var lst, lab, hhh, mmm: textfile;
 
 // version
 
-{126} chr(ord('m') + $80),'a','d','s',' ','2','.','0','.','8',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{126} chr(ord('m') + $80),'a','d','s',' ','2','.','0','.','9',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
@@ -863,15 +849,15 @@ const
   __pages  = $BD;
   __endpg  = $BE;
   __reloc  = $BF;
-  __dend   = $C0;       // zastepuje dyrektywy .ENDL, .ENDP, .ENDS, .ENDM, .ENDR itd.
+  __dend   = $C0;	// zastepuje dyrektywy .ENDL, .ENDP, .ENDS, .ENDM, .ENDR itd.
   __link   = $C1;
-  __extrn  = $C2;       // odpowiednik pseudo rozkazu EXT
-  __public = $C3;       // odpowiednik dla .GLOBAL, .GLOBL
+  __extrn  = $C2;	// odpowiednik pseudo rozkazu EXT
+  __public = $C3;	// odpowiednik dla .GLOBAL, .GLOBL
 
-  __reg    = $C4;       // __REG, __VAR koniecznie w tej kolejnosci
+  __reg    = $C4;	// __REG, __VAR koniecznie w tej kolejnosci
   __var    = $C5;
 
-  __or     = $C6;       // ORG
+  __or     = $C6;	// ORG
   __by     = $C7;
   __he     = $C8;
   __wo     = $C9;
@@ -902,11 +888,14 @@ const
   __i      = $E2;
   __ai	   = $E3;
   __ia	   = $E4;
+  __longa  = $E5;
+  __longi  = $E6;
+  __cbm    = $E7;
 
-  __over   = __ia;      // koniec kodow dyrektyw
+  __over   = __cbm;	// koniec kodow dyrektyw
 
 
-//  __switch = $E8;     // nie oprogramowane
+//  __switch = $E8;	// nie oprogramowane
 //  __case   = $E9;
   __telse  = $EA;
   __cycle  = $EB;
@@ -924,24 +913,24 @@ const
 // !!! of $F4 zaczyna siê __id_
 // !!! to koniec !!!
 
-  __rel    = $0000;     // wartosc dla etykiet relokowalnych
+  __rel    = $0000;	// wartosc dla etykiet relokowalnych
 
-  __relASM = $0100;     // adres asemblacji dla bloku .RELOC
+  __relASM = $0100;	// adres asemblacji dla bloku .RELOC
 
   __relHea = ord('M')+ord('R') shl 8;  // naglowek 'MR' dla bloku .RELOC
 
 
                         // !!! zaczynamy koniecznie od __ID_PARAM !!!
 
-  __id_param   = $FFF4; // parametry procedury
-  __id_mparam  = $FFF5; // parametry makra
+  __id_param   = $FFF4;	// parametry procedury
+  __id_mparam  = $FFF5;	// parametry makra
   __id_array   = $FFF6;
   __dta_struct = $FFF7;
   __id_ext     = $FFF8;
   __id_smb     = $FFF9;
   __id_noLab   = $FFFA;
 
-  __id_macro   = $FFFB; // >= __id_macro (line 6515)
+  __id_macro   = $FFFB;	// >= __id_macro (line 6515)
   __id_define  = $FFFC;
   __id_enum    = $FFFD;
   __id_struct  = $FFFE;
@@ -1123,10 +1112,10 @@ begin
 
    flush_dst;
 
-   v:=$ff;
+   v := fvalue;
 
    while fill>0 do begin
-    blockwrite(dst,v,1);
+    blockwrite(dst, v, 1);
     dec(fill);
    end;
 
@@ -1884,29 +1873,6 @@ begin
 end;
 
 
-function search(var a,x: string): integer;
-(*----------------------------------------------------------------------------*)
-(*  szukamy nazwy etykiety w tablicy T_LAB, jesli w nazwie wystepuje kropka   *)
-(*  obcinamy nazwe i szukamy dalej                                            *)
-(*----------------------------------------------------------------------------*)
-var b, t: string;
-begin
- b:=x+lokal_name;
-
- t:=b+a;
- Result:=l_lab(t);
-
- while (Result<0) and (pos('.',b)>0) do begin
-
-  obetnij_kropke(b);
-
-  t:=b+a;
-  Result:=l_lab(t);
- end;
-
-end;
-
-
 function load_lab(var a:string; const test:Boolean): integer;
 (*----------------------------------------------------------------------------*)
 (*  szukamy etykiety i zwracamy jej indeks do tablicy 'T_LAB'                 *)
@@ -1919,6 +1885,32 @@ function load_lab(var a:string; const test:Boolean): integer;
 (*----------------------------------------------------------------------------*)
 var txt: string;
     i: integer;
+    
+    
+	function search(var x: string): integer;
+	(*----------------------------------------------------------------------------*)
+	(*  szukamy nazwy etykiety w tablicy T_LAB, jesli w nazwie wystepuje kropka   *)
+	(*  obcinamy nazwe i szukamy dalej                                            *)
+	(*----------------------------------------------------------------------------*)
+	var b, t: string;
+	begin
+	
+	  b:=x+lokal_name;
+	
+	  t:=b+a;
+	  Result:=l_lab(t);
+
+	  while (Result<0) and (pos('.',b)>0) do begin
+
+		obetnij_kropke(b);
+
+		t:=b+a;
+		Result:=l_lab(t);
+	  end;
+
+	end;    
+    
+    
 begin
 
  Result:=-1;
@@ -1928,20 +1920,20 @@ begin
   if test then begin
 
     if run_macro then begin
-     Result:=search(a,macro_nr);
+     Result:=search(macro_nr);
 
      if Result>=0 then exit;
     end;
 
 
     if proc then begin
-     Result:=search(a,proc_name);
+     Result:=search(proc_name);
 
      if Result>=0 then exit;
     end;
 
     txt:='';
-    Result:=search(a,txt);
+    Result:=search(txt);
     if Result>=0 then exit;
 
   end;
@@ -1949,7 +1941,7 @@ begin
   txt:=lokal_name+a;
   Result:=l_lab(txt);
 
-  if Result<0 then Result:=search(a,proc_name);
+  if Result<0 then Result:=search(proc_name);
 
  end;
 
@@ -2109,17 +2101,17 @@ begin
 
  len:=length(a);
 
- tmp:=$ffffffff;              // crc32
+ tmp:=$ffffffff;		// CRC32
 
  i:=1;
- while i<=len do begin                            // WHILE jest krótsze od FOR
+ while i<=len do begin		// WHILE jest krótsze od FOR
   tmp:=tCRC32[byte(tmp) xor byte(a[i])] xor (tmp shr 8);
   inc(i);
  end;
 
  if pass>0 then
- if (symbol<>'?') or mae_labels then              // jesli to styl etykiet MAE to musimy je sprawdzic
-  if t_lab[x].nam=tmp then                        // normalnie sprawdzamy tylko etykiety z pierwszym znakiem <>'?'
+ if (symbol<>'?') or mae_labels then		// jesli to styl etykiet MAE to musimy je sprawdzic
+  if t_lab[x].nam=tmp then			// normalnie sprawdzamy tylko etykiety z pierwszym znakiem <>'?'
    if (t_lab[x].bnk<__id_param) and not(t_lab[x].lid) then begin
 {
     if t_lab[x].lid then begin
@@ -2131,8 +2123,8 @@ begin
      if t_lab[x].pas=pass then blad_und(old,a,2); // nie mozna sprawdzac dwa razy tej samej etykiety w aktualnym przebiegu
 
      if pass<pass_max-1 then
-      if not(next_pass) then                      // sprawdz czy potrzebny jest dodatkowy przebieg
-       if mne_used then begin                     // jakis mnemonik musial zostac wczesniej wykonany
+      if not(next_pass) then			// sprawdz czy potrzebny jest dodatkowy przebieg
+       if mne_used then begin			// jakis mnemonik musial zostac wczesniej wykonany
 
         next_pass := (t_lab[x].adr <> ad);
 
@@ -2180,7 +2172,7 @@ begin
 
  t_lab[x].ofs := org_ofset;
 
- if (blok>0) or dreloc.use then t_lab[x].rel := true;
+ if (blok>0) or dreloc.use and ({ (mae_labels = false) and} (symbol<>'?') ) then t_lab[x].rel := true;
 
  zapisz_etykiete(a,ad,ba,symbol);
 end;
@@ -2193,7 +2185,7 @@ procedure save_lab(var a:string; const ad:cardinal; const ba:integer; var old:st
 var tmp: string;
 begin
 
- if a<>'' then begin                       // !!! konieczny test
+ if a<>'' then begin			// !!! konieczny test
 
   if a='@' then begin
    a:=IntToStr(anonymous_idx)+'@';
@@ -2207,7 +2199,7 @@ begin
    lokal_name:=a+'.';
 
   end else
-   if run_macro then tmp:=macro_nr+lokal_name+a else   // !!! nie remowac LOKAL_NAME !!!
+   if run_macro then tmp:=macro_nr+lokal_name+a else	// !!! nie remowac LOKAL_NAME !!!
     if proc then tmp:=proc_name+lokal_name+a else
      tmp:=lokal_name+a;
 
@@ -2298,13 +2290,13 @@ begin
 
  if t_end[end_idx].kod <> a then
   case a of
-   __endpg: blad(zm,64);  // Missing .PAGES
-   __ends: blad(zm,55);   // Missing .STRUCT
-   __endm: blad(zm,97);   // Missing .MACRO
-   __endw: blad(zm,88);   // Missing .WHILE
-   __endt: blad(zm,95);   // Missing .TEST
-   __enda: blad(zm,59);   // Missing .ARRAY
-   __endr: blad(zm,51);   // Missing .REPT
+   __endpg: blad(zm,64);	// Missing .PAGES
+   __ends: blad(zm,55);		// Missing .STRUCT
+   __endm: blad(zm,97);		// Missing .MACRO
+   __endw: blad(zm,88);		// Missing .WHILE
+   __endt: blad(zm,95);		// Missing .TEST
+   __enda: blad(zm,59);		// Missing .ARRAY
+   __endr: blad(zm,51);		// Missing .REPT
   end;
 
 end;
@@ -2934,7 +2926,7 @@ begin
    ' ',#9:
         if sep=' ' then exit else __inc(i,a);
 
-   '.','$'{,'%'}:  // b³¹d jeœli po znakach '.', '$' jest "bia³y znak"
+   '.','$'{,'%'}:  // blad jesli po znakach '.', '$' jest "bia³y znak"
         if a[i+1] in AllowWhiteSpaces then
          exit
         else begin
@@ -3699,7 +3691,7 @@ begin
 end;
 
 
-function get_define(var i: integer; arg: integer; var a, old: string): string;
+function get_define(var i: integer; arg: integer; var a: string): string;
 var k: integer;
     txt: string;
 begin
@@ -3999,10 +3991,10 @@ LOOP:
             inc(reloc_value.cnt, old_reloc_value_cnt);
 
             case t_dirop(k) of
-              _get: war:=t_get[arg];
-             _wget: war:=t_get[arg] + t_get[arg+1] shl 8;
-             _lget: war:=t_get[arg] + t_get[arg+1] shl 8 + t_get[arg+2] shl 16;
-             _dget: war:=t_get[arg] + t_get[arg+1] shl 8 + t_get[arg+2] shl 16 + t_get[arg+3] shl 24;
+              _get: war := t_get[arg];
+             _wget: war := Int64(t_get[arg]) + Int64(t_get[arg+1] shl 8);
+             _lget: war := Int64(t_get[arg]) + Int64(t_get[arg+1] shl 8) + Int64(t_get[arg+2] shl 16);
+             _dget: war := Int64(t_get[arg]) + Int64(t_get[arg+1] shl 8) + Int64(t_get[arg+2] shl 16) + Int64(t_get[arg+3] shl 24);
             end;
 
             value:=true;
@@ -4031,7 +4023,7 @@ LOOP:
             war := get_type(v, txt, old, false, false);
 
 
-         if not (war in [1..4] ) then begin
+         if not (byte(war) in [1..4] ) then begin
 
             i:=k;
 
@@ -4383,7 +4375,7 @@ LOOP:
            __id_define: begin
                         // omin_spacje(i,a);
 
-                         txt := get_define(i, arg, a, old);
+                         txt := get_define(i, arg, a);
 
                          dec(i, length(tmp));
 
@@ -4533,10 +4525,10 @@ LOOP:
 
              save_relAddress(arg, reloc_value);
 
-             b:=t_lab[arg].bnk;                         // bank przypisany etykiecie
+             b:=t_lab[arg].bnk;				// bank przypisany etykiecie
 
              if dreloc.use or dreloc.sdx then begin
-              b:=t_lab[arg].blk;                        // blok przypisany etykiecie
+              b:=t_lab[arg].blk;			// blok przypisany etykiecie
               if reloc_value.use and (reloc_value.cnt>1) then blad(old,85);
              end;
 
@@ -4546,16 +4538,18 @@ LOOP:
 
               obetnij_kropke(tmp);
 
-              k:=length(tmp);            // usun ostatni znak kropki
+              k:=length(tmp);				// usun ostatni znak kropki
               SetLength(tmp,k-1);
 
               arg:=l_lab(tmp);
+	      
+	      if arg<0 then arg:=l_lab(lokal_name+tmp);	      
 
               pomoc:=t_lab[arg].adr;
 
               if (arg>=0) and ExProcTest then
                if t_lab[arg].bnk=__id_proc then begin
-                t_prc[pomoc].use:=true;  // procedura .PROC musi byc asemblowana
+                t_prc[pomoc].use:=true;			// procedura .PROC musi byc asemblowana
                 Break;
                end;
 
@@ -4648,12 +4642,18 @@ LOOP:
          k:=ord(a[i]);
          tmp:=get_string(i,a,old,true);
 
-         if length(tmp)>1 then blad(old,3);                // maksymalnie 1 znak
+         if length(tmp)>2 then blad(old,3);                // maksymalnie 1 znak, lub 2 znaki dla 65816
 
          if chr(k)='''' then
           war:=ord(tmp[1])
          else
           war:=ata2int(ord(tmp[1]));
+
+	 if length(tmp) = 2 then
+         if chr(k)='''' then
+          war:=war shl 8 + ord(tmp[2])
+         else
+          war:=war shl 8 + (ata2int(ord(tmp[2])));
 
          byt:=a[i+1];
 
@@ -5328,28 +5328,43 @@ begin
 end;
 
 
-procedure reg_size(const i:byte; const a:Boolean);
+procedure reg_size(const i:byte; const a: t_MXinst);
 (*----------------------------------------------------------------------------*)
 (*  nowe rozmiary rejestrow dla operacji sledzenia SEP, REP                   *)
+(*  A: t_MXinst		SEP (set bits), REP (reset bits)		      *)
+(*  bit 0 -> 16 bit							      *)
+(*  bit 1 -> 8 bit							      *)
 (*----------------------------------------------------------------------------*)
 begin
 
- if i in [$10,$30] then begin regX:=a; regY:=a end;
- if i in [$20,$30] then regA:=a;
+ if i and $10 <> 0 then
+  if a = REP then
+    isize := 16
+  else
+    isize := 8;
+
+ if i and $20 <> 0 then
+  if a = REP then
+    asize := 16
+  else
+    asize := 8;
 
 end;
 
 
-procedure test_reg_size(var a:string; const b:Boolean; const i:byte);
+procedure test_reg_size(var a:string; const b,i,l:byte);
 (*----------------------------------------------------------------------------*)
 (*  sprawdzamy rozmiar rejestrow dla wlaczonej opcji sledzenia SEP, REP       *)
+(*  B: BYTE	reg size = [8,16]					      *)
+(*  I: BYTE	code size = [1..3]					      *)
+(*  L: BYTE	LONGA | LONGI = [0,8,16]				      *)
 (*----------------------------------------------------------------------------*)
 begin
 
- if b then begin
-  if i>2 then blad(a,63);
+ if b=8 then begin
+  if (i>2) and (l in [0,16]) then blad(a,63);
  end else
-  if i<3 then blad(a,63);
+  if (i<3) and (l in [0,8]) then blad(a,63);
 
 end;
 
@@ -5596,7 +5611,7 @@ var j, m, idx, len: integer;
     war, war_roz, help: Int64;
     code, ile, k, byt: byte;
     op, siz: char;
-    test, zwieksz, incdec, mvnmvp, mSEP, mREP, pomin, opty, isvar: Boolean;
+    test, zwieksz, incdec, mvnmvp, pomin, opty, isvar: Boolean;
     branch_run: Boolean;
     tryb: cardinal;
     hlp: int5;
@@ -5821,7 +5836,7 @@ begin
 
  war_roz:=0;
 
- mvnmvp:=true; mSEP:=false; mREP:=false; pomin:=false; ext_used.use:=false;
+ mvnmvp:=true; pomin:=false; ext_used.use:=false;
 
  zwieksz:=false; incdec:=false; reloc:=false; branch:=false;
 
@@ -5960,12 +5975,12 @@ begin
  if len=3 then
   k:=fASC(mnemo)
  else
-  if siz<>' ' then begin     // jesli SIZ<>' ' tzn ze jest to 3-literowy mnemonik z rozszerzeniem
+  if siz<>' ' then begin		// jesli SIZ<>' ' tzn ze jest to 3-literowy mnemonik z rozszerzeniem
 
     k:=fASC(mnemo);
 
-    if k>0 then SetLength(mnemo,3); // jesli taki mnemonik istnieje to OK,
-                                    // !!! w przeciwnym wypadku zapewne jest to jakies makro !!!
+    if k>0 then SetLength(mnemo,3);	// jesli taki mnemonik istnieje to OK,
+					// !!! w przeciwnym wypadku zapewne jest to jakies makro !!!
   end;
 
  // symbole mnemonikow maja kody <1..92>
@@ -5973,9 +5988,9 @@ begin
  // symbole mnemonikow 65816     <57..92>
 
  if not(opt and opt_C>0) then begin
-  if k in [57..92] then k:=0;       // gdy 6502 to mozna uzywac mnemonikow 65816 jako makra itp.
+  if k in [57..92] then k:=0;		// gdy 6502 to mozna uzywac mnemonikow 65816 jako makra itp.
  end else
-  if k in [96..118] then k:=0;      // gdy 65816 to mozna uzywac mnemonikow nielegali 6502 jako makra itp.
+  if k in [96..118] then k:=0;		// gdy 65816 to mozna uzywac mnemonikow nielegali 6502 jako makra itp.
 
 
 // w IDX przechowujemy aktualny adres asemblacji, tej zmiennej nie uzyjemy w innym celu
@@ -5987,13 +6002,13 @@ if k in [__cpbcpd..__jskip] then begin
 
  if siz<>' ' then blad(old,33);
 
- if not(k in [__BckSkp, __phrplr]) then begin     // __BckSkp i __phrplr nie potrzebuja parametrow
+ if not(k in [__BckSkp, __phrplr]) then begin	// __BckSkp i __phrplr nie potrzebuja parametrow
 
   omin_spacje(i,a);
 
   SetLength(par, 1);
 
-   while not(test_char(i,a)) do begin    // odczyt parametrow makro rozkazu, 'GetParameters' nie nadaje sie do tego
+   while not(test_char(i,a)) do begin		// odczyt parametrow makro rozkazu, 'GetParameters' nie nadaje sie do tego
     idx:=High(par);
     par[idx]:=get_dat(i,a,' ',true);
 
@@ -6002,7 +6017,7 @@ if k in [__cpbcpd..__jskip] then begin
     omin_spacje(i,a);
    end;
 
-  case k of                              // test liczby parametrow makro rozkazu
+  case k of					// test liczby parametrow makro rozkazu
    __inwdew, __addsub: begin idx:=1; j:=1 end;
    __movaxy, __cpbcpd: begin idx:=2; j:=2 end;
    __adwsbw, __adbsbb: begin idx:=2; j:=3 end;
@@ -6471,7 +6486,6 @@ if k in [__cpbcpd..__jskip] then begin
   if (war<0) and (abs(war)-128>0) then test:=true;
   if (war>0) and (war-127>0) then test:=true;
 
-
   if not(test) then begin
 
    Result.l:=2;
@@ -6634,22 +6648,22 @@ if k in [__cpbcpd..__jskip] then begin
 
  regOpty.use := ( k = __movaxy );
 
- mne_used := true;           // zostal odczytany jakis mnemonik
- exit;                       // !!! KONIEC !!! zostal odczytany i zdekodowany makro-rozkaz
+ mne_used := true;		// zostal odczytany jakis mnemonik
+ exit;				// !!! KONIEC !!! zostal odczytany i zdekodowany makro-rozkaz
 end;
 
 
 // sprawdz czy to nazwa makra
  if k=0 then begin
 
-    idx:=load_lab(mnemo_tmp,false);     // poszukaj w etykietach
+    idx:=load_lab(mnemo_tmp,false);	// poszukaj w etykietach
 
     if idx<0 then begin
      if pass=pass_end then blad_und(old,mnemo,35);
      exit;
     end;
 
-    if t_lab[idx].bnk=__id_ext then             // symbol external
+    if t_lab[idx].bnk=__id_ext then	// symbol external
      if t_extn[t_lab[idx].adr].prc then begin
 
       tmp:='##'+t_extn[t_lab[idx].adr].nam;
@@ -6673,7 +6687,7 @@ end;
  end;
 
 
- dec(k);                   // !!! koniecznie
+ dec(k);			// !!! koniecznie
 
 
 // znalazl pseudo rozkaz
@@ -6782,10 +6796,10 @@ end;
  // wyjatki dla ktorych rozmiar rejestru jest staly
  if (opt and opt_C>0) and (op='#') then
   case code of
-    98: test_siz(a,siz,'Q',pomin);                       // PEA #Q
-   254: test_siz(a,siz,'Z',pomin);                       // COP #Z
-   190: begin test_siz(a,siz,'Z',pomin); mREP:=true end; // REP #Z
-   222: begin test_siz(a,siz,'Z',pomin); mSEP:=true end; // SEP #Z
+    98: test_siz(a,siz,'Q',pomin);		// PEA #Q
+   254: test_siz(a,siz,'Z',pomin);		// COP #Z
+   190: test_siz(a,siz,'Z',pomin);		// REP #Z
+   222: test_siz(a,siz,'Z',pomin);		// SEP #Z
   end;
 
   zm:=get_dat_noSPC(i,a,old,';');
@@ -7074,7 +7088,7 @@ end;
 
  while (j=0) or (tryb and maska[j]=0) do begin
 
-  case op_[len] of         // zmien rozmiar operandu
+  case op_[len] of		// zmien rozmiar operandu
    'Z': op_[len]:='Q';
    'Q': op_[len]:='T';
   else
@@ -7085,11 +7099,11 @@ end;
     Break;
 
   end;
-                           // sprawdz czy nowy operand nie kloci sie z zadeklarowanym rozmiarem
+				// sprawdz czy nowy operand nie kloci sie z zadeklarowanym rozmiarem
   if (siz<>' ') and (pass=pass_end) then
    if not(siz=op_[len]) then blad(old,31);
 
-  j:=adrMode(op_);         // sprawdz czy dla nowego rozmiaru operandu istnieje tryb adresowania
+  j:=adrMode(op_);		// sprawdz czy dla nowego rozmiaru operandu istnieje tryb adresowania
  end;
 
  if (k=116) and (j=4) then code:=$78;	// wyjatek dla DOP #xx     ($80)
@@ -7117,13 +7131,13 @@ end;
   if tryb and $02000000>0 then ile:=7*23;
   if tryb and $01000000>0 then ile:=8*23;}
 
-  inc(code, addycja_16[j+ile])       //code:=byte( code+addycja_16[j+ile] )
+  inc(code, addycja_16[j+ile])		//code:=byte( code+addycja_16[j+ile] )
 
  end else
-  if (tryb and $80000000>0) then inc(code, addycja[j+12]) else   //code:=code+addycja[j+12]
-   if (tryb and $40000000>0) then inc(code, addycja[j+24]) else  //code:=code+addycja[j+24]
-    if (tryb and $20000000>0) then inc(code, addycja[j+36]) else //code:=code+addycja[j+36]
-     inc(code, addycja[j]);                                      //code:=code+addycja[j];
+  if (tryb and $80000000>0) then inc(code, addycja[j+12]) else	//code:=code+addycja[j+12]
+   if (tryb and $40000000>0) then inc(code, addycja[j+24]) else	//code:=code+addycja[j+24]
+    if (tryb and $20000000>0) then inc(code, addycja[j+36]) else//code:=code+addycja[j+36]
+     inc(code, addycja[j]);					//code:=code+addycja[j];
 
 
 // obliczenie wartosci 'WAR' na podstawie 'OP'
@@ -7137,6 +7151,38 @@ end;
   '>': begin war := byte( wartosc(a,help,'D') shr 8 );  _sizm( byte(help) ) end;
   '^': begin war := byte( wartosc(a,help,'D') shr 16 ); _sizm( byte(help) ) end;
  end;
+
+
+  if (longa or longi <> 0) and macro_rept_if_test then		// LONGA | LONGI
+   if not (code in [$f4,$02,ord(REP),ord(SEP)]) then begin	// PEA #, COP #, REP #, SEP #
+
+  // sprawdzamy rozmiar rejestrow dla trybu adresowania natychmiastowego '#'
+    if op_[len]='#' then
+     case mnemo[3] of
+      'A','C','D','P','R','T':		// lda, adc, sbc, and, cmp, ror, bit
+
+        if longa > 0 then
+	 if longa = 8 then begin
+	   if siz='Q' then blad(old, 63);
+	   siz:='Z';
+	 end else
+	   siz:='Q';
+
+	  //test_reg_size(a,asize,ile, longa);
+
+      'X','Y':				// ldx, ldy, cpx, cpy,
+
+        if longi > 0 then
+	 if longi = 8 then begin
+	   if siz='Q' then blad(old, 63);
+	   siz:='Z';
+	 end else
+	  siz:='Q';
+
+     end;
+
+  end;
+
 
 // policz z ilu bajtow sklada sie rozkaz wraz z argumentem
  ile:=1;
@@ -7200,16 +7246,17 @@ end;
  // modyfikowanych przez rozkazy REP, SEP
   if (opt and opt_T>0) and (pass=pass_end) and macro_rept_if_test then begin  // wlaczona opcja sledzenia rozkazow SEP, REP
 
-   if mSEP then reg_size( byte(war),true ) else
-    if mREP then reg_size( byte(war),false );
+   if code in [ord(REP), ord(SEP)] then reg_size( byte(war), t_MXinst(code));
+
+//   if mSEP then reg_size( byte(war),true ) else
+//    if mREP then reg_size( byte(war),false );
 
   // sprawdzamy rozmiar rejestrow dla trybu adresowania natychmiastowego '#'
    if not(pomin) then
     if op_[len]='#' then
      case mnemo[3] of
-      'A','C','D','P','R','T': test_reg_size(a,regA,ile);  // lda, adc, sbc, and, cmp, ror, bit
-                          'X': test_reg_size(a,regX,ile);  // ldx
-                          'Y': test_reg_size(a,regY,ile);  // ldy
+      'A','C','D','P','R','T': test_reg_size(a,asize,ile, longa);	// lda, adc, sbc, and, cmp, ror, bit
+        	      'X','Y': test_reg_size(a,isize,ile, longi);	// ldx, ldy, cpx, cpy
      end;
 
   end;
@@ -7248,13 +7295,13 @@ var v: byte;
 begin
   v:=fASC(ety);
 
-  Result := (v in [$80..$9f]);     // PSEUDO
+  Result := (v in [$80..$9f]);	// PSEUDO
   if Result then exit;
 
   if opt and opt_C>0 then
-   Result := (v in [1..92])        // 65816
+   Result := (v in [1..92])	// 65816
   else
-   Result := (v in [1..56]);       // 6502
+   Result := (v in [1..56]);	// 6502
 
 end;
 
@@ -7356,6 +7403,7 @@ begin
 
       inc(adres, j*t_str[idx].rpt);
      end;
+
 end;
 
 
@@ -8912,11 +8960,15 @@ var _odd, _doo, idx, j, tmp: integer;
     par: _strArray;
 begin
 
+   omin_spacje(i, zm);
+
+   if test_char(i,zm) then blad(zm,23);
+
+
    if proc then
     yes := t_prc[proc_nr-1].use
    else
     yes := true;
-
 
    data_out:=true;    // wymus pokazanie w pliku LST podczas wykonywania makra
 
@@ -9082,6 +9134,8 @@ procedure create_long_test(const _v, _r:byte; var long_test, _lft, _rgt:string);
 var txt: string;
 begin
 
+   txt:='';
+
    case _v xor 4 of
     0: txt:='<>';
     1: txt:='>=';
@@ -9093,7 +9147,7 @@ begin
 
    if long_test<>'' then long_test:=long_test+'\';
 
-   long_test:=long_test+'.TEST '+mads_param[_r]+_lft+txt+_rgt+'\ LDA:SNE#1\.ENDT\ LDA#0';
+   long_test:=long_test+'.TEST '+mads_param[_r]+_lft + txt + _rgt+'\ LDA:SNE#1\.ENDT\ LDA#0';
 
    long_test:=long_test+'\.IF .GET[?I-1]=41\ AND EX+?J-2+1\ STA EX+?J-2+1\ ?I--\ ELS\ STA EX+?J+1\ ?J+=2\ EIF\';
 
@@ -10258,7 +10312,7 @@ LOOP:
 (*----------------------------------------------------------------------------*)
 (*  sprawdzamy czy to dyrektywa, tylko niektore dyrektywy moga byc petlone:   *)
 (*  .PRINT, .BYTE, .WORD, .LONG, .DWORD, .GET, .PUT, .HE, .BY, .WO, .SB, .FL, *)
-(*  .CB, .DEF  innych dyrektyw nie mozemy powtarzac                           *)
+(*  .CB, .CBM, .DEF  innych dyrektyw nie mozemy powtarzac                     *)
 (*----------------------------------------------------------------------------*)
    if zm[i]='.' then begin
 
@@ -10270,7 +10324,7 @@ LOOP:
      blad_und(zm,tmp,68)
     else
      if loop_used then
-      if not(mne.l in [__byte..__dword, __def, __print, __sav, __get, __xget, __put, __he, __by, __wo, __sb, __fl, __cb, __dbyte]) then blad(zm,36);
+      if not(mne.l in [__byte..__dword, __def, __print, __sav, __get, __xget, __put, __he, __by, __wo, __sb, __fl, __cb, __cbm, __dbyte]) then blad(zm,36);
 
    end;
 
@@ -11091,6 +11145,8 @@ JUMP:
 
         save_lst(' ');
 
+	txt:='';
+
         txt:=get_string(i,zm,txt,true);
 
         if txt<>'' then begin
@@ -11663,6 +11719,37 @@ JUMP:
 
          end;
 
+
+(*----------------------------------------------------------------------------*)
+(*  .LONGA|.LONGI ON/OFF						      *)
+(*----------------------------------------------------------------------------*)
+   __longa, __longi:
+         if macro_rept_if_test then begin
+
+	  if ety<>'' then save_lab(ety,adres,bank,zm);
+
+	  omin_spacje(i, zm);
+
+	  str := get_lab(i,zm, false);
+
+	  if not(opt and opt_C>0) then blad(zm, 14);
+
+	  if (str='') or ((str <> 'ON') and (str <> 'OFF')) then blad(zm, 58);
+
+	  if (str='ON') or (str='16') then v:=16 else v:=8;
+
+	  if mne.l = __longa then
+	   longa := v
+	  else
+	   longi := v;
+
+	  save_lst(' ');
+
+	  ety:='';
+
+	 end;
+
+
 (*----------------------------------------------------------------------------*)
 (*  .A8 ; .A16 ; .AI8 ; .AI16						      *)
 (*----------------------------------------------------------------------------*)
@@ -11684,23 +11771,20 @@ JUMP:
 
 	   if not(opt and opt_C>0) then blad(zm, 14);
 
-	   if str='8' then begin
-	    mne.h[0]:=$e2;
-	    asize:=8;
-	   end else begin
-	    mne.h[0]:=$c2;
-	    asize:=16;
-	   end;
+	   if str='8' then
+	    mne.h[0] := ord(SEP)
+	   else
+	    mne.h[0] := ord(REP);
 
 	   if mne.l = __a then
             mne.h[1]:=$20
-	   else begin
+	   else
             mne.h[1]:=$30;
-	    isize:=asize;
-	   end;
 
 	  end else
            blad_und(a,ety+str,68);
+
+	  reg_size(mne.h[1], t_MXinst(mne.h[0]) );
 
 	  mne.l := 2;
 
@@ -11732,23 +11816,20 @@ JUMP:
 
 	   if not(opt and opt_C>0) then blad(zm, 14);
 
-	   if str='8' then begin
-	    mne.h[0]:=$e2;
-	    isize:=8;
-	   end else begin
-	    mne.h[0]:=$c2;
-	    isize:=16;
-	   end;
+	   if str='8' then
+	    mne.h[0] := ord(SEP)
+	   else
+	    mne.h[0] := ord(REP);
 
 	   if mne.l = __i then
             mne.h[1]:=$10
-	   else begin
+	   else
             mne.h[1]:=$30;
-	    asize:=isize;
-	   end;
 
 	  end else
            blad_und(a,ety+str,68);
+
+	  reg_size(mne.h[1], t_MXinst(mne.h[0]) );
 
 	  mne.l := 2;
 
@@ -12477,7 +12558,7 @@ JUMP:
     end;
 
 
-// !!! wymaga dodania obslugi dla SDX !!!
+// !!! wymaga dodania obslugi dla SDX, obecnie brak obslugi relokacji !!!
 (*----------------------------------------------------------------------------*)
 (*  .BY [+byte] bytes and/or ASCII                                            *)
 (*  .CB [+byte] bytes and/or ASCII                                            *)
@@ -12487,7 +12568,14 @@ JUMP:
 (*  .DBYTE
 (*----------------------------------------------------------------------------*)
  __by, __wo, __he, __sb, __cb, __dbyte:
-  if (mne.l in [__by, __wo, __dbyte]) and (dreloc.use or dreloc.sdx) then blad(zm,71) else
+  if {dreloc.use or dreloc.sdx or} struct.use then begin
+
+   if struct.use then
+    blad(zm,58);
+   //else
+   // blad(zm,71);
+
+  end else
    if macro_rept_if_test then begin
 
     save_lab(ety,adres,bank,zm);
@@ -12877,7 +12965,34 @@ JUMP:
 
 
 (*----------------------------------------------------------------------------*)
-(*  .FL                                                                       *)
+(*  .CBM 'text'								      *)
+(*----------------------------------------------------------------------------*)
+ __cbm:
+    if macro_rept_if_test then begin
+
+     save_lab(ety,adres,bank,zm);
+     save_lst('a');
+
+     txt:=get_string(i,zm,zm,true);
+
+     for j:=1 to length(txt) do
+      case txt[j] of
+       'a'..'z': save_dst( byte(txt[j]) - 96 );
+       '['..'_': save_dst( byte(txt[j]) - 64 );
+            '`': save_dst(64);
+	    '@': save_dst(0);
+      else
+       save_dst( byte(txt[j]) )
+      end;
+
+     inc(adres, length(txt));
+
+     ety:='';
+    end;
+
+
+(*----------------------------------------------------------------------------*)
+(*  .FL									      *)
 (*----------------------------------------------------------------------------*)
  __fl:
     if macro_rept_if_test then begin
@@ -12887,6 +13002,8 @@ JUMP:
      save_lst('a');
 
      omin_spacje(i,zm);
+
+     if test_char(i,zm) then blad(zm,23);
 
      while not(test_char(i,zm)) do begin
        txt:=get_dat(i,zm,',',true);
@@ -13961,6 +14078,8 @@ JUMP:
                'C': begin
                       str:=fgetS(_odd);
 
+		      vtmp:=0;
+
                       case typ of
                        'B': vtmp:=fgetB(_odd);
                        'W': vtmp:=fgetW(_odd);
@@ -14193,7 +14312,7 @@ JUMP:
 
 (*----------------------------------------------------------------------------*)
 (*  DTA [abefgtcd] 'string',expression...                                     *)
-(*  lub dodajemy nowe pola do struktury  .STRUCT                              *)
+(*  lub dodajemy nowe pola do struktury .STRUCT                               *)
 (*----------------------------------------------------------------------------*)
    __dta, __byte..__dword:
         if macro_rept_if_test then
@@ -14216,6 +14335,8 @@ JUMP:
            end;
 
            if ety='' then get_parameters(i,zm,par,false, '.',#0);    // tutaj nie moze konczyc odczytu dla ':', np.: .BYTE :5 LABEL
+
+	   if High(par) = 0 then blad(zm,58);
 
            omin_spacje(i,zm);
            test_eol(i,zm,zm,#0);
@@ -14518,15 +14639,15 @@ JUMP:
          idx:=_doo mod 10;
 
        case idx of
-         2: begin save_dst($ea); inc(adres) end;
-         3: begin save_dst($c5); save_dst(0); inc(adres,2) end;
-         4: begin save_dst($ea); save_dst($ea); inc(adres,2) end;
-         5: begin save_dst($c5); save_dst(0); save_dst($ea); inc(adres,3) end;
-         6: begin save_dst($ea); save_dst($ea); save_dst($ea); inc(adres,3) end;
-         7: begin save_dst($48); save_dst($68); inc(adres,2) end;
-         8: begin save_dst($c5); save_dst(0); save_dst($c5); save_dst(0); save_dst($ea); inc(adres,5) end;
-         9: begin save_dst($48); save_dst($68); save_dst($ea); inc(adres,3) end;
-        10: begin save_dst($48); save_dst($68); save_dst($c5); save_dst(0); inc(adres,4) end;
+         2: begin save_dst($ea); inc(adres) end;						// NOP
+         3: begin save_dst($c5); save_dst(0); inc(adres,2) end;					// CMP Z
+         4: begin save_dst($ea); save_dst($ea); inc(adres,2) end;				// NOP:NOP
+         5: begin save_dst($c5); save_dst(0); save_dst($ea); inc(adres,3) end;			// CMP Z:NOP
+         6: begin save_dst($c1); save_dst(0); inc(adres,2) end;					// CMP (Z,X)
+         7: begin save_dst($48); save_dst($68); inc(adres,2) end;				// PHA:PLA
+         8: begin save_dst($c1); save_dst(0); save_dst($ea); inc(adres,3) end;			// CMP (Z,X):NOP
+         9: begin save_dst($48); save_dst($68); save_dst($ea); inc(adres,3) end;		// PHA:PLA:NOP
+        10: begin save_dst($48); save_dst($68); save_dst($c5); save_dst(0); inc(adres,4) end;	// PHA:PLA:CMP Z
        end;
 
        dec(_doo, idx);
@@ -15139,7 +15260,7 @@ const
 
  // _HASH wylicza osobny program
  // nie trzeba przechowywac w pamieci stringow z nazwami
- _hash: array [0..339] of record
+ _hash: array [0..342] of record
                               v: byte;
                               o: word;
                          end =
@@ -15175,32 +15296,33 @@ const
  (v:$0B;o:$4A6A),(v:$0D;o:$4A6C),(v:$13;o:$4A91),(v:$6F;o:$4C2C),(v:$34;o:$4C62),(v:$9F;o:$4C6A),
  (v:$9B;o:$4C72),(v:$9B;o:$4C73),(v:$51;o:$4C74),(v:$71;o:$4D13),(v:$A6;o:$4D85),(v:$84;o:$4DC9),
  (v:$21;o:$4E92),(v:$37;o:$4EC2),(v:$9F;o:$4ECA),(v:$9B;o:$4ED2),(v:$9B;o:$4ED3),(v:$2B;o:$4F14),
- (v:$AF;o:$4FA1),(v:$96;o:$50B3),(v:$A1;o:$50C9),(v:$D4;o:$50FC),(v:$38;o:$5122),(v:$A3;o:$51D4),
- (v:$8B;o:$51E2),(v:$82;o:$520F),(v:$F0;o:$521A),(v:$8E;o:$5245),(v:$69;o:$5297),(v:$95;o:$5305),
- (v:$81;o:$5625),(v:$DE;o:$569D),(v:$B2;o:$56C2),(v:$1A;o:$5983),(v:$A3;o:$5A04),(v:$E0;o:$5A4E),
- (v:$9A;o:$5C53),(v:$9A;o:$5C81),(v:$9C;o:$5CA4),(v:$B8;o:$5D5E),(v:$9C;o:$5DC9),(v:$97;o:$5E03),
- (v:$A4;o:$5E83),(v:$62;o:$5EDF),(v:$E1;o:$6003),(v:$66;o:$602C),(v:$65;o:$6033),(v:$2D;o:$6034),
- (v:$6E;o:$6053),(v:$02;o:$608C),(v:$28;o:$60A4),(v:$48;o:$6110),(v:$72;o:$6113),(v:$D9;o:$6142),
- (v:$4C;o:$6190),(v:$BA;o:$61A1),(v:$68;o:$61A6),(v:$6D;o:$61C1),(v:$26;o:$61C9),(v:$11;o:$6203),
- (v:$CB;o:$6231),(v:$2E;o:$6274),(v:$05;o:$6293),(v:$9E;o:$62CD),(v:$9E;o:$62ED),(v:$55;o:$6334),
- (v:$2C;o:$6434),(v:$03;o:$648C),(v:$27;o:$64A4),(v:$49;o:$6510),(v:$73;o:$6513),(v:$4D;o:$6590),
- (v:$25;o:$65C9),(v:$10;o:$6603),(v:$06;o:$6693),(v:$9E;o:$66CD),(v:$9E;o:$66ED),(v:$54;o:$6714),
- (v:$AB;o:$68C2),(v:$D7;o:$6A46),(v:$39;o:$6A93),(v:$E9;o:$6B3A),(v:$6F;o:$733C),(v:$A9;o:$73F5),
- (v:$67;o:$7833),(v:$6D;o:$7B65),(v:$6A;o:$7C8D),(v:$A7;o:$7D7A),(v:$69;o:$7E9D),(v:$C9;o:$7F58),
- (v:$B7;o:$7F79),(v:$A7;o:$8154),(v:$D1;o:$843F),(v:$77;o:$864A),(v:$62;o:$8976),(v:$F0;o:$8A4B),
- (v:$CE;o:$8C5C),(v:$02;o:$8D39),(v:$71;o:$8D4A),(v:$74;o:$92F2),(v:$76;o:$9704),(v:$EB;o:$9833),
- (v:$F0;o:$987A),(v:$AA;o:$990E),(v:$A9;o:$9998),(v:$11;o:$9B5A),(v:$B9;o:$9B88),(v:$AE;o:$9E9D),
- (v:$D5;o:$9F41),(v:$61;o:$9F52),(v:$03;o:$A146),(v:$A4;o:$A152),(v:$0D;o:$A224),(v:$B0;o:$A307),
- (v:$C1;o:$A3EE),(v:$BB;o:$A421),(v:$65;o:$A934),(v:$B4;o:$A9FB),(v:$66;o:$AB24),(v:$AD;o:$ACD0),
- (v:$64;o:$AFC6),(v:$BE;o:$B2B3),(v:$BD;o:$B633),(v:$E3;o:$B64B),(v:$CF;o:$B904),(v:$AE;o:$B9DA),
- (v:$C5;o:$B9F0),(v:$0A;o:$BA05),(v:$DD;o:$BA64),(v:$E4;o:$BEEA),(v:$CC;o:$BFBD),(v:$C0;o:$C10A),
- (v:$73;o:$C257),(v:$75;o:$CA0E),(v:$6E;o:$CA5A),(v:$09;o:$CC30),(v:$C8;o:$CD5F),(v:$66;o:$CDE6),
- (v:$A1;o:$CE0D),(v:$C3;o:$CF8A),(v:$6C;o:$D040),(v:$B1;o:$D0C2),(v:$6B;o:$D0CD),(v:$D8;o:$D417),
- (v:$04;o:$D720),(v:$6C;o:$D894),(v:$CF;o:$D91C),(v:$D8;o:$DB0C),(v:$CE;o:$DE1A),(v:$B3;o:$E073),
- (v:$E2;o:$E10B),(v:$6A;o:$E3FC),(v:$0E;o:$E6E6),(v:$D0;o:$E767),(v:$B4;o:$E829),(v:$CD;o:$E97F),
- (v:$0C;o:$EA8C),(v:$C4;o:$EB60),(v:$C3;o:$EBA8),(v:$08;o:$EDEE),(v:$07;o:$EFC3),(v:$C7;o:$F129),
- (v:$72;o:$F166),(v:$CC;o:$F1FE),(v:$AA;o:$F353),(v:$64;o:$F5F1),(v:$A8;o:$F6D0),(v:$D0;o:$F6E5),
- (v:$C0;o:$F88C),(v:$B5;o:$FAC5),(v:$01;o:$FC2A),(v:$D2;o:$FCCE)
+ (v:$AF;o:$4FA1),(v:$96;o:$50B3),(v:$A1;o:$50C9),(v:$D4;o:$50FC),(v:$38;o:$5122),(v:$E5;o:$5198),
+ (v:$A3;o:$51D4),(v:$8B;o:$51E2),(v:$82;o:$520F),(v:$F0;o:$521A),(v:$8E;o:$5245),(v:$69;o:$5297),
+ (v:$95;o:$5305),(v:$81;o:$5625),(v:$DE;o:$569D),(v:$B2;o:$56C2),(v:$1A;o:$5983),(v:$A3;o:$5A04),
+ (v:$E0;o:$5A4E),(v:$9A;o:$5C53),(v:$9A;o:$5C81),(v:$9C;o:$5CA4),(v:$B8;o:$5D5E),(v:$9C;o:$5DC9),
+ (v:$97;o:$5E03),(v:$A4;o:$5E83),(v:$62;o:$5EDF),(v:$E1;o:$6003),(v:$66;o:$602C),(v:$65;o:$6033),
+ (v:$2D;o:$6034),(v:$6E;o:$6053),(v:$02;o:$608C),(v:$28;o:$60A4),(v:$48;o:$6110),(v:$72;o:$6113),
+ (v:$D9;o:$6142),(v:$4C;o:$6190),(v:$BA;o:$61A1),(v:$68;o:$61A6),(v:$6D;o:$61C1),(v:$26;o:$61C9),
+ (v:$11;o:$6203),(v:$CB;o:$6231),(v:$2E;o:$6274),(v:$05;o:$6293),(v:$9E;o:$62CD),(v:$9E;o:$62ED),
+ (v:$55;o:$6334),(v:$2C;o:$6434),(v:$03;o:$648C),(v:$27;o:$64A4),(v:$49;o:$6510),(v:$73;o:$6513),
+ (v:$4D;o:$6590),(v:$25;o:$65C9),(v:$10;o:$6603),(v:$06;o:$6693),(v:$9E;o:$66CD),(v:$9E;o:$66ED),
+ (v:$54;o:$6714),(v:$AB;o:$68C2),(v:$D7;o:$6A46),(v:$39;o:$6A93),(v:$E9;o:$6B3A),(v:$6F;o:$733C),
+ (v:$A9;o:$73F5),(v:$67;o:$7833),(v:$6D;o:$7B65),(v:$6A;o:$7C8D),(v:$A7;o:$7D7A),(v:$69;o:$7E9D),
+ (v:$C9;o:$7F58),(v:$B7;o:$7F79),(v:$A7;o:$8154),(v:$D1;o:$843F),(v:$77;o:$864A),(v:$62;o:$8976),
+ (v:$F0;o:$8A4B),(v:$CE;o:$8C5C),(v:$02;o:$8D39),(v:$71;o:$8D4A),(v:$74;o:$92F2),(v:$76;o:$9704),
+ (v:$EB;o:$9833),(v:$F0;o:$987A),(v:$AA;o:$990E),(v:$A9;o:$9998),(v:$11;o:$9B5A),(v:$B9;o:$9B88),
+ (v:$AE;o:$9E9D),(v:$D5;o:$9F41),(v:$61;o:$9F52),(v:$03;o:$A146),(v:$A4;o:$A152),(v:$0D;o:$A224),
+ (v:$B0;o:$A307),(v:$C1;o:$A3EE),(v:$BB;o:$A421),(v:$E7;o:$A7EE),(v:$65;o:$A934),(v:$B4;o:$A9FB),
+ (v:$66;o:$AB24),(v:$AD;o:$ACD0),(v:$64;o:$AFC6),(v:$BE;o:$B2B3),(v:$BD;o:$B633),(v:$E3;o:$B64B),
+ (v:$CF;o:$B904),(v:$AE;o:$B9DA),(v:$C5;o:$B9F0),(v:$0A;o:$BA05),(v:$DD;o:$BA64),(v:$E4;o:$BEEA),
+ (v:$CC;o:$BFBD),(v:$C0;o:$C10A),(v:$73;o:$C257),(v:$75;o:$CA0E),(v:$6E;o:$CA5A),(v:$09;o:$CC30),
+ (v:$C8;o:$CD5F),(v:$66;o:$CDE6),(v:$A1;o:$CE0D),(v:$C3;o:$CF8A),(v:$6C;o:$D040),(v:$E6;o:$D090),
+ (v:$B1;o:$D0C2),(v:$6B;o:$D0CD),(v:$D8;o:$D417),(v:$04;o:$D720),(v:$6C;o:$D894),(v:$CF;o:$D91C),
+ (v:$D8;o:$DB0C),(v:$CE;o:$DE1A),(v:$B3;o:$E073),(v:$E2;o:$E10B),(v:$6A;o:$E3FC),(v:$0E;o:$E6E6),
+ (v:$D0;o:$E767),(v:$B4;o:$E829),(v:$CD;o:$E97F),(v:$0C;o:$EA8C),(v:$C4;o:$EB60),(v:$C3;o:$EBA8),
+ (v:$08;o:$EDEE),(v:$07;o:$EFC3),(v:$C7;o:$F129),(v:$72;o:$F166),(v:$CC;o:$F1FE),(v:$AA;o:$F353),
+ (v:$64;o:$F5F1),(v:$A8;o:$F6D0),(v:$D0;o:$F6E5),(v:$C0;o:$F88C),(v:$B5;o:$FAC5),(v:$01;o:$FC2A),
+ (v:$D2;o:$FCCE)
  );
 
 begin
@@ -15265,7 +15387,6 @@ begin
 
 
     'C': case_used    := true;
-    'F': labFirstCol  := true;
     'P': full_name    := true;
     'S': silent       := true;
     'X': exclude_proc := true;
@@ -15297,6 +15418,31 @@ begin
           end;
 
           s_lab(def_label,nul.i,bank,t,def_label[1]);
+         end;
+
+    'F': begin
+          inc(_i);
+
+	  if length(t) = 2 then
+
+	    labFirstCol  := true
+
+	  else
+
+          case UpCase(t[_i]) of
+
+           'V': if t[_i+1] <> ':' then
+		  Syntax
+		else begin
+		  inc(_i, 2);
+		  tmp:=get_dat(_i,t,' ',true);
+
+		  fvalue := byte( oblicz_wartosc(tmp, t) );
+                end;
+           else
+            Syntax
+           end;
+
          end;
 
     'H': begin
@@ -15489,8 +15635,11 @@ begin
 
  array_idx:=1;
 
-
  pass:=1;
+
+ binary_file.use:=false;
+ plik_asm:='';
+ status:=0;
 
 (*----------------------------------------------------------------------------*)
 (* tworzenie tablic 'TCRC16', 'TCRC32' oraz tablicy 'HASH', odczyt parametrow *)
