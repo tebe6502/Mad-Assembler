@@ -1,11 +1,11 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.0.9 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.0 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*                                                                            *)
 (*  support 6502, 65816, Sparta DOS X, virtual banks                          *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2019-05-12                                                  *)
+(*  last changes: 2019-09-24                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -26,7 +26,7 @@ type
 
     t_Dirop  = (_unknown, _r=1, _or, _lo, _hi, _get, _wget, _lget, _dget, _and,
                 _xor, _not, _len, _adr, _def, _filesize, _sizeof, _zpvar, _array,
-		_asize, _isize);
+		_asize, _isize, _fileexists);
 
     t_Mads   = (__STACK_POINTER, __STACK_ADDRESS, __PROC_VARS_ADR);
 
@@ -588,7 +588,7 @@ var lst, lab, hhh, mmm: textfile;
 
 
 // komunikaty
- mes: array [0..3249] of char=(
+ mes: array [0..3268] of char=(
 {0}  chr(ord('V') + $80),'a','l','u','e',' ','o','u','t',' ','o','f',' ','r','a','n','g','e',
 {1}  chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','I','F',
 {2}  chr(ord('L') + $80),'a','b','e','l',' ',#9,' ','d','e','c','l','a','r','e','d',' ','t','w','i','c','e',
@@ -713,8 +713,9 @@ var lst, lab, hhh, mmm: textfile;
 {121} chr(ord('A') + $80),'m','b','i','g','u','o','u','s',' ','l','a','b','e','l',' ',
 {122} chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','E',
 {123} chr(ord('M') + $80),'u','l','t','i','-','l','i','n','e',' ','a','r','g','u','m','e','n','t',' ','i','s',' ','n','o','t',' ','s','u','p','p','o','r','t','e','d',
-
-{124} chr(ord('S') + $80),
+{124} chr(ord('B') + $80),'u','g','g','y',' ','i','n','d','i','r','e','c','t',' ','j','u','m','p',
+              
+{125} chr(ord('S') + $80),
      'y','n','t','a','x',':',' ','m','a','d','s',' ','s','o','u','r','c','e',' ','[','s','w','i','t','c','h','e','s',']',#13,#10,
      '-','b',':','a','d','d','r','e','s','s',#9,'G','e','n','e','r','a','t','e',' ','b','i','n','a','r','y',' ','f','i','l','e',' ','a','t',' ','s','p','e','c','i','f','i','c',' ','a','d','d','r','e','s','s',#13,#10,
      '-','c',#9,#9,'L','a','b','e','l',' ','c','a','s','e',' ','s','e','n','s','i','t','i','v','i','t','y',#13,#10,
@@ -735,17 +736,17 @@ var lst, lab, hhh, mmm: textfile;
      '-','v','u',#9,#9,'V','e','r','i','f','y',' ','c','o','d','e',' ','i','n','s','i','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',#13,#10,
      '-','x',#9,#9,'E','x','c','l','u','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',
 
-{125} chr($80),
+{126} chr($80),
 
 // version
 
-{126} chr(ord('m') + $80),'a','d','s',' ','2','.','0','.','9',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{127} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','0',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
 const
 
-  mads_version = 126 + 1;
+  mads_version = 127 + 1;
 
   TAB = ^I;            // Char for a TAB
   CR  = ^M;            // Char for a CR
@@ -3974,7 +3975,7 @@ LOOP:
            begin
 	    war:=isize;
 	    value:=true;
-	   end;
+	   end;     
 
      _get, _wget, _lget, _dget:
            begin                                    // .GET, .WGET, .LGET, .DGET
@@ -4007,6 +4008,30 @@ LOOP:
      _xor: oper:=OperNew(k,old,'^',value,true);     // .XOR
 
      _not: oper:=OperNew(k,old,'!',value,false);    // .NOT
+     
+     _fileexists:				    // .FILEEXISTS
+           begin  
+
+            if a[i] in AllowStringBrackets then
+             txt := ciag_ograniczony(i, a, true)
+            else
+             txt:= get_datUp(i, a, #0, false);
+
+            k:=1;
+
+            if txt[k] in AllowQuotes then begin
+
+             txt:=get_string(k,txt,old,true);
+
+             txt:=GetFile(txt,a);
+	     
+	    end;
+	    
+            war:=ord(TestFile(txt));
+	    
+	    value:=true;
+	   
+	   end;
 
      _len,_filesize,_sizeof:
            begin                                    // .LEN
@@ -7282,6 +7307,8 @@ end;
  Result.h[2] := byte(war shr 8);
  Result.h[3] := byte(war shr 16);
  Result.h[4] := byte(war shr 24);
+
+ if (Result.h[0]=$6c) and (Result.h[1]=$ff) and (pass=pass_end) then warning(124);
 
  mne_used := true;           // zostal odczytany jakis mnemonik
 
@@ -15260,7 +15287,7 @@ const
 
  // _HASH wylicza osobny program
  // nie trzeba przechowywac w pamieci stringow z nazwami
- _hash: array [0..342] of record
+ _hash: array [0..343] of record
                               v: byte;
                               o: word;
                          end =
@@ -15318,11 +15345,11 @@ const
  (v:$CC;o:$BFBD),(v:$C0;o:$C10A),(v:$73;o:$C257),(v:$75;o:$CA0E),(v:$6E;o:$CA5A),(v:$09;o:$CC30),
  (v:$C8;o:$CD5F),(v:$66;o:$CDE6),(v:$A1;o:$CE0D),(v:$C3;o:$CF8A),(v:$6C;o:$D040),(v:$E6;o:$D090),
  (v:$B1;o:$D0C2),(v:$6B;o:$D0CD),(v:$D8;o:$D417),(v:$04;o:$D720),(v:$6C;o:$D894),(v:$CF;o:$D91C),
- (v:$D8;o:$DB0C),(v:$CE;o:$DE1A),(v:$B3;o:$E073),(v:$E2;o:$E10B),(v:$6A;o:$E3FC),(v:$0E;o:$E6E6),
- (v:$D0;o:$E767),(v:$B4;o:$E829),(v:$CD;o:$E97F),(v:$0C;o:$EA8C),(v:$C4;o:$EB60),(v:$C3;o:$EBA8),
- (v:$08;o:$EDEE),(v:$07;o:$EFC3),(v:$C7;o:$F129),(v:$72;o:$F166),(v:$CC;o:$F1FE),(v:$AA;o:$F353),
- (v:$64;o:$F5F1),(v:$A8;o:$F6D0),(v:$D0;o:$F6E5),(v:$C0;o:$F88C),(v:$B5;o:$FAC5),(v:$01;o:$FC2A),
- (v:$D2;o:$FCCE)
+ (v:$D8;o:$DB0C),(v:$CE;o:$DE1A),(v:$15;o:$DE7D),(v:$B3;o:$E073),(v:$E2;o:$E10B),(v:$6A;o:$E3FC),
+ (v:$0E;o:$E6E6),(v:$D0;o:$E767),(v:$B4;o:$E829),(v:$CD;o:$E97F),(v:$0C;o:$EA8C),(v:$C4;o:$EB60),
+ (v:$C3;o:$EBA8),(v:$08;o:$EDEE),(v:$07;o:$EFC3),(v:$C7;o:$F129),(v:$72;o:$F166),(v:$CC;o:$F1FE),
+ (v:$AA;o:$F353),(v:$64;o:$F5F1),(v:$A8;o:$F6D0),(v:$D0;o:$F6E5),(v:$C0;o:$F88C),(v:$B5;o:$FAC5),
+ (v:$01;o:$FC2A),(v:$D2;o:$FCCE)
  );
 
 begin
