@@ -7,7 +7,6 @@
 <BODY BACKGROUND="6502proc.gif">
 
 <style type="text/css">
-
 .duzy {
 	font-family: Tahoma, Verdana, Arial;
 	font-size: 24px;
@@ -47,8 +46,8 @@
 </head>
 
 <CENTER>
-<p class="duzy"><u>MAD-ASSEMBLER 2.0.7</u></p>
-<p class="stopka">Tebe/Madteam (11.10.2017)
+<p class="duzy"><u>MAD-ASSEMBLER 2.0.9</u></p>
+<p class="stopka">Tebe/Madteam (15.09.2019)
 
 <HR>
 
@@ -215,6 +214,8 @@
 <UL>
 <LI><A HREF="#makra">Deklaracja makra</A>
 <LI><A HREF="#makra_wy">Wywo³anie makra</A>
+<LI><A HREF="#_defi">Definiowanie makra</A>
+
 </UL>
 
 <b><LI><A HREF="#procs">Procedury</A></b>
@@ -279,9 +280,17 @@ Je¶li dla Twojego systemu istnieje odpowiednia wersja <tt>Free Pascala</tt>, tzn
 <p></p>
 
 <li>Strona domowa <tt>XASM-a</tt>: <a href="http://atariarea.histeria.pl/x-asm/">http://atariarea.krap.pl/x-asm/</a>
+
+
+<li>W±tki dotycz±ce <tt>MADS-a</tt>:
+<ul>
+<li><a href="http://www.atari.org.pl/forum/viewtopic.php?id=8450">http://www.atari.org.pl/</a>
+<li><a href="http://atariage.com/forums/topic/114443-mad-assembler-mads/">http://atariage.com/</a>
+<li><a href="http://www.atari.org.pl/forum/viewtopic.php?id=13407">Kolorowanie sk³adni MADS, XASM</a></li>
+</ul>
+
 <p></p>
 <br />
-
 
 
 <A NAME="komp">
@@ -383,18 +392,20 @@ Syntax: mads source [switches]
 -c              Label case sensitivity
 -d:label=value  Define a label
 -f              CPU command at first column
+-fv:value       Set raw binary fill byte to [value]
 -hc[:filename]  Header file for CC65
 -hm[:filename]  Header file for MADS
 -i:path         Additional include directories
 -l[:filename]   Generate listing
 -m:filename     File with macro definition
+-ml:value       margin-left property
 -o:filename     Set object file name
 -p              Print fully qualified file names in listing and error messages
 -s              Silent mode
 -t[:filename]   List label table
--x              Exclude unreferenced procedures
--vu             Verify code inside unreferenced procedures
 -u              Warn of unused labels
+-vu             Verify code inside unreferenced procedures
+-x              Exclude unreferenced procedures
 </pre>
 </span>
 
@@ -468,6 +479,13 @@ poleceñ. Prze³±cznika mo¿na u¿yæ wielokrotnie podczas jednego wywo³ania <tt>MADS
 <div style="font-weight: bold"  style="font-size: 18px">-f</div>
 <div align="justify">
 U¿ycie prze³±cznika <b><tt>-f</tt></b> umo¿liwia umieszczanie rozkazów CPU od pierwszej kolumny wiersza i ich poprawne rozpoznawanie przez asembler jako rozkazy a nie tylko jako etykiety.
+</p>
+
+
+<p>
+<div style="font-weight: bold"  style="font-size: 18px">-f</div>
+<div align="justify">
+U¿ycie prze³±cznika <b><tt>-fv:value</tt></b> pozwala ustaliæ warto¶æ wype³nienia pamiêci gdy u¿yjemy 'OPT F+'
 </p>
 
 
@@ -1449,6 +1467,9 @@ DYREKTYWY
 
  <A HREF="#locals">.LOCAL</A> label
  <A HREF="#locals">.ENDL, [.LEND]</A>
+ 
+ <A HREF="#_longa">.LONGA ON|OFF</A>
+ <A HREF="#_longi">.LONGI ON|OFF</A>
 
  <A HREF="#_link">.LINK</A> 'filename'
  
@@ -5161,6 +5182,30 @@ PARAM_NAME    ATASCII
 
 
 
+<A NAME="_longa">
+<u><tt><h2>.LONGA, .LONGI</h2></tt></u>
+
+<span style="color: #0000FF">
+<pre>
+ .LONGA ON|OFF
+ .LONGI ON|OFF
+</pre>
+</span>
+
+<p>
+Dyrektywa .LONGA informuje assembler o rozmiarze rejestru akumulatora, 16bit gdy ON, 8bit gdy OFF.
+</p>
+
+<p>
+Dyrektywa .LONGI informuje assembler o rozmiarze rejestrów indeksowych XY, 16bit gdy ON, 8bit gdy OFF.
+</p>
+
+Dyrektywy wp³ywaj± na rozmiar argumentu przy adresowaniu absolutnym CPU 65816.
+
+<p></p>
+<br />
+
+
 
 <A NAME="_link">
 <u><tt><h2>Linkowanie .LINK</h2></tt></u>
@@ -5634,6 +5679,25 @@ Przyk³adem wykorzystania tego trybu pracy <tt>MADS-a</tt> jest plik <tt>..\EXAMP
 <A NAME="zmiany">
 </tt><h2>HISTORIA</h2></tt>
 
+<p class="tekst-wiekszy">
+v2.0.9
+<p class="tekst">
+- .cbm 'text' konwersja na znaki ekranowe Commodore C64<br>
+- usuniêty b³±d kiedy procedura .PROC znajduj±ca siê w bloku .LOCAL nie zosta³a oznaczona jako "do asemblacji" mimo tego ¿e by³o do niej odwo³anie z poziomu makra .MACRO w bloku .LOCAL<br>
+- usuniêty b³±d, etykiety tymczasowe ?label by³y oznaczane "do relokacji"<br>
+
+
+<p class="tekst-wiekszy">
+v2.0.8
+<p class="tekst">
+- krótszy kod dla #CYCLE<br>
+- poprawki dla .BY, .WO, .HE, .SB, .CB, .FL<br>
+- komunikat b³êdu 'Improper syntax' w przypadku u¿ycia .BY, .WO, .HE, .SB, .CB, .FL w bloku .STRUCT<br>
+- dodane nowe dyrektywy dla 65816 .LONGA ON|OFF, .LONGI ON|OFF<br>
+- poprawione dzia³anie ¶ledzenia rozmiaru rejestrów 65816 gdy 'OPT T+'<br>
+- dodany prze³±cznik -FV:VALUE pozwalaj±cy ustaliæ warto¶æ wype³nienia pamiêci gdy 'OPT F+'<br>
+- dodana mo¿liwo¶æ podania argumentu jako ci±gu dwóch znaków (poprzednio tylko 1 znak) np. lda #'AB' , mwa #'XY' $80<br>
+
 
 <p class="tekst-wiekszy">
 v2.0.7
@@ -5641,8 +5705,8 @@ v2.0.7
 - poprawione generowanie kodu wynikowego dla nielegali DOP, SHA<br>
 - dodane nowe dyrektywy (65816) .A8, .A16, .I8, .I16, .AI8, .IA8, .AI16, .IA16 pozwalaj±ce ustawiæ rozmiar rejestrów AXY<br>
 - dodane nowe dyrektywy (65816) .ASIZE, .ISIZE zwracaj±ce aktualnie ustawiony rozmiar rejestrów AXY<br>
-- rozkaz JML (65816) zmieniany jest na JMP je¶li skok jest w tym samym 64KB banku pamiêci<br>
-- dodany nowy prze³±cznik '-ml:value' (margin-left property), który umo¿liwia zmianê lewgo marginesu generowanego listingu w zakresie od 32 do 128 znaków<br>
+- rozkaz JMP zmieniany jest na JML (65816) tylko gdy skok dotyczy innego 64KB banku ni¿ obecny<br>
+- dodany nowy prze³±cznik '-ml:value' (margin-left property), który umo¿liwia zmianê lewego marginesu generowanego listingu w zakresie od 32 do 128 znaków<br>
 
 
 <p class="tekst-wiekszy">
