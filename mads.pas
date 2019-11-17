@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2019-09-24                                                  *)
+(*  last changes: 2019-10-27                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -1674,7 +1674,7 @@ begin
 
  con := con+show_full_name(global_name,full_name,false)+' ('+IntToStr(Int64(line_err)+ord(line_err=0))+load_mes(81);
 
- if (b=0) and (str_blad<>'') then add:=add+' $'+str_blad;
+ if (b=0) and (str_blad<>'') then add:=add+' '+str_blad;
 
  if b=18 then str_blad:=a;                 // Cannont open or create file ' '
 
@@ -2385,22 +2385,22 @@ function wartosc(var a:string; var v:Int64; const o:char): cardinal;
 (*  sprawdzamy zakres wartosci zmiennej 'V' na podstawie kodu w 'O'           *)
 (*----------------------------------------------------------------------------*)
 var x: Boolean;
-    i: int64;
+    i, mx: int64;
 begin
  Result:=cardinal( v );
 
  i:=abs(v);                  // koniecznie ABS inaczej nie zadziala prawidlowo
 
  case o of
-               'B' :  x := i > $FF;
-           'A','V' :  x := i > $FFFF;
-           'E','T' :  x := i > $FFFFFF;
+               'B' : begin mx:=$ff; x := i > $FF end;
+           'A','V' : begin mx:=$ffff; x := i > $FFFF end;
+           'E','T' : begin mx:=$ffffff; x := i > $FFFFFF end;
 //   'F','R','L','H' :  x := i > $FFFFFFFF;   // !!! nie realne !!! zaremowac aby dzialalo odejmowanie
  else
-  x:=false;
+  begin mx:=$ffffffff; x:=false end;
  end;
 
- if x then blad(a,0, Hex(v,4));
+ if x then blad(a,0, '('+IntToStr(v)+' must be between 0 and '+IntToStr(mx)+')');
 
 end;
 
@@ -7235,7 +7235,7 @@ end;
                end;
 
           'Q': if (opt and opt_C=0) then
-                blad(old,0)
+                blad(old,0,'('+IntToStr(war)+' must be between 0 and 255)')
                else begin
                 war:=wartosc(a,war,'A');
                 inc(ile,2)
@@ -13462,15 +13462,15 @@ JUMP:
 
            adres:=idx;
 
-           if r<>__blkEmp then org:=true;        // R = MNE.L
+           if r<>__blkEmp then org:=true;	// R = MNE.L
          end;
 
 
          if ( (opt and opt_C>0) and (idx>=0) and (idx<=$FFFFFF) ) or ( (idx>=0) and (idx<=$FFFF) ) then
           first_org:=false
          else
-          blad(zm,0);    // !!! koniecznie blad(zm,0) !!! w celu akceptacji
-                         // ORG-ów <0 w poczatkowych przebiegach asemblacji
+          blad(zm,0,'('+IntToStr(idx)+' must be between 0 and 65535)');		// !!! koniecznie blad(zm,0) !!! w celu akceptacji
+										// ORG-ów < 0 w poczatkowych przebiegach asemblacji
 
          if raw.use and (r in [__run, __ini]) then first_org:=true;
 
@@ -14655,7 +14655,7 @@ JUMP:
        blad(zm,14);
 
       _doo:=integer( oblicz_wartosc_noSPC(zm,zm,i,#0,'A') );
-      if _doo<2 then blad(zm,0);
+      if _doo<2 then blad(zm,0,'('+IntToStr(_doo)+' must be between 2 and 65535)');
 
       save_lst('a');
 
