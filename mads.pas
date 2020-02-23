@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2019-10-27                                                  *)
+(*  last changes: 2019-12-22                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -24,9 +24,9 @@ program MADS;
 
 type
 
-    t_Dirop  = (_unknown, _r=1, _or, _lo, _hi, _get, _wget, _lget, _dget, _and,
-                _xor, _not, _len, _adr, _def, _filesize, _sizeof, _zpvar, _array,
-		_asize, _isize, _fileexists);
+    t_Dirop  = (_unknown, _r=1, _or, _lo, _hi, _get, _wget, _lget, _dget, _and, _xor, _not,
+		_len, _adr, _def, _filesize, _sizeof, _zpvar, _rnd, _asize, _isize, 
+		_fileexists, _array);
 
     t_Mads   = (__STACK_POINTER, __STACK_ADDRESS, __PROC_VARS_ADR);
 
@@ -3917,7 +3917,7 @@ LOOP:
      x:=tCRC16[byte($ffff shr 8) xor byte('.')] xor ($ffff shl 8);
 
      while _alpha(a[i]) and (i<=length(a)) do begin
-      byt:=UpCase(a[i]);                    // !! duze litery !! bo nie zadziala z przelacznikiem -c
+      byt:=UpCase(a[i]);				// !! duze litery !! bo nie zadziala z przelacznikiem -c
       x:=tCRC16[byte(x shr 8) xor byte(byt)] xor (x shl 8);
 
       tmp:=tmp+byt;
@@ -3925,14 +3925,14 @@ LOOP:
 
       k:=hash[(tCRC16[byte(x shr 8) xor byte('.')] xor (x shl 8)) and $ffff];
 
-      if k in [ord(_r)..ord(_array)] then Break;
+      if k in [ord(_or)..ord(_array)] then Break;
      end;
 
      omin_spacje(i,a);
 
      case t_dirop(k) of
 
-      _r: begin                                     // .R
+      _r: begin						// .R
            if ___rept_ile<0 then blad(old,116);
 
            war:=___rept_ile;
@@ -3941,7 +3941,7 @@ LOOP:
            value:=true;
           end;
 
-      _lo: begin                                    // .LO (expression)
+      _lo: begin					// .LO (expression)
             old_reloc_value_cnt := reloc_value.cnt;
             old_reloc_value_use := reloc_value.use;
 
@@ -3953,7 +3953,7 @@ LOOP:
             value:=true;
            end;
 
-      _hi: begin                                    // .HI (expression)
+      _hi: begin					// .HI (expression)
             old_reloc_value_cnt := reloc_value.cnt;
             old_reloc_value_use := reloc_value.use;
 
@@ -3964,21 +3964,27 @@ LOOP:
 
             value:=true;
            end;
+	   
+     _rnd: begin					// .RND
+	    //randomize;
+	    war:=random(256);
+	    value:=true;     
+	   end;	   
 
-     _asize:				    	    // .ASIZE
+     _asize:						// .ASIZE
            begin
 	    war:=asize;
 	    value:=true;
 	   end;
 
-     _isize:				    	    // .ISIZE
+     _isize:						// .ISIZE
            begin
 	    war:=isize;
 	    value:=true;
 	   end;     
 
      _get, _wget, _lget, _dget:
-           begin                                    // .GET, .WGET, .LGET, .DGET
+           begin					// .GET, .WGET, .LGET, .DGET
             arg:=0;
 
             old_reloc_value_cnt := reloc_value.cnt;
@@ -5085,7 +5091,7 @@ begin
    end;
 
  // ND(
-   $4E4428: begin
+   $4E4428: begin		
     inc(i,3);
 
    // sprawdzamy poprawnosc nawiasow
@@ -15287,7 +15293,7 @@ const
 
  // _HASH wylicza osobny program
  // nie trzeba przechowywac w pamieci stringow z nazwami
- _hash: array [0..343] of record
+ _hash: array [0..344] of record
                               v: byte;
                               o: word;
                          end =
@@ -15301,7 +15307,7 @@ const
  (v:$0A;o:$0C53),(v:$33;o:$0C62),(v:$9F;o:$0C6A),(v:$9B;o:$0C72),(v:$9B;o:$0C73),(v:$07;o:$0C81),
  (v:$52;o:$0C94),(v:$12;o:$0CA4),(v:$22;o:$0CB3),(v:$18;o:$0D83),(v:$69;o:$0DC1),(v:$13;o:$0DC9),
  (v:$53;o:$0E74),(v:$36;o:$0EC2),(v:$9F;o:$0ECA),(v:$9B;o:$0ED2),(v:$9B;o:$0ED3),(v:$EA;o:$0EF2),
- (v:$DF;o:$0FA5),(v:$50;o:$1074),(v:$9D;o:$1081),(v:$9C;o:$10A4),(v:$24;o:$10B3),(v:$12;o:$10F4),
+ (v:$DF;o:$0FA5),(v:$50;o:$1074),(v:$9D;o:$1081),(v:$9C;o:$10A4),(v:$24;o:$10B3),(v:$16;o:$10F4),
  (v:$46;o:$1110),(v:$1B;o:$1183),(v:$4B;o:$1190),(v:$08;o:$11C1),(v:$85;o:$11C5),(v:$9C;o:$11C9),
  (v:$97;o:$1203),(v:$64;o:$1252),(v:$BC;o:$1284),(v:$59;o:$1478),(v:$63;o:$155E),(v:$6C;o:$15C1),
  (v:$32;o:$15C2),(v:$9F;o:$15CA),(v:$9B;o:$15D2),(v:$9B;o:$15D3),(v:$63;o:$166C),(v:$10;o:$16BF),
@@ -15320,36 +15326,36 @@ const
  (v:$2F;o:$41EE),(v:$76;o:$41F4),(v:$4F;o:$4293),(v:$41;o:$42CD),(v:$35;o:$44A2),(v:$9F;o:$44AA),
  (v:$9B;o:$44B2),(v:$9B;o:$44B3),(v:$A5;o:$463C),(v:$14;o:$47D3),(v:$42;o:$48B0),(v:$99;o:$4910),
  (v:$6A;o:$4981),(v:$99;o:$4990),(v:$14;o:$49E5),(v:$16;o:$49F2),(v:$AC;o:$4A25),(v:$6B;o:$4A41),
- (v:$0B;o:$4A6A),(v:$0D;o:$4A6C),(v:$13;o:$4A91),(v:$6F;o:$4C2C),(v:$34;o:$4C62),(v:$9F;o:$4C6A),
- (v:$9B;o:$4C72),(v:$9B;o:$4C73),(v:$51;o:$4C74),(v:$71;o:$4D13),(v:$A6;o:$4D85),(v:$84;o:$4DC9),
- (v:$21;o:$4E92),(v:$37;o:$4EC2),(v:$9F;o:$4ECA),(v:$9B;o:$4ED2),(v:$9B;o:$4ED3),(v:$2B;o:$4F14),
- (v:$AF;o:$4FA1),(v:$96;o:$50B3),(v:$A1;o:$50C9),(v:$D4;o:$50FC),(v:$38;o:$5122),(v:$E5;o:$5198),
- (v:$A3;o:$51D4),(v:$8B;o:$51E2),(v:$82;o:$520F),(v:$F0;o:$521A),(v:$8E;o:$5245),(v:$69;o:$5297),
- (v:$95;o:$5305),(v:$81;o:$5625),(v:$DE;o:$569D),(v:$B2;o:$56C2),(v:$1A;o:$5983),(v:$A3;o:$5A04),
- (v:$E0;o:$5A4E),(v:$9A;o:$5C53),(v:$9A;o:$5C81),(v:$9C;o:$5CA4),(v:$B8;o:$5D5E),(v:$9C;o:$5DC9),
- (v:$97;o:$5E03),(v:$A4;o:$5E83),(v:$62;o:$5EDF),(v:$E1;o:$6003),(v:$66;o:$602C),(v:$65;o:$6033),
- (v:$2D;o:$6034),(v:$6E;o:$6053),(v:$02;o:$608C),(v:$28;o:$60A4),(v:$48;o:$6110),(v:$72;o:$6113),
- (v:$D9;o:$6142),(v:$4C;o:$6190),(v:$BA;o:$61A1),(v:$68;o:$61A6),(v:$6D;o:$61C1),(v:$26;o:$61C9),
- (v:$11;o:$6203),(v:$CB;o:$6231),(v:$2E;o:$6274),(v:$05;o:$6293),(v:$9E;o:$62CD),(v:$9E;o:$62ED),
- (v:$55;o:$6334),(v:$2C;o:$6434),(v:$03;o:$648C),(v:$27;o:$64A4),(v:$49;o:$6510),(v:$73;o:$6513),
- (v:$4D;o:$6590),(v:$25;o:$65C9),(v:$10;o:$6603),(v:$06;o:$6693),(v:$9E;o:$66CD),(v:$9E;o:$66ED),
- (v:$54;o:$6714),(v:$AB;o:$68C2),(v:$D7;o:$6A46),(v:$39;o:$6A93),(v:$E9;o:$6B3A),(v:$6F;o:$733C),
- (v:$A9;o:$73F5),(v:$67;o:$7833),(v:$6D;o:$7B65),(v:$6A;o:$7C8D),(v:$A7;o:$7D7A),(v:$69;o:$7E9D),
- (v:$C9;o:$7F58),(v:$B7;o:$7F79),(v:$A7;o:$8154),(v:$D1;o:$843F),(v:$77;o:$864A),(v:$62;o:$8976),
- (v:$F0;o:$8A4B),(v:$CE;o:$8C5C),(v:$02;o:$8D39),(v:$71;o:$8D4A),(v:$74;o:$92F2),(v:$76;o:$9704),
- (v:$EB;o:$9833),(v:$F0;o:$987A),(v:$AA;o:$990E),(v:$A9;o:$9998),(v:$11;o:$9B5A),(v:$B9;o:$9B88),
- (v:$AE;o:$9E9D),(v:$D5;o:$9F41),(v:$61;o:$9F52),(v:$03;o:$A146),(v:$A4;o:$A152),(v:$0D;o:$A224),
- (v:$B0;o:$A307),(v:$C1;o:$A3EE),(v:$BB;o:$A421),(v:$E7;o:$A7EE),(v:$65;o:$A934),(v:$B4;o:$A9FB),
- (v:$66;o:$AB24),(v:$AD;o:$ACD0),(v:$64;o:$AFC6),(v:$BE;o:$B2B3),(v:$BD;o:$B633),(v:$E3;o:$B64B),
- (v:$CF;o:$B904),(v:$AE;o:$B9DA),(v:$C5;o:$B9F0),(v:$0A;o:$BA05),(v:$DD;o:$BA64),(v:$E4;o:$BEEA),
- (v:$CC;o:$BFBD),(v:$C0;o:$C10A),(v:$73;o:$C257),(v:$75;o:$CA0E),(v:$6E;o:$CA5A),(v:$09;o:$CC30),
- (v:$C8;o:$CD5F),(v:$66;o:$CDE6),(v:$A1;o:$CE0D),(v:$C3;o:$CF8A),(v:$6C;o:$D040),(v:$E6;o:$D090),
- (v:$B1;o:$D0C2),(v:$6B;o:$D0CD),(v:$D8;o:$D417),(v:$04;o:$D720),(v:$6C;o:$D894),(v:$CF;o:$D91C),
- (v:$D8;o:$DB0C),(v:$CE;o:$DE1A),(v:$15;o:$DE7D),(v:$B3;o:$E073),(v:$E2;o:$E10B),(v:$6A;o:$E3FC),
- (v:$0E;o:$E6E6),(v:$D0;o:$E767),(v:$B4;o:$E829),(v:$CD;o:$E97F),(v:$0C;o:$EA8C),(v:$C4;o:$EB60),
- (v:$C3;o:$EBA8),(v:$08;o:$EDEE),(v:$07;o:$EFC3),(v:$C7;o:$F129),(v:$72;o:$F166),(v:$CC;o:$F1FE),
- (v:$AA;o:$F353),(v:$64;o:$F5F1),(v:$A8;o:$F6D0),(v:$D0;o:$F6E5),(v:$C0;o:$F88C),(v:$B5;o:$FAC5),
- (v:$01;o:$FC2A),(v:$D2;o:$FCCE)
+ (v:$0B;o:$4A6A),(v:$0D;o:$4A6C),(v:$13;o:$4A91),(v:$6F;o:$4C2C),(v:$12;o:$4C4B),(v:$34;o:$4C62),
+ (v:$9F;o:$4C6A),(v:$9B;o:$4C72),(v:$9B;o:$4C73),(v:$51;o:$4C74),(v:$71;o:$4D13),(v:$A6;o:$4D85),
+ (v:$84;o:$4DC9),(v:$21;o:$4E92),(v:$37;o:$4EC2),(v:$9F;o:$4ECA),(v:$9B;o:$4ED2),(v:$9B;o:$4ED3),
+ (v:$2B;o:$4F14),(v:$AF;o:$4FA1),(v:$96;o:$50B3),(v:$A1;o:$50C9),(v:$D4;o:$50FC),(v:$38;o:$5122),
+ (v:$E5;o:$5198),(v:$A3;o:$51D4),(v:$8B;o:$51E2),(v:$82;o:$520F),(v:$F0;o:$521A),(v:$8E;o:$5245),
+ (v:$69;o:$5297),(v:$95;o:$5305),(v:$81;o:$5625),(v:$DE;o:$569D),(v:$B2;o:$56C2),(v:$1A;o:$5983),
+ (v:$A3;o:$5A04),(v:$E0;o:$5A4E),(v:$9A;o:$5C53),(v:$9A;o:$5C81),(v:$9C;o:$5CA4),(v:$B8;o:$5D5E),
+ (v:$9C;o:$5DC9),(v:$97;o:$5E03),(v:$A4;o:$5E83),(v:$62;o:$5EDF),(v:$E1;o:$6003),(v:$66;o:$602C),
+ (v:$65;o:$6033),(v:$2D;o:$6034),(v:$6E;o:$6053),(v:$02;o:$608C),(v:$28;o:$60A4),(v:$48;o:$6110),
+ (v:$72;o:$6113),(v:$D9;o:$6142),(v:$4C;o:$6190),(v:$BA;o:$61A1),(v:$68;o:$61A6),(v:$6D;o:$61C1),
+ (v:$26;o:$61C9),(v:$11;o:$6203),(v:$CB;o:$6231),(v:$2E;o:$6274),(v:$05;o:$6293),(v:$9E;o:$62CD),
+ (v:$9E;o:$62ED),(v:$55;o:$6334),(v:$2C;o:$6434),(v:$03;o:$648C),(v:$27;o:$64A4),(v:$49;o:$6510),
+ (v:$73;o:$6513),(v:$4D;o:$6590),(v:$25;o:$65C9),(v:$10;o:$6603),(v:$06;o:$6693),(v:$9E;o:$66CD),
+ (v:$9E;o:$66ED),(v:$54;o:$6714),(v:$AB;o:$68C2),(v:$D7;o:$6A46),(v:$39;o:$6A93),(v:$E9;o:$6B3A),
+ (v:$6F;o:$733C),(v:$A9;o:$73F5),(v:$67;o:$7833),(v:$6D;o:$7B65),(v:$6A;o:$7C8D),(v:$A7;o:$7D7A),
+ (v:$69;o:$7E9D),(v:$C9;o:$7F58),(v:$B7;o:$7F79),(v:$A7;o:$8154),(v:$D1;o:$843F),(v:$77;o:$864A),
+ (v:$62;o:$8976),(v:$F0;o:$8A4B),(v:$CE;o:$8C5C),(v:$02;o:$8D39),(v:$71;o:$8D4A),(v:$74;o:$92F2),
+ (v:$76;o:$9704),(v:$EB;o:$9833),(v:$F0;o:$987A),(v:$AA;o:$990E),(v:$A9;o:$9998),(v:$11;o:$9B5A),
+ (v:$B9;o:$9B88),(v:$AE;o:$9E9D),(v:$D5;o:$9F41),(v:$61;o:$9F52),(v:$03;o:$A146),(v:$A4;o:$A152),
+ (v:$0D;o:$A224),(v:$B0;o:$A307),(v:$C1;o:$A3EE),(v:$BB;o:$A421),(v:$E7;o:$A7EE),(v:$65;o:$A934),
+ (v:$B4;o:$A9FB),(v:$66;o:$AB24),(v:$AD;o:$ACD0),(v:$64;o:$AFC6),(v:$BE;o:$B2B3),(v:$BD;o:$B633),
+ (v:$E3;o:$B64B),(v:$CF;o:$B904),(v:$AE;o:$B9DA),(v:$C5;o:$B9F0),(v:$0A;o:$BA05),(v:$DD;o:$BA64),
+ (v:$E4;o:$BEEA),(v:$CC;o:$BFBD),(v:$C0;o:$C10A),(v:$73;o:$C257),(v:$75;o:$CA0E),(v:$6E;o:$CA5A),
+ (v:$09;o:$CC30),(v:$C8;o:$CD5F),(v:$66;o:$CDE6),(v:$A1;o:$CE0D),(v:$C3;o:$CF8A),(v:$6C;o:$D040),
+ (v:$E6;o:$D090),(v:$B1;o:$D0C2),(v:$6B;o:$D0CD),(v:$D8;o:$D417),(v:$04;o:$D720),(v:$6C;o:$D894),
+ (v:$CF;o:$D91C),(v:$D8;o:$DB0C),(v:$CE;o:$DE1A),(v:$15;o:$DE7D),(v:$B3;o:$E073),(v:$E2;o:$E10B),
+ (v:$6A;o:$E3FC),(v:$0E;o:$E6E6),(v:$D0;o:$E767),(v:$B4;o:$E829),(v:$CD;o:$E97F),(v:$0C;o:$EA8C),
+ (v:$C4;o:$EB60),(v:$C3;o:$EBA8),(v:$08;o:$EDEE),(v:$07;o:$EFC3),(v:$C7;o:$F129),(v:$72;o:$F166),
+ (v:$CC;o:$F1FE),(v:$AA;o:$F353),(v:$64;o:$F5F1),(v:$A8;o:$F6D0),(v:$D0;o:$F6E5),(v:$C0;o:$F88C),
+ (v:$B5;o:$FAC5),(v:$01;o:$FC2A),(v:$D2;o:$FCCE)
  );
 
 begin
