@@ -1,5 +1,4 @@
 # Mad-Assembler http://mads.atari8.info
-
 https://atariage.com/forums/topic/179559-mads-knowledge-base/#comments
 
 MADS is a multi-pass crossassembler designed for 6502 and 65816 processors. Binaries are generated mainly for Atari 8-bit systems (supported are AtariDosII and SpartaDOS X formats).
