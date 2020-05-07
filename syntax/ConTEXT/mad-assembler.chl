@@ -1,0 +1,85 @@
+// xasm highlighter for ConTEXT v0.97.1 (www.fixedsys.com/context)
+// written by Piotr Fusik <fox@scene.pl>, Tomasz Biela <te_be_@poczta.onet.pl>
+
+Language:               mads
+Filter:                 mads files (*.asm,*.asx,*.h)|*.asm;*.asx;*.h
+HelpFile:
+
+CaseSensitive:          0
+
+LineComment:            ;
+BlockCommentBeg:
+BlockCommentEnd:
+
+BlockCommentBeg:	/*
+BlockCommentEnd:	*/
+
+IdentifierBegChars:     a..z A..Z _
+IdentifierChars:        a..z A..Z _ 0..9
+
+NumConstBegChars:       0..9
+NumConstChars:          0..9 abcdefABCDEF
+
+EscapeChar:
+
+KeyWords1:
+
+  lda   ldx   ldy   sta   stx   sty   adc   and 
+  asl   sbc   jsr   jmp   lsr   ora   cmp   cpy 
+  cpx   dec   inc   eor   rol   ror   brk   clc 
+  cli   clv   cld   php   plp   pha   pla   rti 
+  rts   sec   sei   sed   iny   inx   dey   dex 
+  txa   tya   txs   tay   tax   tsx   nop   bpl 
+  bmi   bne   bcc   bcs   beq   bvc   bvs   bit 
+  stz   sep   rep   trb   tsb   bra   cop   mvn 
+  mvp   pea   phb   phd   phk   phx   phy   plb 
+  pld   plx   ply   rtl   stp   tcd   tcs   tdc 
+  tsc   txy   tyx   wai   wdm   xba   xce   dea
+  ina   brl   jsl   jml   per   pei
+
+KeyWords2:
+
+  equ   opt   org   ins   end   dta   icl   run
+  nmb   ini   rmb   lmb   ift   eli   els   eif
+  ert   smb   blk   sin   rnd   req   rne   rpl
+  rmi   rcc   rcs   rvc   rvs   seq   sne   spl
+  smi   scc   scs   svc   svs	jeq   jne   jpl
+  jmi   jcc   jcs   jvc   jvs   ext   add   sub
+  mva   mvx   mvy   mwa   mwx   mwy   inw   dew
+  adw   sbw   phr   plr   adb   sbb   set
+
+KeyWords3:
+
+  macro  endm    proc    endp   rept   endr   exit
+  local  endl    struct  ends   error  print  if
+  else   elseif  endif   byte   word   long   dword
+  or     and     xor     not    ds     dbyte
+  def    array   enda    hi     lo     get    put
+  sav	 pages   endpg   reloc  extrn  public var
+  reg	 while	 endw    by     wo     he     en
+  sb	 fl      symbol  link   global globl  adr
+  len    mend    pgend   rend   using  use    echo
+  align  zpvar   enum    ende   eend   elif   wend
+  define undef
+
+
+StringBegChar:          '
+StringEndChar:          '
+MultilineStrings:       0
+
+UsePreprocessor:        0
+
+CurrLineHighlighted:    0
+
+SpaceCol:               clWindowText clWindow
+Keyword1Col:            clBlue clWindow
+Keyword2Col:            clBlue clWindow
+Keyword3Col:            clBlue clWindow
+IdentifierCol:          clWindowText clWindow
+CommentCol:             clGreen clWindow
+NumberCol:              clWindowText clWindow
+StringCol:              clPurple clWindow
+SymbolCol:              clWindowText clWindow
+PreprocessorCol:        clWindowText clWindow
+SelectionCol:           clWhite clNavy
+CurrentLineCol:         clBlack clYellow

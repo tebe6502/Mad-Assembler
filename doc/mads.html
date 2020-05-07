@@ -46,8 +46,8 @@
 </head>
 
 <CENTER>
-<p class="duzy"><u>MAD-ASSEMBLER 2.0.9</u></p>
-<p class="stopka">Tebe/Madteam (15.09.2019)
+<p class="duzy"><u>MAD-ASSEMBLER 2.1.0</u></p>
+<p class="stopka">Tebe/Madteam (11.11.2019)
 
 <HR>
 
@@ -1543,6 +1543,7 @@ DYREKTYWY
  
  <A HREF="#_len">.SIZEOF</A> label
  <A HREF="#_len">.FILESIZE</A> 'filename' 
+ <A HREF="#_fex">.FILEEXISTS</A> 'filename' 
 
  <A HREF="#_get">.GET</A> [index] 'filename'["filename"][*][+-value][,+-ofset[,length]]
  <A HREF="#_get">.WGET</A> [index] 
@@ -2057,6 +2058,22 @@ label .array [255] .dword
 <p>
 Dyrektywy .SIZEOF i .FILESIZE to alternatywne nazwy dla .LEN, mo¿na u¿ywaæ ich zamiennie zale¿nie od upodobañ programuj±cego.
 </p>
+<br />
+
+
+<A NAME="_fex">
+<p>
+<u><tt><h3>.FILEEXISTS 'filename'</h3></tt></u>
+Dyrektywa .FILEEXISTS zwraca '1' gdy plik 'filename' istnieje w przeciwnym wypadku zwraca warto¶æ '0'  np.:
+<span style="color: #0000FF">
+<pre>
+ ift .fileexists 'filename'
+ .print 'true'
+ els
+ .print 'false'
+ eif
+</pre>
+</span>
 <br />
 
 
@@ -4443,7 +4460,7 @@ W/w operatory modyfikuj±ce dotycz± tylko etykiet tymczasowych, próba ich u¿ycia 
 <u><tt><h2>Etykiety lokalne w stylu MAE</h2></tt></u>
 
 <p>
-Opcja <b>OPT ?+</b> informuje MADS aby etykiety zaczynaj±ce siê znakiem <b>'?'</b> interpretowa³ jako etykiety lokalne tak jak robi to MAE. Domy¶lnie etykiety zaczynaj±ce siê znakiem <b>'?'</b> traktowane s± przez MADS jako etykiety tymczasowe <a href="#labels_set">Etykiety tymczasowe</a>.
+Opcja <b>OPT ?+</b> informuje MADS aby etykiety zaczynaj±ce siê znakiem <b>'?'</b> interpretowa³ jako etykiety lokalne tak jak robi to MAE. Domy¶lnie etykiety zaczynaj±ce siê znakiem <b>'?'</b> traktowane s± przez MADS jako <a href="#labels_set">Etykiety tymczasowe</a>.
 </p>
 
 <u>Przyk³ad u¿ycia etykiet lokalnych w stylu MAE:</u>
@@ -5678,6 +5695,14 @@ Przyk³adem wykorzystania tego trybu pracy <tt>MADS-a</tt> jest plik <tt>..\EXAMP
 
 <A NAME="zmiany">
 </tt><h2>HISTORIA</h2></tt>
+
+<p class="tekst-wiekszy">
+v2.1.0
+<p class="tekst">
+- dodany komunikat ostrze¿enia 'Buggy indirect jump' w przypadku u¿ycia rozkazu JMP(ABS)<br>
+- dodana dyrektywa .FILEEXISTS('filename') zwracajaca 1 gdy plik w podanej ¶cie¿ce istnije, 0 gdy nie istnieje<br>
+- rozszerzony komunikat  'Value out of range (VALUE must be between X and Y)'<br>
+
 
 <p class="tekst-wiekszy">
 v2.0.9

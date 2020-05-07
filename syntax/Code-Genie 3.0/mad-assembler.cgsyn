@@ -1,0 +1,123 @@
+# X-Assembler syntax for Code-Genie 3.0 (www.code-genie.com)
+# written by Piotr Fusik <fox@scene.pl>, Tomasz Biela <te_be_@poczta.onet.pl>
+
+CaseInsensitive  true
+
+FgColor      #000000
+
+
+BlockStart   comment1  *\s
+BlockEnd     comment1  \n
+Format       comment1  b
+FgColor      comment1  #00BB00
+
+BlockStart   comment2  ;
+BlockEnd     comment2  \n
+FgColor      comment2  #EE44AA
+
+BlockStart   comment3  //
+BlockEnd     comment3  \n
+Format       comment3  i
+FgColor      comment3  #00BB00
+
+BlockStart   comment4  /*
+BlockEnd     comment4  */
+Format       comment4  i
+FgColor      comment4  #00BB00
+
+
+BlockStart   string1  '
+BlockEnd     string1  \n
+BlockEnd     string1  '
+BlockNotEnd  string1  ''
+FgColor      string1  #800080
+
+BlockStart   string2  "
+BlockEnd     string2  \n
+BlockEnd     string2  "
+BlockNotEnd  string2  ""
+FgColor      string2  #800080
+
+
+KeywordGroup	command
+
+  lda   ldx   ldy   sta   stx   sty   adc   and 
+  asl   sbc   jsr   jmp   lsr   ora   cmp   cpy 
+  cpx   dec   inc   eor   rol   ror   brk   clc 
+  cli   clv   cld   php   plp   pha   pla   rti 
+  rts   sec   sei   sed   iny   inx   dey   dex 
+  txa   tya   txs   tay   tax   tsx   nop   bpl 
+  bmi   bne   bcc   bcs   beq   bvc   bvs   bit 
+  stz   sep   rep   trb   tsb   bra   cop   mvn 
+  mvp   pea   phb   phd   phk   phx   phy   plb 
+  pld   plx   ply   rtl   stp   tcd   tcs   tdc 
+  tsc   txy   tyx   wai   wdm   xba   xce   dea
+  ina   brl   jsl   jml
+  aso   rln   lse   rrd   sax   lax   dcp   isb
+  anc   alr   arr   ane   anx   sbx   las   sha
+  shs   shx   shy   npo   cim   per   pei
+
+FgColor	command	#0000ff
+
+
+KeywordGroup	pseudo
+
+  equ   opt   org   ins   dta   icl   run   ext
+  ini   ift   eli   els   eif   ert   smb   blk
+  sin   rnd   end   set
+
+Format	pseudo		b
+FgColor	pseudo		#0020ff
+
+
+KeywordGroup	macrocommand
+
+  req   rne   rpl   nmb   rmb   lmb   del   ded
+  rmi   rcc   rcs   rvc   rvs   seq   sne   spl
+  smi   scc   scs   svc   svs	jeq   jne   jpl
+  jmi   jcc   jcs   jvc   jvs   ext   add   sub
+  mva   mvx   mvy   mwa   mwx   mwy   inw   dew
+  adw   sbw   phr   plr   adb   sbb   inl   ind
+  cpb   cpw   cpl   cpd
+
+Format	macrocommand	i
+FgColor	macrocommand	#800080
+
+
+KeywordGroup	direct
+
+  macro	endm	proc   endp   rept   endr   exit
+  local	endl	struct ends   error  print  if
+  else	elseif	endif  byte   word   long   dword
+  or	and	xor    not    ds     dbyte
+  def	array	enda   hi     lo     get    put
+  sav	pages	endpg  reloc  extrn  public var
+  reg	by	wo     he     en     sb     lend
+  pend	aend	wend   tend   send   fl     symbol
+  link	global	globl  adr    len    mend   pgend
+  rend	using	use    nowarn while  switch case
+  end	ifdef   ifndef fi     exitm  echo   elif
+  align zpvar   enum   ende   eend   endw   cb
+  segdef segment endseg filesize sizeof define
+  undef
+
+FgColor		direct	#903000
+Format		direct	b
+
+Operator operators  ()[]{}!-+=*&^%~<>'/^:
+FgColor  operators   #f00000
+
+
+Nest	comment1
+Nest	comment2
+Nest	comment3
+Nest	comment4
+Nest	string1
+Nest	string2
+Nest	command
+Nest	pseudo
+Nest	macrocommand
+Nest	direct
+Nest	operators
+
+# eof
