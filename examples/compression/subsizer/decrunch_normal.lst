@@ -1,0 +1,509 @@
+mads 2.0.9 build 57 (26 Jul 19)
+Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm
+     1
+     2 				;**************************************************************************
+     3 				;*
+     4 				;* FILE  decrunch_normal.asm
+     5 				;* Copyright (c) 2015, 2017 Daniel Kahlin <daniel@kahlin.net>
+     6 				;* Written by Daniel Kahlin <daniel@kahlin.net>
+     7 				;*
+     8 				;* DESCRIPTION
+     9 				;*   subsizer 0.6 decruncher - stand alone version
+    10 				;*
+    11 				;*   usage:
+    12 				;*     You need to provide a function to get a byte from the input
+    13 				;*     stream. (must preserve X,Y and C)
+    14 				;*
+    15 				;*     typical function:
+    16 				;*
+    17 				;*       dc_get_byte:
+    18 				;*           lda   dcgb_ptr
+    19 				;*           bne   dcgb_skp1
+    20 				;*           dec   dcgb_ptr+1
+    21 				;*       dcgb_skp1:
+    22 				;*           dec   dcgb_ptr
+    23 				;*       dcgb_ptr  equ    . + 1
+    24 				;*           lda   data_end
+    25 				;*           rts
+    26 				;*
+    27 				;*     To decrunch just do:
+    28 				;*
+    29 				;*	 jsr decrunch
+    30 				;*
+    31 				;*     The decruncher will use a temporary area of 188 bytes during
+    32 				;*     decrunching.
+    33 				;*
+    34 				;******
+    35
+    36
+    37 				;**************************************************************************
+    38 				;*
+    39 				;* Configuration options
+    40 				;*
+    41 				;******
+    42 = 0001			HAVE_LONG_PARTS		=	1
+    43
+    44 = 00F8			subsizer_zp		=	$f8		; 8 bytes
+    45 = 0400			subsizer_data		=	$0400		; 188 bytes
+    46 = 2000			subsizer_main		=	$2000
+    47
+    48 = 8010			destination		=	$8010
+    49
+    50
+    51 					ift HAVE_LONG_PARTS
+    52 = 000F			PART_MASK	equ	%00001111
+    53 = 0010			N_PARTS		equ	16
+    54 					els
+    55 				PART_MASK	equ	%00000111
+    56 				N_PARTS		equ	8
+    57 					eif
+    58
+    59
+    60 					org	subsizer_zp
+    61
+    62 = 00F8			len_zp		.ds	1
+    63 = 00F9			copy_zp		.ds	2
+    64 = 00FB			hibits_zp	.ds	1
+    65 = 00FC			buf_zp		.ds	1
+    66 = 00FD			dest_zp		.ds	2
+    67 = 00FF			endm_zp		.ds	1
+    68
+    69 					org	subsizer_main
+    70
+    71 FFFF> 2000-21E8> 70 70 + dl	dta d'ppp'
+    72 2003 4E 10 80			dta $4e,a($8010)
+    73 2006 0E 0E 0E 0E 0E 0E + 	:101 dta $e
+    74 206B 4E 00 90			dta $4e,a($9000)
+    75 206E 0E 0E 0E 0E 0E 0E + 	:91 dta $e
+    76 20C9 41 00 20			dta $41,a(dl)
+    77
+    78 20CC			main
+    79 20CC A9 00 8D 30 02 A9 + 	mwa #dl 560
+    80
+    81 				;	lda data_end-3
+    82 				;	add <destination
+    83 				;	sta data_end-3
+    84 				;	lda data_end-2
+    85 				;	adc >destination
+    86 				;	sta data_end-2
+    87 				;
+    88 				;	lda data_end-1
+    89 				;	add >destination
+    90 				;	sta data_end-1
+    91
+    92 20D6 20 DC 20			jsr decrunch
+    93
+    94 20D9 4C D9 20			jmp *
+    95
+    96 				;**************************************************************************
+    97 				;*
+    98 				;* NAME  fast macros
+    99 				;*
+   100 				;******
+   101
+   102 				;******
+   103 				;* get bit macro
+   104 				.macro	get_bit
+   105 					asl	buf_zp
+   106 					bne	gb_skp1
+   107 				; C=1 (because the marker bit was just shifted out)
+   108 					jsr	dc_get_byte
+   109 					rol
+   110 					sta	buf_zp
+   111 				gb_skp1
+   112 				.endm
+   113
+   114
+   115 				;******
+   116 				;* get bits max8 macro
+   117 				.macro	get_bits_max8
+   118 				gb_lp1
+   119 					asl	buf_zp
+   120 					bne	gb_skp1
+   121 				; C=1 (because the marker bit was just shifted out)
+   122 					pha
+   123 					jsr	dc_get_byte
+   124 					rol
+   125 					sta	buf_zp
+   126 					pla
+   127 				gb_skp1
+   128 					rol
+   129 					dey
+   130 					bne	gb_lp1
+   131 				.endm
+   132
+   133
+   134 				;******
+   135 				;* get bits max8 masked macro
+   136 				.macro	get_bits_max8_masked
+   137 				gb_lp1
+   138 					asl	buf_zp
+   139 					bne	gb_skp1
+   140 				; C=1 (because the marker bit was just shifted out)
+   141 					tay
+   142 					jsr	dc_get_byte
+   143 					rol
+   144 					sta	buf_zp
+   145 					tya
+   146 				gb_skp1
+   147 					rol
+   148 					bcs	gb_lp1
+   149 				.endm
+   150
+   151
+   152 				;******
+   153 				;* get bits max16 macro
+   154 				.macro	get_bits_max16
+   155 				gb_lp1
+   156 					asl	buf_zp
+   157 					bne	gb_skp1
+   158 				; C=1 (because the marker bit was just shifted out)
+   159 					pha
+   160 					jsr	dc_get_byte
+   161 					rol
+   162 					sta	buf_zp
+   163 					pla
+   164 				gb_skp1
+   165 					rol
+   166 					rol	hibits_zp
+   167 					dey
+   168 					bne	gb_lp1		; C=0 for all Y!=0
+   169 				.endm
+   170
+   171
+   172 				;**************************************************************************
+   173 				;*
+   174 				;* NAME  decrunch
+   175 				;*
+   176 				;******
+   177 20DC			decrunch:
+   178 20DC A2 04			ldx	#4
+   179 				; Get dest_zp, endm_zp and buf_zp
+   180 20DE			dc_lp00:
+   181 20DE 20 DA 21			jsr	dc_get_byte
+   182 20E1 95 FB			sta	buf_zp-1,x
+   183 20E3 CA				dex
+   184 20E4 D0 F8			bne	dc_lp00
+   185
+   186 				; X = 0
+   187
+   188 				;	ldx	#0
+   189 20E6			dc_lp01:
+   190
+   191 				;******
+   192 				;* get 4 bits
+   193 20E6 A9 E0			lda	#%11100000
+   194 20E8			dcg_lp1:
+   195 20E8 06 FC			asl	buf_zp
+   196 20EA D0 08			bne	dcg_skp1
+   197 				; C=1 (because the marker bit was just shifted out)
+   198 20EC A8				tay
+   199 20ED 20 DA 21			jsr	dc_get_byte
+   200 20F0 2A				rol
+   201 20F1 85 FC			sta	buf_zp
+   202 20F3 98				tya
+   203 20F4			dcg_skp1:
+   204 20F4 2A				rol
+   205 20F5 B0 F1			bcs	dcg_lp1
+   206 				; Acc = 4 bits.
+   207
+   208 20F7 9D 78 04			sta	bits,x
+   209
+   210 20FA 8A				txa
+   211 20FB 29 0F			and	#PART_MASK
+   212 20FD A8				tay
+   213 20FE F0 17			beq	dc_skp01
+   214
+   215 2100 A9 00			lda	#0
+   216 2102 85 FB			sta	hibits_zp
+   217 2104 BC 77 04			ldy	bits-1,x
+   218 2107 38				sec
+   219 2108			dc_lp02:
+   220 2108 2A				rol
+   221 2109 26 FB			rol	hibits_zp
+   222 210B 88				dey
+   223 210C 10 FA			bpl	dc_lp02
+   224 				; C = 0
+   225 				;	clc
+   226 210E 7D FF 03			adc	base_l-1,x
+   227 2111 A8				tay
+   228 2112 A5 FB			lda	hibits_zp
+   229 2114 7D 33 04			adc	base_h-1,x
+   230
+   231 2117			dc_skp01:
+   232 2117 9D 34 04			sta	base_h,x
+   233 211A 98				tya
+   234 211B 9D 00 04			sta	base_l,x
+   235 211E E8				inx
+   236 211F E0 44			cpx	#N_PARTS*4+4
+   237 2121 D0 C3			bne	dc_lp01
+   238
+   239 				; perform decrunch
+   240 2123 A0 00			ldy	#0
+   241 2125 F0 0D			beq	decrunch_entry	; always taken
+   242
+   243 				; we could optimize this by falling through into the dc_literal routine as
+   244 				; the first byte must always be a literal anyway (maybe even a literal run?)
+   245
+   246
+   247 				;**************************************************************************
+   248 				;*
+   249 				;* NAME  decruncher
+   250 				;*
+   251 				;* DESCRIPTION
+   252 				;*   decruncher
+   253 				;*
+   254 				;******
+   255
+   256 				;******
+   257 				;* single literal byte
+   258 				;*
+   259 2127			dc_literal:
+   260 2127 A5 FD			lda	dest_zp
+   261 2129 D0 02			bne	dc_skp5
+   262 212B C6 FE			dec	dest_zp+1
+   263 212D			dc_skp5:
+   264 212D C6 FD			dec	dest_zp
+   265 212F 20 DA 21			jsr	dc_get_byte
+   266 				;	ldy	#0
+   267 2132			dc_common:
+   268 2132 91 FD			sta	(dest_zp),y
+   269 					; fall through
+   270
+   271 2134			decrunch_entry:
+   272 				;------
+   273 				; perform actual decrunch
+   274 2134			dc_lp1:
+   275 2134				get_bit
+Macro: GET_BIT [Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm]
+     1 2134 06 FC			asl	buf_zp
+     2 2136 D0 06			bne	gb_skp1
+     4 2138 20 DA 21			jsr	dc_get_byte
+     5 213B 2A				rol
+     6 213C 85 FC			sta	buf_zp
+     7 213E			gb_skp1
+Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm
+   276 213E B0 E7			bcs	dc_literal
+   277
+   278 				; get length as bits/base.
+   279 2140 A2 70			ldx	#$80-N_PARTS
+   280 2142			dc_lp2:
+   281 2142 E8				inx
+   282 2143 30 0D			bmi	dc_skp0
+   283 2145				get_bit
+Macro: GET_BIT [Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm]
+     1 2145 06 FC			asl	buf_zp
+     2 2147 D0 06			bne	gb_skp1
+     4 2149 20 DA 21			jsr	dc_get_byte
+     5 214C 2A				rol
+     6 214D 85 FC			sta	buf_zp
+     7 214F			gb_skp1
+Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm
+   284 214F 90 F1			bcc	dc_lp2
+   285 2151 18				clc
+   286 2152			dc_skp0:
+   287 				; C = 0, Y = 0
+   288 				;	lda	#0
+   289 2152 98				tya
+   290 2153 BC 07 04			ldy	bits_len-$80+N_PARTS-1,x
+   291 2156 F0 10			beq	dcb1_skp2
+   292 2158				get_bits_max8
+Macro: GET_BITS_MAX8 [Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm]
+     1 2158			gb_lp1
+     2 2158 06 FC			asl	buf_zp
+     3 215A D0 08			bne	gb_skp1
+     5 215C 48				pha
+     6 215D 20 DA 21			jsr	dc_get_byte
+     7 2160 2A				rol
+     8 2161 85 FC			sta	buf_zp
+     9 2163 68				pla
+    10 2164			gb_skp1
+    11 2164 2A				rol
+    12 2165 88				dey
+    13 2166 D0 F0			bne	gb_lp1
+Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm
+   293 2168			dcb1_skp2:
+   294 				; C = 0
+   295 2168 7D 8F 03			adc	base_len-$80+N_PARTS-1,x
+   296 216B 85 F8			sta	len_zp
+   297 				; C = 0
+   298
+   299 				;******
+   300 				;* IN: len = $01..$100 (Acc = $00..$ff)
+   301 				;* OUT: dest_zp = dest_zp - len,  X = len-1
+   302 				;*
+   303 216D AA				tax
+   304 				;	clc
+   305 216E 49 FF			eor	#$ff
+   306 2170 65 FD			adc	dest_zp
+   307 2172 85 FD			sta	dest_zp
+   308 2174 B0 02			bcs	dc_skp22
+   309 2176 C6 FE			dec	dest_zp+1
+   310 2178			dc_skp22:
+   311
+   312 				; check end marker here to avoid thrashing carry earlier
+   313 2178 E4 FF			cpx	endm_zp
+   314 217A F0 59			beq	done
+   315
+   316 				;******
+   317 				;* Get selector bits depending on length.
+   318 				;*
+   319 				;* IN: len = $01..$100 (X = $00..$ff)
+   320 				;* OUT:
+   321 				;*
+   322 217C E0 04			cpx	#4
+   323 217E 90 02			bcc	dc_skp2
+   324 2180 A2 03			ldx	#3
+   325 2182			dc_skp2:
+   326
+   327 				; get offset as bits/base.
+   328 2182 BD D6 21			lda	tabb,x
+   329 2185				get_bits_max8_masked
+Macro: GET_BITS_MAX8_MASKED [Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm]
+     1 2185			gb_lp1
+     2 2185 06 FC			asl	buf_zp
+     3 2187 D0 08			bne	gb_skp1
+     5 2189 A8				tay
+     6 218A 20 DA 21			jsr	dc_get_byte
+     7 218D 2A				rol
+     8 218E 85 FC			sta	buf_zp
+     9 2190 98				tya
+    10 2191			gb_skp1
+    11 2191 2A				rol
+    12 2192 B0 F1			bcs	gb_lp1
+Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm
+   330 2194 AA				tax
+   331 				; C = 0
+   332
+   333 2195 A9 00			lda	#0
+   334 2197 85 FB			sta	hibits_zp
+   335 2199 BC 88 04			ldy	bits_offs,x
+   336 219C F0 12			beq	dcb3_skp2
+   337 219E				get_bits_max16
+Macro: GET_BITS_MAX16 [Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm]
+     1 219E			gb_lp1
+     2 219E 06 FC			asl	buf_zp
+     3 21A0 D0 08			bne	gb_skp1
+     5 21A2 48				pha
+     6 21A3 20 DA 21			jsr	dc_get_byte
+     7 21A6 2A				rol
+     8 21A7 85 FC			sta	buf_zp
+     9 21A9 68				pla
+    10 21AA			gb_skp1
+    11 21AA 2A				rol
+    12 21AB 26 FB			rol	hibits_zp
+    13 21AD 88				dey
+    14 21AE D0 EE			bne	gb_lp1		; C=0 for all Y!=0
+Source: D:\!Delphi\mads\examples\compression\subsizer\decrunch_normal.asm
+   338 21B0			dcb3_skp2:
+   339 				; C = 0,  Acc/hibits_zp + base_offs,x = offset - 1
+   340
+   341 				; perform: copy_zp = Acc/hibits_zp + base_offs,x + 1 + dest_zp
+   342 				; result:  copy_zp = dest_zp + offset
+   343 21B0 7D 10 04			adc	base_offs_l,x
+   344 21B3 90 02			bcc	dcb3_skp3
+   345 21B5 E6 FB			inc	hibits_zp
+   346 21B7			dcb3_skp3:
+   347 21B7 38				sec
+   348 21B8 65 FD			adc	dest_zp
+   349 21BA 85 F9			sta	copy_zp
+   350 21BC A5 FB			lda	hibits_zp
+   351 21BE 7D 44 04			adc	base_offs_h,x
+   352 				; C = 0
+   353 21C1 65 FE			adc	dest_zp+1
+   354 21C3 85 FA			sta	copy_zp+1
+   355
+   356 				;******
+   357 				;* Reverse fast copy
+   358 				;*
+   359 				;* IN: len = $01..$100 (len_zp = $00..$ff), C = 0
+   360 				;*
+   361 21C5			copy:
+   362 21C5 A4 F8			ldy	len_zp
+   363 21C7 F0 07			beq	dc_skp4
+   364 21C9			dc_lp4:
+   365 21C9 B1 F9			lda	(copy_zp),y
+   366 21CB 91 FD			sta	(dest_zp),y
+   367 21CD 88				dey
+   368 21CE D0 F9			bne	dc_lp4
+   369 21D0			dc_skp4:
+   370 21D0 B1 F9			lda	(copy_zp),y
+   371 				;	sta	(dest_zp),y
+   372 21D2 4C 32 21			jmp	dc_common
+   373 				;	bcc	dc_common		; always taken
+   374
+   375 				;******
+   376 				;* exit out
+   377 21D5			done:
+   378 21D5 60				rts
+   379
+   380 					ift	HAVE_LONG_PARTS
+   381 21D6			tabb:
+   382 21D6 8C				dta	%10000000 | [48 >> 2]	; 2 bits
+   383 21D7 E0				dta	%11100000 | [0  >> 4]	; 4 bits
+   384 21D8 E1				dta	%11100000 | [16 >> 4]	; 4 bits
+   385 21D9 E2				dta	%11100000 | [32 >> 4]	; 4 bits
+   386 					els
+   387 				tabb:
+   388 					dta	%10000000 | [24 >> 2]	; 2 bits
+   389 					dta	%11000000 | [0  >> 3]	; 3 bits
+   390 					dta	%11000000 | [8  >> 3]	; 3 bits
+   391 					dta	%11000000 | [16 >> 3]	; 3 bits
+   392 					eif
+   393
+   394
+   395
+   396 				;	ift	0
+   397 				;**************************************************************************
+   398 				;*
+   399 				;* NAME  dc_get_byte
+   400 				;*
+   401 				;* DESCRIPTION
+   402 				;*   Get byte from the packed stream.
+   403 				;*
+   404 				;******
+   405 21DA			dc_get_byte:
+   406 21DA AD E6 21 D0 03 CE + 	dew dc_ptr
+   407 = 21E6			dc_ptr	equ	*+1
+   408 21E5 AD 88 1B			lda	data_end
+   409 21E8 60				rts
+   410 				;	eif
+   411
+   412
+   413 21E9			end_decruncher:
+   414
+   415 21E9				org	subsizer_data
+   416 0400			begin_tables:
+   417 				;**************************************************************************
+   418 				;*
+   419 				;* NAME  base_l, base_h, bits
+   420 				;*
+   421 				;* DESCRIPTION
+   422 				;*   Data for bits/base decoding.
+   423 				;*
+   424 				;******
+   425 0400			base_l:
+   426 0400			base_len:
+   427 0400-04BB> 00 00 00 00 + 	:N_PARTS	brk
+   428 0410			base_offs_l:
+   429 0410 00 00 00 00 00 00 + 	:N_PARTS*3+4	brk
+   430 = 0434			base_h	equ	*-N_PARTS
+   431 				;	:N_PARTS	brk
+   432 0444			base_offs_h:
+   433 0444 00 00 00 00 00 00 + 	:N_PARTS*3+4	brk
+   434
+   435 0478			bits:
+   436 0478			bits_len:
+   437 0478 00 00 00 00 00 00 + 	:N_PARTS	brk
+   438 0488			bits_offs:
+   439 0488 00 00 00 00 00 00 + 	:N_PARTS*3+4	brk
+   440
+   441 04BC			end_tables:
+   442
+   443 				; eof
+   444
+   445 04BC				org $1000		; taki adres jest w naglowku 'a.out'
+   446 1000-1B87> 50 00 56 AA + data	ins 'pc\a.out',2
+   447 1B88			data_end
+   448
+   449 02E0-02E1> CC 20			run main

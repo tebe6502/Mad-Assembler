@@ -1,0 +1,105 @@
+mads 2.0.9 build 57 (26 Jul 19)
+Source: D:\!Delphi\mads\examples\compression\lz4\unlz4.asm
+     1
+     2
+     3 = A010			dst	= $a010
+     4
+     5 					
+     6 					org $2000
+     7 					
+     8 FFFF> 2000-300D> 70 70 + dl	dta d'ppp'
+     9 2003 4E 10 A0			dta $4e,a(dst)
+    10 2006 0E 0E 0E 0E 0E 0E + 	:101 dta $e
+    11 206B 4E 00 B0			dta $4e,0,h(dst+$1000)
+    12 206E 0E 0E 0E 0E 0E 0E + 	:95 dta $e
+    13 20CD 41 00 20			dta $41,a(dl)
+    14 					
+    15 20D0 A9 00 8D 30 02 A9 + main	mwa #dl $230
+    16
+    17 20DA A9 F4 8D 03 30 A9 + 	mwa #src inputPointer
+    18 20E4 A9 10 8D D5 2F A9 + 	mwa #dst outputPointer
+    19 20EE 20 7E 2F			jsr unlz4
+    20 					
+    21 20F1 4C F1 20			jmp *
+    22
+    23 20F4 12 66 01 00 15 AA + src	ins 'koronis.lz4',11		; cut 11 bytes from begining, 6 bytes from end
+    24
+    25
+    26 2F7E			unlz4
+    27 2F7E 20 02 30		                jsr    xBIOS_GET_BYTE                  ; length of literals
+    28 2F81 8D B8 2F		                sta    token
+    29 2F84 4A 4A 4A 4A				:4 lsr
+    30 2F88 F0 0D		                beq    read_offset                     ; there is no literal
+    31 2F8A C9 0F		                cmp    #$0f
+    32 2F8C 20 F5 2F		                jsr    getlength
+    33 2F8F 20 02 30		literals        jsr    xBIOS_GET_BYTE
+    34 2F92 20 D4 2F		                jsr    store
+    35 2F95 D0 F8		                bne    literals
+    36 2F97 20 02 30		read_offset     jsr    xBIOS_GET_BYTE
+    37 2F9A A8			                tay
+    38 2F9B 38			                sec
+    39 2F9C 49 FF		                eor    #$ff
+    40 2F9E 6D D5 2F		                adc    outputPointer
+    41 2FA1 8D C3 2F		                sta    source
+    42 2FA4 98			                tya
+    43 2FA5 08			                php
+    44 2FA6 20 02 30		                jsr    xBIOS_GET_BYTE
+    45 2FA9 28			                plp
+    46 2FAA D0 03		                bne    not_done
+    47 2FAC A8			                tay
+    48 2FAD F0 38		                beq    unlz4_done
+    49 2FAF 49 FF		not_done        eor    #$ff
+    50 2FB1 6D D6 2F		                adc    outputPointer+1
+    51 2FB4 8D C4 2F		                sta    source+1
+    52 				                ; c=1
+    53 2FB7 A9 FF		                lda    #$ff
+    54 = 2FB8			token           equ    *-1
+    55 2FB9 29 0F		                and    #$0f
+    56 2FBB 69 03		                adc    #$03                            ; 3+1=4
+    57 2FBD C9 13		                cmp    #$13
+    58 2FBF 20 F5 2F		                jsr    getLength
+    59
+    60 2FC2 AD FF FF		@               lda    $ffff
+    61 = 2FC3			source		equ    *-2
+    62
+    63 2FC5 EE C3 2F D0 03 EE + 		inw    source
+    64
+    65 2FCD 20 D4 2F				jsr    store
+    66 2FD0 D0 F0		                bne    @-
+    67 2FD2 F0 AA		                beq    unlz4                           ; zawsze
+    68
+    69 2FD4 8D FF FF		store           sta    $ffff
+    70 = 2FD5			outputPointer	equ    *-2
+    71
+    72 2FD7 EE D5 2F D0 03 EE + 		inw    outputPointer
+    73 				 
+    74 2FDF CE EE 2F				dec    lenL
+    75 2FE2 D0 03		                bne    unlz4_done
+    76 2FE4 CE 01 30		                dec    lenH
+    77
+    78 2FE7 60			unlz4_done      rts
+    79
+    80 2FE8 20 02 30		getLength_next  jsr    xBIOS_GET_BYTE
+    81 2FEB A8			                tay
+    82 2FEC 18			                clc
+    83 2FED 69 00		                adc    #$00
+    84 = 2FEE			lenL            equ    *-1
+    85 2FEF 90 03		                bcc    @+
+    86 2FF1 EE 01 30		                inc    lenH
+    87 2FF4 C8			@               iny
+    88 2FF5 8D EE 2F		getLength       sta    lenL
+    89 2FF8 F0 EE		                beq    getLength_next
+    90 2FFA A8			                tay
+    91 2FFB F0 03		                beq    @+
+    92 2FFD EE 01 30		                inc    lenH
+    93 3000 60			@               rts
+    94
+    95 3001 00			lenH		.byte    $00
+    96
+    97 3002			xBIOS_GET_BYTE
+    98 3002 AD FF FF				lda $ffff
+    99 = 3003			inputPointer	equ *-2
+   100 3005 EE 03 30 D0 03 EE + 		inw inputPointer
+   101 300D 60					rts
+   102
+   103 02E0-02E1> D0 20			run main

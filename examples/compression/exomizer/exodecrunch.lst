@@ -1,0 +1,342 @@
+mads 2.0.9 build 57 (26 Jul 19)
+Source: D:\!Delphi\mads\examples\compression\exomizer\exodecrunch.asm
+     1
+     2 				// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     3 				// exomizer mem -P0 -l0xLOAD_ADDRESS -c <INPUT_FILENAME> -o <OUTPUT_FILENAME>
+     4 				// exomizer mem -P0 -l none -c <INPUT_FILENAME> -o <OUTPUT_FILENAME>
+     5 				// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     6
+     7 				;
+     8 				; Copyright (c) 2002 - 2005 Magnus Lind.
+     9 				;
+    10 				; This software is provided 'as-is', without any express or implied warranty.
+    11 				; In no event will the authors be held liable for any damages arising from
+    12 				; the use of this software.
+    13 				;
+    14 				; Permission is granted to anyone to use this software for any purpose,
+    15 				; including commercial applications, and to alter it and redistribute it
+    16 				; freely, subject to the following restrictions:
+    17 				;
+    18 				;   1. The origin of this software must not be misrepresented; you must not
+    19 				;   claim that you wrote the original software. If you use this software in a
+    20 				;   product, an acknowledgment in the product documentation would be
+    21 				;   appreciated but is not required.
+    22 				;
+    23 				;   2. Altered source versions must be plainly marked as such, and must not
+    24 				;   be misrepresented as being the original software.
+    25 				;
+    26 				;   3. This notice may not be removed or altered from any distribution.
+    27 				;
+    28 				;   4. The names of this software and/or it's copyright holders may not be
+    29 				;   used to endorse or promote products derived from this software without
+    30 				;   specific prior written permission.
+    31 				;
+    32 				; -------------------------------------------------------------------
+    33 				; The decruncher jsr:s to the get_crunched_byte address when it wants to
+    34 				; read a crunched byte. This subroutine has to preserve x and y register
+    35 				; and must not modify the state of the carry flag.
+    36 				; -------------------------------------------------------------------
+    37 				; -------------------------------------------------------------------
+    38 				; this function is the heart of the decruncher.
+    39 				; It initializes the decruncher zeropage locations and precalculates the
+    40 				; decrunch tables and decrunches the data
+    41 				; This function will not change the interrupt status bit and it will not
+    42 				; modify the memory configuration.
+    43 				; -------------------------------------------------------------------
+    44 				; -------------------------------------------------------------------
+    45 				; if literal sequences is not used (the data was crunched with the -c
+    46 				; flag) then the following line can be uncommented for shorter code.
+    47 				; EXOD_LITERAL_SEQUENCES_NOT_USED = 1
+    48 				; -------------------------------------------------------------------
+    49 				; zero page addresses used
+    50 				; -------------------------------------------------------------------
+    51 = 00A7			exod_zp_len_lo = $a7
+    52
+    53 = 00AE			exod_zp_src_lo  = $ae
+    54 = 00AF			exod_zp_src_hi  = exod_zp_src_lo + 1
+    55
+    56 = 00FC			exod_zp_bits_hi = $fc
+    57
+    58 = 00FD			exod_zp_bitbuf  = $fd
+    59 = 00FE			exod_zp_dest_lo = exod_zp_bitbuf + 1	; dest addr lo
+    60 = 00FF			exod_zp_dest_hi = exod_zp_bitbuf + 2	; dest addr hi
+    61
+    62 				; -------------------------------------------------------------------
+    63 				; this 156 byte table area may be relocated. It may also be clobbered
+    64 				; by other data between decrunches.
+    65 				; -------------------------------------------------------------------
+    66 = BC40			exod_tabl_bi = $BC40			; EXOD_DECRUNCH_TABLE (156 bytes)
+    67 = BC74			exod_tabl_lo = exod_tabl_bi + 52
+    68 = BCA8			exod_tabl_hi = exod_tabl_bi + 104
+    69
+    70 				; -------------------------------------------------------------------
+    71 				; no code below this comment has to be modified in order to generate
+    72 				; a working decruncher of this source file.
+    73 				; However, you may want to relocate the tables last in the file to a
+    74 				; more suitable address.
+    75 				; -------------------------------------------------------------------
+    76
+    77 					org $2000-2
+    78
+    79
+    80 				;	ins 'filename.pck',2	; skip 2 first bytes
+    81 				packed_end
+    82
+    83
+    84 					org $b000
+    85
+    86 				main
+    87
+    88 				;	mwa	#PACKED_END-4	exod_init_zp+1
+    89 				;	mwa	#PACKED_END-3	opbase+1
+    90
+    91 FFFF> B000-B0FB> 20 04 + 	jsr exod_decrunch
+    92
+    93 B003 60				rts
+    94
+    95
+    96 				; -------------------------------------------------------------------
+    97 				; jsr this label to decrunch, it will in turn init the tables and
+    98 				; call the decruncher
+    99 				; no constraints on register content, however the
+   100 				; decimal flag has to be #0 (it almost always is, otherwise do a cld)
+   101 B004			exod_decrunch:
+   102 				; -------------------------------------------------------------------
+   103 				; init zeropage, x and y regs. (12 bytes)
+   104 				;
+   105 B004 A0 00			ldy #0
+   106 B006 A2 03			ldx #3
+   107 B008			exod_init_zp:
+   108 B008 BD FA 1F			lda PACKED_END-4,x
+   109 B00B 95 FC			sta exod_zp_bitbuf - 1,x
+   110 B00D CA				dex
+   111 B00E D0 F8			bne exod_init_zp
+   112
+   113 				; -------------------------------------------------------------------
+   114 				; calculate tables (50 bytes)
+   115 				; x and y must be #0 when entering
+   116 				;
+   117 B010			exod_nextone:
+   118 B010 E8				inx
+   119 B011 98				tya
+   120 B012 29 0F			and #$0f
+   121 B014 F0 14			beq exod_shortcut		; starta på ny sekvens
+   122
+   123 B016 8A				txa			; this clears reg a
+   124 B017 4A				lsr			; and sets the carry flag
+   125 B018 BE 3F BC			ldx exod_tabl_bi-1,y
+   126 B01B			exod_rolle:
+   127 B01B 2A				rol
+   128 B01C 26 FC			rol exod_zp_bits_hi
+   129 B01E CA				dex
+   130 B01F 10 FA			bpl exod_rolle		; c = 0 after this (rol exod_zp_bits_hi)
+   131
+   132 B021 79 73 BC			adc exod_tabl_lo-1,y
+   133 B024 AA				tax
+   134
+   135 B025 A5 FC			lda exod_zp_bits_hi
+   136 B027 79 A7 BC			adc exod_tabl_hi-1,y
+   137 B02A			exod_shortcut:
+   138 B02A 99 A8 BC			sta exod_tabl_hi,y
+   139 B02D 8A				txa
+   140 B02E 99 74 BC			sta exod_tabl_lo,y
+   141
+   142 B031 A2 04			ldx #4
+   143 B033 20 42 B0			jsr exod_get_bits		; clears x-reg.
+   144 B036 99 40 BC			sta exod_tabl_bi,y
+   145 B039 C8				iny
+   146 B03A C0 34			cpy #52
+   147 B03C D0 D2			bne exod_nextone
+   148 B03E A0 00			ldy #0
+   149 B040 F0 37			beq exod_begin
+   150
+   151
+   152 				; -------------------------------------------------------------------
+   153 				; get bits (29 bytes)
+   154 				;
+   155 				; args:
+   156 				;   x = number of bits to get
+   157 				; returns:
+   158 				;   a = #bits_lo
+   159 				;   x = #0
+   160 				;   c = 0
+   161 				;   z = 1
+   162 				;   exod_zp_bits_hi = #bits_hi
+   163 				; notes:
+   164 				;   y is untouched
+   165 				; -------------------------------------------------------------------
+   166 B042			exod_get_bits:
+   167 B042 A9 00			lda #$00
+   168 B044 85 FC			sta exod_zp_bits_hi
+   169 B046 E0 01			cpx #$01
+   170 B048 90 1F			bcc exod_bits_done
+   171 B04A			exod_bits_next:
+   172 B04A 46 FD			lsr exod_zp_bitbuf
+   173 B04C D0 15			bne exod_ok
+   174 B04E 48				pha
+   175 B04F			exod_literal_get_byte:
+   176
+   177 B04F			exod_get_crunched_byte:
+   178
+   179 B04F AD 5B B0 D0 03 CE + 	dew opbase+1
+   180
+   181 B05A AD FB 1F		opbase:	lda PACKED_END-3
+   182
+   183 B05D 90 15			bcc exod_literal_byte_gotten
+   184 B05F 6A				ror
+   185 B060 85 FD			sta exod_zp_bitbuf
+   186 B062 68				pla
+   187 B063			exod_ok:
+   188 B063 2A				rol
+   189 B064 26 FC			rol exod_zp_bits_hi
+   190 B066 CA				dex
+   191 B067 D0 E1			bne exod_bits_next
+   192 B069			exod_bits_done:
+   193 B069 60				rts
+   194 				; -------------------------------------------------------------------
+   195 				; main copy loop (18(16) bytes)
+   196 				;
+   197 B06A			exod_copy_next_hi:
+   198 B06A CA				dex
+   199 B06B C6 FF			dec exod_zp_dest_hi
+   200 B06D C6 AF			dec exod_zp_src_hi
+   201 B06F			exod_copy_next:
+   202 B06F 88				dey
+   203 					.IFNDEF EXOD_LITERAL_SEQUENCES_NOT_USED
+   204 B070 90 DD			bcc exod_literal_get_byte
+   205 					.ENDIF
+   206 B072 B1 AE			lda (exod_zp_src_lo),y
+   207 B074			exod_literal_byte_gotten:
+   208 B074 91 FE			sta (exod_zp_dest_lo),y
+   209 B076			exod_copy_start:
+   210 B076 98				tya
+   211 B077 D0 F6			bne exod_copy_next
+   212 B079			exod_begin:
+   213 B079 8A				txa
+   214 B07A D0 EE			bne exod_copy_next_hi
+   215 				; -------------------------------------------------------------------
+   216 				; decruncher entry point, needs calculated tables (21(13) bytes)
+   217 				; x and y must be #0 when entering
+   218 				;
+   219 					.IFNDEF EXOD_LITERAL_SEQUENCES_NOT_USED
+   220 B07C E8				inx
+   221 B07D 20 42 B0			jsr exod_get_bits
+   222 B080 A8				tay
+   223 B081 D0 13			bne exod_literal_start1
+   224 					.ELSE
+   225 					dey
+   226 					.ENDIF
+   227 B083			exod_begin2:
+   228 B083 E8				inx
+   229 B084 20 4A B0			jsr exod_bits_next
+   230 B087 4A				lsr
+   231 B088 C8				iny
+   232 B089 90 F8			bcc exod_begin2
+   233 					.IFDEF EXOD_LITERAL_SEQUENCES_NOT_USED
+   234 					beq exod_literal_start
+   235 					.ENDIF
+   236 B08B C0 11			cpy #$11
+   237 					.IFNDEF EXOD_LITERAL_SEQUENCES_NOT_USED
+   238 B08D 90 0F			bcc exod_sequence_start
+   239 B08F F0 D8			beq exod_bits_done
+   240 				; -------------------------------------------------------------------
+   241 				; literal sequence handling (13(2) bytes)
+   242 				;
+   243 B091 A2 10			ldx #$10
+   244 B093 20 42 B0			jsr exod_get_bits
+   245 B096			exod_literal_start1:
+   246 B096 85 A7			sta exod_zp_len_lo
+   247 B098 A6 FC			ldx exod_zp_bits_hi
+   248 B09A A0 00			ldy #0
+   249 B09C 90 27			bcc exod_literal_start
+   250 B09E			exod_sequence_start:
+   251 					.ELSE
+   252 					bcs exod_bits_done
+   253 					.ENDIF
+   254 				; -------------------------------------------------------------------
+   255 				; calulate length of sequence (exod_zp_len) (11 bytes)
+   256 				;
+   257 B09E BE 3F BC			ldx exod_tabl_bi - 1,y
+   258 B0A1 20 42 B0			jsr exod_get_bits
+   259 B0A4 79 73 BC			adc exod_tabl_lo - 1,y	; we have now calculated exod_zp_len_lo
+   260 B0A7 85 A7			sta exod_zp_len_lo
+   261 				; -------------------------------------------------------------------
+   262 				; now do the hibyte of the sequence length calculation (6 bytes)
+   263 B0A9 A5 FC			lda exod_zp_bits_hi
+   264 B0AB 79 A7 BC			adc exod_tabl_hi - 1,y	; c = 0 after this.
+   265 B0AE 48				pha
+   266 				; -------------------------------------------------------------------
+   267 				; here we decide what offset table to use (20 bytes)
+   268 				; x is 0 here
+   269 				;
+   270 B0AF D0 06			bne exod_nots123
+   271 B0B1 A4 A7			ldy exod_zp_len_lo
+   272 B0B3 C0 04			cpy #$04
+   273 B0B5 90 02			bcc exod_size123
+   274 B0B7			exod_nots123:
+   275 B0B7 A0 03			ldy #$03
+   276 B0B9			exod_size123:
+   277 B0B9 BE F5 B0			ldx exod_tabl_bit - 1,y
+   278 B0BC 20 42 B0			jsr exod_get_bits
+   279 B0BF 79 F8 B0			adc exod_tabl_off - 1,y	; c = 0 after this.
+   280 B0C2 A8				tay			; 1 <= y <= 52 here
+   281 				; -------------------------------------------------------------------
+   282 				; Here we do the dest_lo -= len_lo subtraction to prepare exod_zp_dest
+   283 				; but we do it backwards:	a - b == (b - a - 1) ^ ~0 (C-syntax)
+   284 				; (16(16) bytes)
+   285 B0C3 A5 A7			lda exod_zp_len_lo
+   286 B0C5			exod_literal_start:			; literal enters here with y = 0, c = 1
+   287 B0C5 E5 FE			sbc exod_zp_dest_lo
+   288 B0C7 90 02			bcc exod_noborrow
+   289 B0C9 C6 FF			dec exod_zp_dest_hi
+   290 B0CB			exod_noborrow:
+   291 B0CB 49 FF			eor #$ff
+   292 B0CD 85 FE			sta exod_zp_dest_lo
+   293 B0CF C0 01			cpy #$01		; y < 1 then literal
+   294 					.IFNDEF EXOD_LITERAL_SEQUENCES_NOT_USED
+   295 B0D1 90 1E			bcc exod_pre_copy
+   296 					.ELSE
+   297 					bcc exod_literal_get_byte
+   298 					.ENDIF
+   299 				; -------------------------------------------------------------------
+   300 				; calulate absolute offset (exod_zp_src) (27 bytes)
+   301 				;
+   302 B0D3 BE 40 BC			ldx exod_tabl_bi,y
+   303 B0D6 20 42 B0			jsr exod_get_bits;
+   304 B0D9 79 74 BC			adc exod_tabl_lo,y
+   305 B0DC 90 03			bcc exod_skipcarry
+   306 B0DE E6 FC			inc exod_zp_bits_hi
+   307 B0E0 18				clc
+   308 B0E1			exod_skipcarry:
+   309 B0E1 65 FE			adc exod_zp_dest_lo
+   310 B0E3 85 AE			sta exod_zp_src_lo
+   311 B0E5 A5 FC			lda exod_zp_bits_hi
+   312 B0E7 79 A8 BC			adc exod_tabl_hi,y
+   313 B0EA 65 FF			adc exod_zp_dest_hi
+   314 B0EC 85 AF			sta exod_zp_src_hi
+   315 				; -------------------------------------------------------------------
+   316 				; prepare for copy loop (8(6) bytes)
+   317 				;
+   318 B0EE 68				pla
+   319 B0EF AA				tax
+   320 					.IFNDEF EXOD_LITERAL_SEQUENCES_NOT_USED
+   321 B0F0 38				sec
+   322 B0F1			exod_pre_copy:
+   323 B0F1 A4 A7			ldy exod_zp_len_lo
+   324 B0F3 4C 76 B0			jmp exod_copy_start
+   325 					.ELSE
+   326 					ldy exod_zp_len_lo
+   327 					bcc exod_copy_start
+   328 					.ENDIF
+   329 				; -------------------------------------------------------------------
+   330 				; two small static tables (6(6) bytes)
+   331 				;
+   332 B0F6			exod_tabl_bit:
+   333 B0F6 02 04 04			.byte 2,4,4
+   334 B0F9			exod_tabl_off:
+   335 B0F9 30 20 10			.byte 48,32,16
+   336 				; -------------------------------------------------------------------
+   337 				; end of decruncher
+   338 				; -------------------------------------------------------------------
+   339
+   340 02E0-02E1> 00 B0			run main
