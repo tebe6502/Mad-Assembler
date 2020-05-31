@@ -1,0 +1,199 @@
+* ZOOM handling
+ZOOM	.LOCAL
+
+state		dta 0
+ZOOM_x		dta 0
+ZOOM_y		dta 0
+ZOOM_top_y	dta 0
+
+ZOOM_old_y	dta 0
+ZOOM_old_x	dta 0
+ZOOM_old_top_y	dta 0
+
+zoomhlp	dta 0,0
+
+pages
+	dta $c0,$c1,$c2,$c3,$c4,$c5,$c6,$c7,$c8,$c9,$ca,$cb,$cc,$cd,$ce,$cf
+	dta $e0,$e1,$e2,$e3,$e4,$e5,$e6,$e7,$e8,$e9,$ea,$eb,$ec,$ed,$ee,$ef
+	dta $f0,$f1,$f2,$f3,$f4,$f5,$f6,$f7,$f8,$f9,$fa,$fb,$fc,$fd,$fe
+
+init	.LOCAL
+; init zoom_lines
+	ldx #0
+	ldy #0
+lp	lda pages,x
+	sta zoom_lineadr,y
+	inx
+	cpx MOD_zoom_h
+	bne *+4
+	ldx #0
+	iny
+	bne lp
+	rts
+	.ENDL ; rts
+
+; A - window size, X - max size, Y - cur value
+_zoom_magic
+	sta zoomHlp+1
+	lsr @
+	sta zoomHlp
+	txa
+	sec
+	sbc zoomHlp+1
+	sta zoomHlp+1
+
+	tya
+	sec
+	sbc zoomHlp
+	bcs *+4
+	lda #0
+	cmp zoomHlp+1
+	bcc *+5
+	lda zoomHlp+1
+	rts
+
+update	.LOCAL
+	lda state
+	beq ex
+
+	lda :mod_zoom_w
+	ldx :mod_max_x
+	ldy :cursor_x
+	jsr _zoom_magic
+	sta zoom_x
+
+	lda :mod_zoom_h
+	ldx :mod_max_y
+	ldy :cursor_y
+	jsr _zoom_magic
+	sta zoom_y
+
+	lda zoom_old_y
+	cmp zoom_y
+	bne new_Y
+same_Y
+	lda zoom_old_x
+	cmp zoom_x
+	bne go_xy
+	beq done_xy	; X,Y the same
+new_Y	; Y has changed, either went up or down
+	bcc Y_down
+Y_up ; Y went UP
+	lda zoom_y
+	jsr zul_add
+	jmp go_xy
+Y_down ; Y went down
+	ldy zoom_y
+	clc
+	adc :MOD_zoom_h
+	jsr zul_add
+go_xy
+;	mva #$ff $d01a
+	jsr :MOD_zoom_update
+;	mva #$88 $d01a
+
+done_xy
+	; save settings as old
+	mva zoom_x zoom_old_x
+	mva zoom_y zoom_old_y
+
+	lda :mod_zoom_top_h
+	ldx :mod_max_y
+	ldy :cursor_y
+	jsr _zoom_magic
+	sta zoom_top_y
+	cmp zoom_old_top_y
+
+go_top
+	jsr :MOD_zoom_update_top
+done_top
+	mva zoom_top_y zoom_old_top_y
+ex	rts
+	.ENDL
+
+zoom_status_update
+	lda #"."
+	ldy state
+	beq *+4
+	lda #"+"
+	sta DL.status+22
+	rts
+
+zoom_switch
+	lda state
+	beq zoom_on
+zoom_off
+	dec state
+	mva #0 zoom_top_y
+	jsr MOD_disable_zoom
+	jsr zoom_status_update
+	rts
+
+zoom_on .LOCAL
+	inc state
+
+; force cursor size 1
+	lda #1
+	sta :cursor_w
+	sta :cursor_h
+; force zoom update
+	lda #-1
+	sta zoom_old_x
+	sta zoom_old_y
+	sta zoom_old_top_y
+
+	jsr update
+
+; redraw all lines
+	ldy #0
+loo	sty oy+1
+	tya
+	clc
+	adc zoom_Y
+	jsr zul_add
+oy	ldy #0
+	iny
+	cpy MOD_zoom_h
+	bne loo
+
+	jsr :MOD_enable_zoom
+	jsr zoom_status_update
+	rts
+	.ENDL ; zoom_on
+
+* Zoom update lines management
+zul_cur	dta 0
+zul_cnt	dta 0
+zul_tab
+:50		dta	0
+zul_reset
+	mva #0 zul_cnt
+	rts
+zul_add
+	ldy zul_cnt
+	cpy #50
+	bne *+5
+	jsr error
+	sta zul_tab,y
+	iny
+	sty zul_cnt
+	rts
+zul_apply .LOCAL
+	lda zul_cnt
+	beq ex
+	ldx #0
+lp	stx zul_cur
+	ldy zul_tab,x
+	jsr :MOD_zoom_update_line
+	ldx zul_cur
+	inx
+	cpx zul_cnt
+	bne lp
+ex
+	rts
+	.ENDL
+
+
+MOD_LEN	equ *-ZOOM
+
+	.ENDL ; LOCAL

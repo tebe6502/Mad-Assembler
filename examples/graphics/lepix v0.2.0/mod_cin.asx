@@ -1,0 +1,1167 @@
+*******************************************************************************
+* External
+MOD_MOD		equ *
+
+MOD_init		jmp CIN.init
+MOD_vbl			jmp CIN.vbl
+MOD_pick_color	jmp CIN.pick_color
+MOD_put_pixel	jmp CIN.put_pixel
+MOD_enable_zoom		jmp CIN.enable_zoom
+MOD_disable_zoom	jmp CIN.disable_zoom
+MOD_zoom_update		jmp CIN.zoom_update
+; updates a single zoomed line. Y=line number
+MOD_zoom_update_line	jmp CIN.zoom_update_line
+; updates upper part
+MOD_zoom_update_top		jmp CIN.zoom_update_top
+
+MOD_pmY			dta 19 ; in scanlines, Y position of the first line
+MOD_pixel_w		dta 1 ; can be 1,2 or 4
+MOD_pixel_h		dta 1 ; - anything
+
+MOD_max_x		dta 160
+MOD_max_y		dta 200
+
+MOD_max_cursor_w	dta 4 ; for performance
+MOD_max_cursor_h	dta 8
+
+MOD_zoom_w			dta 80 ; in mode pixels
+MOD_zoom_h			dta CIN.zoomlines ; in mode pixels
+MOD_zoom_pmY		dta 219-[2*CIN.zoomlines] ; in scanlines, Y position of the first line in zoom
+MOD_zoom_pixel_w	dta 2 ; in 15 pixels
+MOD_zoom_pixel_h	dta 2 ; in scanlines
+MOD_zoom_top_h		dta 200-4-[2*CIN.zoomlines] ; lines from main panel visible
+
+MOD_screen	equ *
+	dta d'C0:.. C1:.. C2:.. C3:..  TONE:..   ::CIN'
+	dta d'keys:QWER ASDF 0123 JLIK PCZ UY  M :....'
+
+MOD_curcolor_X	dta 0  ; in 15 pixels, from 0
+MOD_curcolor_W	dta 40 ; in 15 pixels
+
+; returns the mode color as a byte (used in UNDO)
+MOD_get_color	jmp CIN.get_color
+; sets the mode colors as a byte (used in UNDO)
+MOD_set_color	jmp CIN.set_color
+
+MOD_MOD_LEN	equ *-MOD_MOD
+
+*******************************************************************************
+* Internal
+CIN			.LOCAL
+
+zoomlines	equ 47
+
+pline		equ $8000
+scrE		equ $8060
+scrF		equ $6060
+SCR_EOR		equ [>scrE^>scrF]
+
+dl1_zoom	equ $b800
+dl2_zoom	equ $ba00
+
+cin_dl1		equ $b000
+cin_dl2		equ $b400
+DL_EOR		equ [>cin_dl1^>cin_dl2]
+
+loline		equ $a000
+hiline		equ $a100
+div4		equ $a200
+ands		equ $a300
+lsrs		equ $a400
+zoomhi		equ $a500
+zoomlo		equ $a600
+div2		equ $a700
+zoomlo_gtia	equ $a800
+zoomhi_gtia	equ $a900
+
+dlzoom_fill	equ $aa00
+
+*******************************************************************************
+
+MODE_BOTH	equ 3
+MODE_BRI	equ 2
+MODE_TONE	equ 1
+cur_mode	dta MODE_BOTH
+
+palette		dta $00,$04,$08,$0c
+cur_bri 	dta 0	; values: 0..3
+cur_tone	dta $70	; values: 00,10,20,...,e0,f0
+CIN_hscrol	dta 12
+
+set_color	
+	pha
+	and #$f0
+	sta cur_tone
+	pla
+	and #$0f
+	sta cur_bri
+	rts
+get_color
+	lda cur_bri
+	ora cur_tone
+	rts
+
+vbl
+	lda VBL.frame
+	and #1
+	beq *+4
+	lda #[>cin_dl1^>cin_dl2]
+	eor #>cin_dl1
+	sta $d403
+	mva #0 $d402
+	mwa #dli_palette $200
+	rts
+
+init
+	jsr create_DL
+	jsr create_tabs
+	jsr update_status
+	ldxy CIN_KEYTABLE
+	jsr KB.extend_keytable
+	ldxy CIN_MENUTABLE
+	jsr MENU.extend_menutable
+
+	jsr prp_dlzoom_fill
+	rts
+
+dli_palette
+	phaxy
+	mva palette+0 $d01a
+	mva palette+1 $d016
+	mva palette+2 $d017
+	mva palette+3 $d018
+	mva cin_hscrol :HSCROL
+	sta $d40a
+;	sta $d40a
+
+	lda VBL.frame
+	and #1
+	beq *+5
+	sta $d40a
+	ldx #3
+_dp	lda #$c0+$01
+	sta $d40a
+	sta $d01b
+	lda #$00+$01
+	sta $d40a
+	sta $d01b
+	dex
+	bne _dp
+
+	mva #$c0 $d01b
+	mwa #dli_core $200 ; switch DLI
+	
+	lda #$c0+$01
+	sta $d01b
+	
+	plaxy
+	rti
+
+dli_core	.LOCAL
+	pha
+	lda $d40b
+	cmp #$6e
+	bcs blah
+
+	lda #$00+$01
+	sta $d40a
+	sta $d01b
+
+	lda #$c0+$01
+	sta $d40a
+	sta $d01b
+
+	pla
+	rti
+blah
+	pla
+	jmp (DLI.down_vec)
+	.ENDL
+
+create_DL
+	mwa #scrE zer1
+	mwa #scrF zer2
+	mwa #dl1_core _mcd1+1
+	mwa #dl2_core _mcd2+1
+
+	ldy #100
+_mcd0
+	lda #$4f+$80	; gr.11 line
+	jsr _mcd
+	lda zer2
+	jsr _mcd1
+	lda zer2+1
+	jsr _mcd1
+	addToZer zer2 40
+	lda zer2
+	jsr _mcd2
+	lda zer2+1
+	jsr _mcd2
+	addToZer zer2 40
+
+	lda #$4e+$00	; gr.15 line
+	jsr _mcd
+	lda zer1
+	jsr _mcd1
+	lda zer1+1
+	jsr _mcd1
+	addToZer zer1 40
+	lda zer1
+	jsr _mcd2
+	lda zer1+1
+	jsr _mcd2
+	addToZer zer1 40
+
+	dey
+	bne _mcd0
+
+	; return to DL_return
+	lda #$01
+	jsr _mcd
+	lda <dl1_return
+	jsr _mcd1
+	lda >dl1_return
+	jsr _mcd1
+	lda <dl2_return
+	jsr _mcd2
+	lda >dl2_return
+	jsr _mcd2
+
+	; create DL_zoom
+	mwa #dl1_zoom _mcd1+1
+	mwa #dl2_zoom _mcd2+1
+	lda #$20+$00
+	jsr _mcd
+	ldy #zoomlines
+cdl1
+	lda #$5f+$80 ; no DLI
+	jsr _mcd
+	lda #0
+	jsr _mcd
+	jsr _mcd
+	lda #$5e+$00 ; DLI
+	jsr _mcd
+	lda #0
+	jsr _mcd
+	jsr _mcd
+	dey
+	bne cdl1
+	lda #$01
+	jsr _mcd
+	lda <dl1_return
+	jsr _mcd
+	lda >dl1_return
+	jsr _mcd1
+	lda >dl2_return
+	jsr _mcd2
+	rts
+_mcd	jsr _mcd2
+_mcd1	sta dl1_core
+	inw _mcd1+1
+	rts
+_mcd2	sta dl2_core
+	inw _mcd2+1
+	rts
+
+prp_dlzoom_fill .LOCAL
+	mwa #dlzoom_fill wr+1
+; first, fill lo byte
+	ldx #[zoomlines]
+	mwa #DL1_zoom+5 zer1
+lo1
+	lda #{sta DL1_zoom+2}
+	jsr wr
+	lda zer1
+	jsr wr
+	lda zer1+1
+	jsr wr
+	lda #{sta DL2_zoom+2}
+	jsr wr
+	lda zer1
+	jsr wr
+	lda zer1+1
+	eor #[>DL1_zoom^>DL2_zoom]
+	jsr wr
+	addtozer zer1 6
+	dex
+	bne lo1
+	lda #{eor #$80}
+	jsr wr
+	lda #$80
+	jsr wr
+	ldx #[zoomlines]
+	mwa #DL1_zoom+2 zer1
+lo2	lda #{sta DL2_zoom+2}
+	jsr wr
+	lda zer1
+	jsr wr
+	lda zer1+1
+	jsr wr
+	lda #{sta DL2_zoom+2}
+	jsr wr
+	lda zer1
+	jsr wr
+	lda zer1+1
+	eor #[>DL1_zoom^>DL2_zoom]
+	jsr wr
+	addtozer zer1 6
+	dex
+	bne lo2
+; then, fill hi byte
+	ldx #0
+	mwa #DL1_zoom+3 zer1
+	mwa #DL2_zoom+3 zer2
+hloop ;)
+	txa
+	lsr @
+	bcs no_lda
+	lda #{lda zoom_lineadr,X}
+	jsr wr
+	txa
+	lsr @
+	jsr wr
+	lda >zoom_lineadr
+	jsr wr
+no_lda
+	lda #{sta DL1_zoom}
+	jsr wr
+	lda zer1
+	jsr wr
+	lda zer1+1
+	jsr wr
+	addtozer zer1 3
+	lda #{sta DL2_zoom}
+	jsr wr
+	lda zer2
+	jsr wr
+	lda zer2+1
+	jsr wr
+	addtozer zer2 3
+	inc zerHlp
+	inx
+	cpx #[2*zoomlines]
+	bne hloop
+; and exit
+	lda #{rts}
+wr	sta dlzoom_fill
+	inw wr+1
+	rts
+	.ENDL
+
+
+* ****************************************************************************
+* Palette management
+colorpos dta 0,40,80,120
+
+update_tone	ldy #39
+	lda cur_tone
+:4	lsr @
+	ora cur_tone
+ut	sta plineF,y
+	dey
+	bpl ut
+	rts
+chg_tone
+	clc
+	adc cur_tone
+	sta cur_tone
+	jmp update_status
+chg_bri
+	clc
+	adc cur_bri
+	and #3
+	sta cur_bri
+upd_color
+	ldy cur_bri
+	lda colorpos,y
+	sta MOD_curcolor_x
+	rts
+chg_col_val
+	ldx cur_bri
+	clc
+	adc palette,x
+	sta palette,x
+	jmp update_status
+set_kolor
+	sta cur_bri
+	jmp upd_color
+
+* ****************************************************************************
+pick_color
+	ldy cursor_y
+	lda loline,y
+	sta zer1
+	sta zer2
+	lda hiline,y
+	sta zer1+1
+	eor #[>scrE^>scrF]
+	sta zer2+1
+
+	ldx cursor_x
+
+	lda cur_mode
+	and #MODE_BRI
+	beq pc_tone
+
+	ldy div4,x
+	lda (zer1),y
+	and ands,x
+	ldy lsrs,x
+	beq mpc_cont
+mpc	lsr @
+	dey
+	bne mpc
+mpc_cont
+	sta cur_bri
+	jsr upd_color
+
+	; before we enter pc_tone, we need to divide cursor_X by 2
+	txa
+	lsr @
+	tax
+
+pc_tone
+	lda cur_mode
+	and #MODE_TONE
+	bne *+3
+	rts
+
+	ldy div2,x
+	lda (zer2),y
+	tay
+	txa
+	lsr @
+	bcc pct_hi
+pct_lo
+	tya
+:4	asl @
+	sta cur_tone
+	jmp update_status
+pct_hi
+	tya
+	and #$f0
+	sta cur_tone
+	jmp update_status
+* ****************************************************************************
+mpp_cntY	dta 0
+mpp_cntX	dta 0
+pp_do_bri	dta 0
+pp_do_tone	dta 0
+pp_old_bri	dta 0
+pp_old_tone	dta 0
+pp_new_bri	dta 0
+pp_new_tone	dta 0
+
+put_pixel
+	jsr UNDO.put_pixel_prelude
+
+	mva cursor_h mpp_cntY
+
+	lda cur_mode
+	and #MODE_BRI
+	ora undo.ignore			; when in ignore, always set everything
+	sta pp_do_bri
+
+	lda cur_mode
+	and #MODE_TONE
+	ora undo.ignore
+	sta pp_do_tone
+	
+	ldy cursor_y
+	sty UNDO.pos_y
+	lda loline,y
+	sta zer1
+	sta zer2
+	lda hiline,y
+	sta zer1+1
+	eor #[>scrE^>scrF]
+	sta zer2+1
+mpp_loopY
+	mva #0 mpp_cntX
+mpp_loopx
+
+	lda cursor_x
+	clc
+	adc mpp_cntX
+	ldx pp_do_bri
+	bne *+3
+	asl @		; multiply by 2, as we're in the tone mode 
+	tax
+	stx UNDO.pos_x
+
+	; save old bri
+	ldy div4,x	
+	lda (zer1),y
+	ldy lsrs,x	
+	beq sob_end
+sob	
+	lsr @
+	dey
+	bne sob
+sob_end
+	and #$03
+	sta pp_old_bri
+	
+	lda pp_do_bri
+	beq pp_pre_tone
+
+	; put new bri
+	lda cur_bri
+	ldy lsrs,x
+	beq mpp_cont
+mpp	asl @
+	dey
+	bne mpp
+mpp_cont
+	sta zerHlp
+	ldy div4,x
+	lda ands,x
+	eor #$ff
+	and (zer1),y
+	ora zerHlp
+	sta (zer1),y
+
+pp_pre_tone
+	txa
+	lsr @
+	tax
+
+pp_tone
+	lda cur_mode
+	and #MODE_TONE
+	beq pp_cont
+
+	ldy div2,x
+	txa
+	lsr @
+	bcc ppt_hi
+ppt_lo
+	lda (zer2),y		; save old tone
+:4	asl @
+	sta pp_old_tone
+	lda pp_do_tone
+	beq pp_cont
+	lda cur_tone		; put new tone
+:4	lsr @
+	sta zerHlp
+	lda (zer2),y
+	and #$f0
+	ora zerHlp
+	sta (zer2),y
+	jmp pp_cont
+ppt_hi
+	lda (zer2),y		; save old tone
+	and #$f0
+	sta pp_old_tone
+	lda pp_do_tone
+	beq pp_cont
+	lda (zer2),y		; put_new_tone
+	and #$0f
+	ora cur_tone
+	sta (zer2),y
+
+pp_cont
+	lda pp_old_tone
+	ora pp_old_bri
+	sta UNDO.old_c
+	
+	lda cur_tone
+	sta pp_new_tone
+	lda cur_bri
+	sta pp_new_bri
+
+	lda pp_old_tone
+	ldx pp_do_tone
+	bne *+5
+	sta pp_new_tone
+	lda pp_old_bri
+	ldx pp_do_bri
+	bne *+5
+	sta pp_new_bri
+	
+	lda pp_new_tone
+	ora pp_new_bri
+	sta UNDO.new_c
+	jsr UNDO.put_pixel_save
+
+	inc mpp_cntX
+	lda mpp_cntX
+	cmp cursor_W
+	jne mpp_loopX
+
+	lda zer1
+	clc
+	adc #40
+	sta zer1
+	sta zer2
+	bcc *+6
+	inc zer1+1
+	inc zer2+1
+
+	inc UNDO.pos_y
+	dec mpp_cntY
+	jne mpp_loopY
+
+	jsr UNDO.put_pixel_epilogue
+	rts
+
+
+* ****************************************************************************
+mct_ands	dta $c0,$30,$0c,$03
+mct_lsrs	dta 6,4,2,0
+create_tabs
+	mwa #scrE zer0
+	ldy #0
+_mct0	tya
+	lsr @
+	sta div2,y
+	lsr @
+	sta div4,y
+	tya
+	and #3
+	tax
+	lda mct_ands,x
+	sta ands,y
+	lda mct_lsrs,x
+	sta lsrs,y
+	lda zer0
+	sta loline,y
+	clc
+	adc #40
+	sta zer0
+	lda zer0+1
+	sta hiline,y
+	adc #0
+	sta zer0+1
+
+	tya
+	and #$c0
+	sta zerHlp
+:2	lsr @
+	ora zerHlp
+	sta zerHlp
+	tya
+	and #$30
+:2	lsr @
+	pha
+	ora zerHlp
+	sta zerHlp
+	pla
+:2	lsr @
+	ora zerHlp
+	sta zoomhi,y
+
+	tya
+	and #$0c
+:2	asl @
+	sta zerHlp
+:2	asl @
+	ora zerHlp
+	sta zerHlp
+	tya
+	and #$03
+	ora zerHlp
+	sta zerHlp
+	tya
+	and #$03
+:2	asl @
+	ora zerHlp
+	sta zoomlo,y
+
+	tya
+	and #$0f
+	sta zerHlp
+:4	asl @
+	ora zerHlp
+	sta zoomlo_gtia,y
+	tya
+	and #$f0
+	sta zerHlp
+:4	lsr @
+	ora zerHlp
+	sta zoomhi_gtia,y
+
+	iny
+	beq *+5
+	jmp _mct0
+	rts
+* ****************************************************************************
+mode_names dta d'err tonebri both'
+update_status
+	ldy #3
+	lda cur_mode
+:2	asl @
+	ora #3
+	tax
+us	lda mode_names,x
+	sta MOD_screen+76,y
+	dex
+	dey
+	bpl us
+	jsr update_tone
+	lda palette
+	ldxy MOD_SCREEN+3
+	jsr write_hex
+	lda palette+1
+	ldxy MOD_SCREEN+9
+	jsr write_hex
+	lda palette+2
+	ldxy MOD_SCREEN+15
+	jsr write_hex
+	lda palette+3
+	ldxy MOD_SCREEN+21
+	jsr write_hex
+	lda cur_tone
+	ldxy MOD_SCREEN+30
+	jmp write_hex
+
+* ****************************************************************************
+* zoom handling
+* ****************************************************************************
+zoom_lastY	dta 0
+
+zoom_update
+	mwa #dl1_zoom+2 zer1
+	mwa #dl2_zoom+2 zer2
+	lda cur_mode
+	cmp #MODE_TONE
+	beq zu_tone
+zu_bri
+	lda ZOOM.zoom_X
+	lsr @
+	sta zerHlp
+	lda #12
+	bcc *+4
+	lda #10
+	bne zu_ready
+zu_tone
+	lda ZOOM.zoom_X
+	sta zerHlp
+	lda #12
+zu_ready
+	sta :HSCROL
+	sta cin_hscrol
+	ldx #0
+upl
+	lda zerHlp
+	ldx ZOOM.zoom_Y
+	jmp dlzoom_fill
+
+enable_zoom
+	rts
+
+disable_zoom
+	jsr fix_lastY
+	; fix last line
+	mwa #[dl1_core+600] zer1
+	mwa #[dl2_core+600] zer2
+	ldy #0
+	lda #$01
+	sta (zer1),y
+	sta (zer2),y+
+	lda <dl1_return
+	sta (zer1),y
+	sta (zer2),y+
+	lda >dl1_return
+	sta (zer1),y
+	lda >dl2_return
+	sta (zer2),y
+
+	; restore main DL
+	mwa #dl1_core DL1_jsr
+	mwa #dl2_core DL2_jsr
+	rts
+
+; Y - lineno
+zoom_update_line	.LOCAL
+	lda zoom_lineadr,y
+	sta dst1+2
+	sta dst2+2
+	sta dst3+2
+	sta dst4+2
+	lda loline,y
+	sta src+1
+	sta src2+1
+	lda hiline,y
+	sta src+2
+	eor #[>scrE^>scrF]
+	sta src2+2
+	ldx #39
+	ldy #79
+loop
+src		lda scrE,x
+	stx zerHlp
+	tax
+	lda zoomlo,x
+dst1	sta $c001,y-
+	lda zoomhi,x
+dst2	sta $c001,y+
+	ldx zerHlp
+src2	lda scrF,x
+	tax
+	lda zoomlo_gtia,x
+dst3	sta $c081,y-
+	lda zoomhi_gtia,x
+dst4	sta $c081,y-
+;	lda #$f
+;	sta $d40a
+;	sta $d01a
+;	lda #$00
+;	sta $d40a
+;	sta $d01a
+
+	ldx zerHlp
+	dex
+	bpl loop
+	rts
+	.ENDL
+
+zoom_update_top
+	;fix previous last line
+	jsr fix_lasty
+
+	;set new first line
+	ldy ZOOM.zoom_top_y
+	jsr calc_dl_pos
+	lda zer0
+	sta dl1_jsr
+	sta dl2_jsr
+	lda zer0+1
+	sta dl1_jsr+1
+	eor #DL_EOR
+	sta dl2_jsr+1
+
+	;set new last line
+	lda ZOOM.zoom_top_y
+	clc
+	adc MOD_zoom_top_h
+	sta zoom_lastY
+	tay
+	jsr calc_dl_pos
+	mva zer0 zer1
+	lda zer0+1
+	eor #DL_EOR
+	sta zer1+1
+	ldy #0
+	lda #$01
+	sta (zer0),y
+	sta (zer1),y+
+	lda <dl1_zoom
+	sta (zer0),y
+	sta (zer1),y+
+	lda >dl1_zoom
+	sta (zer0),y
+	lda >dl2_zoom
+	sta (zer1),y
+	rts
+
+; Y - lineno, sets zer0
+calc_dl_pos
+	mwa #dl1_core zer0
+	sty cdp_add+1
+	ldx #3
+cdp	lda zer0
+	clc
+cdp_add	adc #0
+	sta zer0
+	bcc *+4
+	inc zer0+1
+	dex
+	bne cdp
+	rts
+
+fix_lasty
+	ldy zoom_lastY
+	jsr calc_dl_pos
+	mva zer0 zer1
+	lda zer0+1
+	eor #[>cin_dl1^>cin_dl2]
+	sta zer1+1
+
+	lda zoom_lastY
+	tax
+	and #1
+	beq *+3
+	dex
+	eor #1
+	eor #1
+	beq *+4
+	lda #[[$4e]^[$4f+$80]]
+	eor #[$4f+$80]
+;	lda #$4e
+;	eor #[[$4f+$80]^$4e]
+	ldy #0
+	sta (zer0),y
+	sta (zer1),y+
+	lda loline,x
+	sta (zer0),y
+	clc
+	adc #40
+	sta (zer1),y+
+	lda zoom_lastY
+	and #1
+	eor #1
+	beq *+4
+	lda #[>scrE^>scrF]
+	eor hiline,x
+	sta (zer0),y
+	adc #0
+	sta (zer1),y
+	rts
+
+* ****************************************************************************
+; Same code in mod_cin and mod_tip
+chg_mode
+	; multiply cursor_X by 2 if only tone
+	lda cur_mode
+	cmp #MODE_TONE
+	bne um1
+	lda cursor_x
+	asl @
+	sta cursor_x
+um1
+	ldx cur_mode
+	dex
+	bne *+4
+	ldx #MODE_BOTH
+	stx cur_mode
+
+	jsr update_status
+
+	ldx cur_mode
+	cpx #MODE_TONE
+	beq um_tone
+um_bri
+	mva #160 MOD_max_x
+	mva #1 MOD_pixel_w
+	mva #2 MOD_zoom_pixel_w
+	mva #80 MOD_zoom_w
+	rts
+um_tone
+	lda cursor_X
+	lsr @
+	sta cursor_X
+	mva #80 MOD_max_x
+	mva #2 MOD_pixel_w
+	mva #4 MOD_zoom_pixel_w
+	mva #40 MOD_zoom_w
+	rts
+* ****************************************************************************
+CIN_KEYTABLE
+	dta KEYCODE_Q,7,a(chg_bri),$ff
+	dta KEYCODE_W,7,a(chg_bri),$01
+	dta KEYCODE_E,7,a(chg_tone),$f0
+	dta KEYCODE_R,7,a(chg_tone),$10
+
+	dta KEYCODE_A,15,a(chg_col_val),$fe
+	dta KEYCODE_S,15,a(chg_col_val),$02
+	dta KEYCODE_D,15,a(chg_col_val),$f0
+	dta KEYCODE_F,15,a(chg_col_val),$10
+	dta KEYCODE_1,7,a(set_kolor),1
+	dta KEYCODE_2,7,a(set_kolor),2
+	dta KEYCODE_3,7,a(set_kolor),3
+	dta KEYCODE_0,7,a(set_kolor),0
+
+	dta KEYCODE_M,15,a(chg_mode),0
+
+	dta $ff
+
+* ****************************************************************************
+* I/O routines
+MIC_ext	dta c'MIC'
+CIN_ext dta c'CIN'
+
+load_mic
+	ldxy MIC_ext
+	jsr IO.open_read
+	bpl transfer_mic
+	rts
+save_mic
+	ldxy MIC_ext
+	jsr IO.open_write
+	bpl transfer_mic
+	rts
+transfer_mic	.LOCAL
+	mwa #scrE IO.adr
+	mwa #8000 IO.len
+	jsr IO.do
+	bmi ex
+
+	mwa #palette IO.adr
+	mwa #4 io.len
+	jsr IO.do
+	bmi ex
+
+	jsr IO.close
+ex
+	rts
+	.ENDL ; transfer_mic
+
+load_cin
+	ldxy CIN_ext
+	jsr IO.open_read
+	bpl transfer_cin
+	rts
+save_cin
+	ldxy CIN_ext
+	jsr IO.open_write
+	bpl transfer_cin
+	rts
+transfer_cin .LOCAL
+	mwa #scrE IO.adr
+	mwa #8000 IO.len
+	jsr IO.do
+	bmi ex
+
+	mwa #scrF IO.adr
+	mwa #8000 IO.len
+	jsr IO.do
+	bmi ex
+
+	mwa #palette IO.adr
+	mwa #4 io.len
+	jsr IO.do
+	bmi ex
+
+	jsr IO.close
+ex
+	rts
+	.ENDL ; transfer_cin
+
+load_cinX
+	ldxy CIN_ext
+	jsr IO.open_read
+	bpl transfer_cinX
+	rts
+save_cinX
+	ldxy CIN_ext
+	jsr IO.open_write
+	bpl transfer_cinX
+	rts
+transfer_cinX .LOCAL
+	mwa #scrE IO.adr
+	mwa #7680 IO.len
+	jsr IO.do
+	bmi ex
+
+	mwa #scrF IO.adr
+	mwa #7680 IO.len
+	jsr IO.do
+	bmi ex
+
+	jsr IO.close
+ex
+	rts
+	.ENDL ; transfer_cinX
+
+
+clear .LOCAL
+	jsr IO.confirm
+	beq ex
+
+	mwa #scrE zer1
+	mwa #8000 zer2
+	lda #0
+	jsr memset
+
+	mwa #scrF zer1
+	mwa #8000 zer2
+	lda #0
+	jsr memset
+
+ex	rts
+	.ENDL
+
+clearcol .LOCAL
+	jsr IO.confirm
+	beq ex
+
+	mwa #scrF zer1
+	mwa #8000 zer2
+	lda #0
+	jsr memset
+
+ex	rts
+	.ENDL
+
+* ****************************************************************************
+CIN_MENUTABLE
+	dta '1',a(load_cin),a(load_cin_msg)
+	dta '2',a(save_cin),a(save_cin_msg)
+	dta '3',a(load_mic),a(load_mic_msg)
+	dta '4',a(save_mic),a(save_mic_msg)
+	dta '5',a(load_cinX),a(load_cinX_msg)
+	dta '6',a(save_cinX),a(save_cinX_msg)
+	dta 'C',a(clear),a(clear_msg)
+	dta 'X',a(clearcol),a(clearcol_msg)
+	dta $ff
+
+load_cin_msg
+	dta c'1 - Load *.CIN (LEPIX, 200 lines)',eol
+save_cin_msg
+	dta c'2 - Save *.CIN (LEPIX, 200 lines)',eol
+load_mic_msg
+	dta c'3 - Load *.MIC',eol
+save_mic_msg
+	dta c'4 - Save *.MIC',eol
+load_cinX_msg
+	dta c'5 - Load *.CIN (CIN, 192 lines)',eol
+save_cinX_msg
+	dta c'6 - Save *.CIN (CIN, 192 lines)',eol
+clear_msg
+	dta c'C - Clear picture',eol
+clearcol_msg
+	dta c'X - Clear colors',eol
+
+* ****************************************************************************
+CIN_return	equ *
+
+		ift INCLUDE_PICTURE
+	org scrE
+;	ins 'cin/tqatrees.cin',0,7680
+	ins 'cin/anj.grE'
+;	ins 'mic/rpla.mic',0,7680
+
+	org scrF
+;	ins 'cin/tqatrees.cin',7680,7680
+	ins 'cin/anj.grB'
+;	ins 'cin/rpl.grB',0,7680
+		eif  ; INCLUDE_PICTURE
+
+	org pline
+plineE
+:10	dta 0
+:10	dta $55
+:10 dta $aa
+:10 dta $ff
+plineF
+
+	org cin_dl1
+	dta $80,$00
+:3	dta $4f,a(plineF),$4e,a(plineE)
+	dta $00
+DL1_jsr	equ *+1
+	dta $01,a(dl1_core)
+DL1_return
+	dta $10
+	dta $81,a(DL.down)
+
+dl1_core	equ *
+
+	org cin_dl2
+	dta $80,$10
+:3	dta $4f,a(plineF),$4e,a(plineE)
+	dta $0
+DL2_jsr	equ *+1
+	dta $01,a(dl2_core)
+DL2_return
+	dta $00
+	dta $81,a(DL.down)
+
+dl2_core	equ *
+
+	org CIN_return
+
+CIN.MOD_LEN	equ *-CIN
+	.ENDL ; CIN
+

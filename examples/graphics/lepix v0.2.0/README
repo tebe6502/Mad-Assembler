@@ -1,0 +1,164 @@
+LePix v.0.2.0
+by eru/tqa (eru[at]scene.pl)
+
+=====================================
+Short manual:
+
+General:
+joystick - move cursor, button draws
+mouse    - move cursor (port 2) - 
+           doesn't really work
+arrows   - move cursor
+ESC,TAB  - enter menu
+SHIFT    - draw
+P        - pick current color
+Z        - zoom
+C        - change cursor shape
+J/L      - dec/inc cursor width 
+           (not in zoom mode)
+I/K      - dec/inc cursor height 
+           (not in zoom mode)
+U        - undo
+Y        - redo
+
+MIC:
+Q/W      - prev/next color
+A/S      - change the brightness 
+           of the current color
+D/F      - change the tone 
+           of the current color
+0..3     - choose color 0..3
+
+INP:
+Q/W      - prev/next color
+A/S      - change the brightness 
+           of the current color
+D/F      - change the tone 
+           of the current color
+0..6     - choose color 0..6
+
+CIN:
+Q/W      - prev/next color 
+           (brightness)
+E/R      - prev/next tone
+A/S      - change the brightness 
+           of the current color
+D/F      - change the tone 
+           of the current color
+0..3     - choose color 0..3
+M        - change work mode: 
+           only brightness, 
+		   only tone or both
+
+HIP:
+Q/W      - prev/next color 
+           (brightness)
+A/S      - change the tone 
+           of the picture
+
+TIP:
+Q/W      - prev/next brightness
+E/R      - prev/next tone
+M        - change work mode: 
+           only brightness, 
+		   only tone or both
+
+=====================================
+Some hints:
+
+- I/O operations add a file extension 
+  and a drive name if not specified 
+  ('D:'). Example translations 
+  (when loading MIC):
+    FIGHT        -> D:FIGHT.MIC
+    FIGHT.PIC    -> D:FIGHT.PIC
+    D:FIGHT      -> D:FIGHT.MIC
+    D1:FIGHT     -> D1:FIGHT.MIC
+    D1:FIGHT.MIC -> D1:FIGHT.MIC
+- On program load the image memory is 
+  not cleaned.
+  You can do it by pressing TAB,C,Y
+- INP: to create INP from two MIC 
+  pictures load the first of them as 
+  MIC(1) and the second as MIC(2)
+- CIN: to create a CIN picture, 
+  load a MIC picture, clear colors 
+  only and color the picture using 
+  the 'tone' mode
+
+=====================================
+ToDo:
+
+- copy-paste of rectangular blocks
+- save/restore snapshots using 
+  extended memory
+- code review.
+- improve mouse
+- add lightpen support
+- add hires modes: GR8, IN8, HR2
+- INP: various interlace modes: 
+  checkers, lines(, frames?)
+- View mode: pressing 'V' should 
+  result in all menus disappearing
+- pictures larger than 200 scanlines 
+  - up to 238 lines
+  (or 119 in double-scanline modes), 
+  with main-part scrolled up/down.
+- common file format: introduce a new 
+  file format that would support 
+  various graphic modes
+
+=====================================
+History:
+
+2007-05-12, v.0.2.0
+Major changes:
+- added TIP module
+- added undo (U) and redo (R) options
+Minor changes:
+- fixed color picking in HIP
+- fixed 'ghost cursor' and 
+  zoomed-cursor problems
+- fixed the first line display 
+  in HIP and CIN
+- experimental mouse support 
+  (both Amiga and AtariST), 
+  doesn't really work
+- added new cursor shapes
+- README Atari-readable in .atr
+
+2004-12-18, v.0.1.0
+- added HIP module
+- project hosted on sourceforge.net
+- multiple changes to increase speed 
+  and stability
+- name changed from LEPIX to LePix :)
+- zoom mode: displays markers around 
+  the zoomed area
+- wider 'chosen-color' marker
+- added various cursor shapes, 
+  changed with 'C'
+- displays version number in menu
+- uses memory under ROM -> 
+  larger ZOOM :)
+- reset doesn't destroy image content
+- some minor changes and fixes
+
+2004-11-28, v.0.0.4
+- added CIN version
+- small bug fixes
+
+2004-11-27, v.0.0.3
+- removed extra fonts, 
+  use the standard ones
+- implemented screen clearing
+- implemented I/O
+- added MENU (TAB,ESC) with various 
+  operations
+- added cursor movement with keys
+
+2004-11-25, v.0.0.2
+Added zoom (!), MIC+INP
+
+2004-11-24, v.0.0.1
+Initial release, MIC+INP, very simple

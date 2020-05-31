@@ -1,0 +1,187 @@
+ XLPaint 2.5-2.6 MaX
+---------------------
+
+.Autorzy
+
+Orygina³ Stanley/USG (Stanislaw Skwiot), poprawki i dodatki TeBe/Madteam (Tomasz Biela).
+
+
+.Wstep
+
+XLPaint Max to przystosowany do rysowania w 16 kolorach-interlace program Stanleya z USG, który 
+oryginalnie pozwala na rysowanie w 7 kolorach-interlace. Dodatkowo Max pozwala na zmianê palety 
+kolorów co drug¹ liniê ekranu. Ekran na którym rysujemy ma rozmiar 160 pixli x 192 linie. Oczywiœcie
+poprzez odpowiednie ustawienie palety mo¿na rysowaæ w 4 kolorach bez interlacu lub 7 kolorach interlace jak
+w starej wersji XLPaint-a.
+
+Program wykorzystuje ca³¹ podstawow¹ pamiêci XE/XL (64kB) od adresu $1F00.
+
+Dane pierwszego obrazu znajduj¹ siê pod adresem $70b0, drugi obraz pod $90b0.
+
+Wersja 2.6 przeznaczona jest tylko dla CPU 65816, dla CPU 6502 najnowsz¹ wersj¹ jest 2.5
+
+
+.Mysz ST
+
+W czasie dzia³ania programu mo¿emy sterowaæ kursorem zawsze za pomoc¹ klawiszy, joysticka i myszy.
+Wyj¹tkiem jest Zoom, tutaj nie bêdzie dzia³a³a myszka.
+
+Mysz od Atari ST musi byæ pod³¹czone do portu 2 joysticka. Pod emulatorem 'Atari800Win Plus'
+w zak³adce Input->Mouse Device->wybieramy Atari ST mouse, w zak³adce Input->Mouse...->ustawiamy
+Emulated Device: Atari ST mouse, Mouse port: 2, Speed of emulated device: 16 lub wg uznania.
+Aktywacja myszki nast¹pi poprzez naciœniêcie klawisza F12.
+
+Procedurê odczytu myszki udostepni³ Pecus -> http://atariarea.nostalgia.pl/forum/viewtopic.php?t=291
+
+
+.Ekran
+
+Ekran podzielony jest na 4 czêœci. Paleta z kolorami + aktywny kolor, pasek menu + wspXY kursora,
+obszar do rysowania, menu dolne z wyborem rodzaju rysowania.
+
+Pasek menu: 'Info File fUnc Otch            X000 Y000'
+
+Du¿a litera z nazwy + Shift to aktywacja, np: Shift+I, Shift+F, Shift+U.
+Podobnie aktywuje sie inne funkcje.
+
+
+.Klawiszologia
+
+HELP		- help
+LOGO		- zoom ekranu, od pozycji XY kursora
+0-9		- kolory od 0-9
+Shift 1-6	- kolory od 10-15
+SPACE		- nastêpny kolor z palety
+Shift SPACE	- poprzedni kolor z palety
+RETURN		- odpowiednik przycisku Fire
+INSERT		- pobranie koloru spod kursora, nie dziala pod Zoomem, wystarczy wyjœæ z Zooma (LOGO)
+		  pobraæ kolor przez Insert i wróciæ (LOGO), pozycja XY kursora zostaje zachowana
+U		- undo, usuniêcie ostatniej zmiany na obrazie (ZOOM wy³¹cza UNDO)
+ESC		- przerwanie rysowania wybrana metoda
+Shift X		- zmiana kszta³tu kursora, 4 rozne ksztalty
+Shift .		- normalna wysokoœæ kursora
+Shift ,		- podwójna wysokoœæ kursora
+Shift I		- info o autorach INFO
+Shift F		- operacje we/wy FILE, odczyt - zapis
+Shift U		- wybór funkcji fUnc
+Shift TAB	- przejœcie do wyboru i modyfikacji palety kolorów
+Shift RETURN	- nowa paleta kolorów od pozycji Y kursora na ekranie, tylko w liniach parzystych
+Shift CLEAR	- czyœci ekran, bez potwierdzenia
+Shift DEL	- zamienia wskazany przez kursor kolor na nowy wybrany kolor na ca³ym obrazie
+Shift Ctrl Q	- wyjœcie do DOS-a, powrót jest niemo¿liwy
+
+P - Point	- stawia pojedyñczy pixel
+A - Spray	- spray
+K - Kspray	- kspray
+D - Draw	- swobodne rysowanie
+L - Line	- pojedyñcza linia
+I - Lines	- linie, krzywa ³amana
+Y - Rays	- promienie 's³oñca' :), odcinki wychodz¹ce z jednego wspólnego punktu
+T - Triangle	- trójkat
+R - Rectangle	- czworok¹t
+C - Circle	- okr¹g, max promien = 64, który jest wyliczany na podstawie pozycji X kursora
+F - Fill	- wype³nianie
+B - Box		- wype³niony czworok¹t
+S - Disc	- wype³niony okr¹g, ograniczenia takie jak dla Circle
+O - Object	- operacje na obiekcie cOpy, Move, Paste
+
+.fUnc 		- Shift+U funkcje
+
+H-flip		- obrót wzgledem osi Y
+V-flip		- obrót wzgledem osi X
+Centflip	- obrót wzgledem osi X i Y
+Rotate		- obrót o 90 stopni
+Lighting	- rozjaœnienie zaznaczonego fragmentu o 1 stopieñ
+Darkness	- œciemnienie zaznaczonego fragmentu o 1 stopieñ
+Negative	- negatyw koloru
+Blur		- blur
+Spill		- efekt sp³ywania farby
+Embos		- embos, efekt kamienia
+Antique		- antique
+eFfect3d	- efekt 3d, przesuniecie osi X o wektor (1,1)
+shadoW		- cieñ
+eXch-col	- 'przebarwienia'
+
+
+.Menu File (Shift+F)
+
+LOAD FILE pozwala na za³adowanie pliku akceptowanego przez program, czyli INP, MIC, XLP lub MAX.
+Program rozpoznaje format INP oraz MIC po rozmiarze pliku: INP-16004bajty, MIC-7684bajty. Inne
+pliki zostan¹ zignorowane.
+
+SAVE .XLP zapis skompresowanego obrazu-interlace dla 7 kolorów.
+SAVE .RAW zapis nieskompresowanego obrazu-interlace bez informacji o kolorach.
+SAVE .MIC zapis nieskompresowanego obrazu, bez interlace dla 4 kolorów.
+SAVE .MAX zapis skompresowanego obrazu-interlace z pe³n¹ informacj¹ o kolorach.
+
+XLP	- nag³ówek 4 bajtowy XLPC
+	- 4 bajtowa informacja o kolorach
+	- skompresowane dane
+
+RAW	- nag³ówek 4 bajtowy XLPB
+	- nieskompresowane dane obrazu - 7680+7680bajty
+
+MIC	- dane obrazu 7680 bajty
+	- informacja o kolorach - 4 bajty
+
+MAX	- nag³ówek 4 bajtowy XLPM
+	- 192 bajty kolor 0
+	- 192 bajty kolor 1
+	- 192 bajty kolor 2
+	- 192 bajty kolor 3
+	- 192 bajty jasnoœæ 0
+	- 192 bajty jasnoœæ 1
+	- 192 bajty jasnoœæ 2
+	- 192 bajty jasnoœæ 3
+	- 192 bajty tablica wskaŸnikow palety kolorów
+	- skompresowane dane
+
+
+.Historia
+2006/08/11 (65816)
+	- dodana mozliwoœæ cofniêcia UNDO
+	- wersja 2.6 przeznaczona dla CPU 65816, ogólnie szybsza od wersji dla 6502
+
+2006/08/10
+	- optymalizacja szybkoœci wykonywania procedur, np. PLOT, UNDO, PUTCHAR
+	- rezygnacja z mo¿liwoœci zmiany koloru t³a co linie, mo¿na tylko zmieniaæ kolor ca³ego t³a
+
+2006/08/08
+	- poprawione i zoptymalizawane programy przerwañ DLI, w poprzedniej wersji programu zmiany
+          kolorów trwa³y wiêcej ni¿ 1 linie obrazu co by³o widaæ najbardziej pod ZOOM-em
+
+2003/06/08
+	- mo¿na wczytaæ MIC-a bez palety kolorów, czyli 7680 bajtów
+	- zapisuje ju¿ poprawnie pliki MAX
+
+2003/02/03
+	- dodana opcja zmniejszenia numeru koloru Shift+SPACE
+	- zmiana wysokoœci kursora dla wszystkich 4 kszta³tów
+	- zmienianie kszta³tu kursora pod Zoomem
+	- naprawiony Shift+DEL, zamienia wskazany przez kursor kolor na nowo wybrany
+	- pobranie koloru spod kursora poprzez klawisz INSERT, nie dziala pod Zoomem
+	- naprawione dzialanie Object (cOpy, Move, Paste)
+	- zerowanie stanu przycisku Fire po wyjsciu z dolnego menu
+	- dodanie obslugi myszki Atari ST, w porcie 2 joysticka
+	- poprawione Circle i Disc, nadal jednak promieñ wyliczany jest wg wspX, a jego max dlugosc=64
+	- wyœwietlanie nazwy wybranej funkcji (Shift+U)
+	
+2002/08/12
+	- efekty typu emboss, blur dzia³a³y nadal z 7kol paleta, teraz z 16kol
+	- powsta³ dodatkowy program RIP2MAX, konwertuj¹cy format RIP na MAX
+
+2002/03/04
+	- parê zauwa¿onych bugów
+	- zmiana palety kolorów widoczna pod ZOOM'em
+	- przesów ekranu co 2 wiersze pod ZOOM'em
+
+2002/02/16
+	- buforowany przycisk FIRE
+
+2002/02/12
+	- poprawka dla Shift+, Shift- (z³y kod klawisza)
+
+2002/02/11
+	- zmiana palety kolorów w liniach parzystych
+	- prze³¹czanie górna/dolna po³owa ekranu przy wyborze palety kolorów (Shift+Tab)
+

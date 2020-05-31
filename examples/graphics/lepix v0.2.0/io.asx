@@ -1,0 +1,255 @@
+IO	.LOCAL
+
+ciov	equ $e456
+
+iocb	equ $340
+io_com	equ iocb+2
+io_sta	equ iocb+3
+io_adr	equ iocb+4
+io_len	equ iocb+8
+io_mod	equ iocb+10
+io_aux	equ iocb+11
+
+chn0	equ $00
+chn1	equ $10
+
+gett	equ 5
+putt	equ 9
+getb	equ 7
+putb	equ 11
+
+adr	dta a(0)
+len	dta a(0)
+
+* ****************************************************************************
+text_len	equ 120
+text
+:text_len	dta c' '
+get_text
+	ldx #chn0
+	mva #gett io_com,x
+	mwa #text io_adr,x
+	sta io_len+1,x
+;	mwa #text_len io_len+1,x
+	jsr ciov
+;	jsr error
+	rts
+
+* ****************************************************************************
+* Message printing, X-hi byte, Y-lo byte
+;msg_adr	dta a(0)
+;msg_len	dta a(0)
+msg
+	txa
+	ldx #chn0
+	sta io_adr,x
+	tya
+	sta io_adr+1,x
+;	mwa msg_len io_len,x
+	mwa #120 io_len,x
+;	mwa msg_adr io_adr,x
+	mva #IO.putt IO.io_com,x
+	jsr ciov
+	rts
+* ****************************************************************************
+fname_msg	dta c'Enter filename:',eol
+extension
+	dta c'.XXX',eol
+
+enter_filename
+	ldxy fname_msg
+	jsr msg
+	jsr get_text
+	jsr add_extension
+	jsr add_drive
+	rts
+
+add_extension
+	ldx #0
+_at1
+	lda text,x
+	cmp #'.'
+	beq _atex
+	cmp #eol
+	beq _at2
+	inx
+	bne _at1
+_atex
+	rts
+_at2
+	ldy #0
+at3	lda extension,y
+	sta text,x
+	inx
+	iny
+	cpy #5
+	bne at3
+	rts
+
+add_drive
+	lda #':'
+	cmp text+1
+	beq ad_ex
+	cmp text+2
+	beq ad_ex
+	lda #';'
+	cmp text+1
+	beq ad_ex
+	cmp text+2
+	beq ad_ex
+
+	ldx #text_len-3
+ad_mv	lda text,x
+	sta text+2,x
+	dex
+	bpl ad_mv
+
+	mva #'D' text
+	mva #':' text+1
+
+ad_ex	rts
+* ****************************************************************************
+
+* ****************************************************************************
+error_msg	dta $1d,c'error $00 !!!',$fd,$fd,eol
+
+do
+	ldx #chn1
+	mwa IO.adr io_adr,x
+	mwa IO.len io_len,x
+
+	lda io_adr+$10
+	ldxy gr0_mem+2
+	jsr write_hex
+
+	lda io_adr+$11
+	ldxy gr0_mem
+	jsr write_hex
+
+	lda io_len+$10
+	ldxy gr0_mem+8
+	jsr write_hex
+
+	lda io_len+$11
+	ldxy gr0_mem+6
+	jsr write_hex
+
+	ldx #chn1
+
+mcio
+	jsr ciov
+	bpl io_ok
+io_err
+	tya
+	ldxy error_msg+8
+	jsr phex
+	ldxy error_msg
+	jsr msg
+	jsr $f2f8
+	ldy #255
+	rts
+io_ok
+	ldy #1
+	rts
+
+open
+	pha
+	jsr close
+	pla
+	tax
+	tya
+	bmi op_ex
+	txa
+	ldx #chn1
+	sta io_mod,x
+	mva #3 io_com,x
+	mwa #text io_adr,x
+;this seem unnecessary according to drac030
+	mva #$80 io_aux,x
+	jsr mcio
+	bmi op_ex
+	lda io_mod,x
+	ora #3
+	sta io_com,x
+op_ex
+	rts
+
+close
+	ldx #chn1
+	lda #12
+	sta io_com,x
+	jsr mcio
+	rts
+
+* ****************************************************************************
+ow_msg
+	dta c'SAVING *.XXX'*,eol
+
+or_msg
+	dta c'LOADING *.XXX'*,eol
+
+file_open
+	pha
+
+	ldx zerHlp
+	ldy zerHlp
+	jsr enter_filename
+
+	ldxy text
+	jsr msg
+
+	pla
+	jmp open
+
+open_write
+	stx zerHlp
+	sty zerHlp+1
+	ldy #2
+owlp
+	lda (zerHlp),y
+	sta extension+1,y
+	ora #$80
+	sta ow_msg+9,y
+	dey
+	bpl owlp
+
+	ldxy ow_msg
+	jsr msg
+
+	lda #8
+	jmp file_open
+
+open_read
+	stx zerHlp
+	sty zerHlp+1
+	ldy #2
+orlp
+	lda (zerHlp),y
+	sta extension+1,y
+	ora #$80
+	sta or_msg+10,y
+	dey
+	bpl orlp
+
+	ldxy or_msg
+	jsr msg
+
+	lda #4
+	jmp file_open
+
+* ****************************************************************************
+confirm_msg dta c'Are you sure?',eol
+confirm
+	ldxy confirm_msg
+	jsr msg
+	jsr $f2f8
+	ldy #0
+	cmp #'Y'
+	bne *+3
+	iny
+	tya
+	rts
+* ****************************************************************************
+MOD_LEN	equ *-IO
+	.ENDL ; IO
+

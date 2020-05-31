@@ -1,0 +1,57 @@
+* JOY handling
+JOY		.LOCAL
+
+MAX_DELAY	equ 10
+
+len		dta 0
+delay	dta 0
+old		dta 0
+dynamic	dta 1
+value	dta 0
+
+update
+	lda TRIG0
+	eor #1
+	ora cursor_pressed
+	sta cursor_pressed
+
+	lda PORTA
+	and #$0f
+	and KB.joymask
+	sta value
+	tax
+	lda dynamic
+	beq _check
+	cpx old
+	beq _same
+	stx old
+	mva #MAX_DELAY len
+	mva #1 delay
+_same
+	dec delay
+	beq _goon
+_wait
+	rts
+_goon
+	ldy len
+	sty delay
+	dey
+	beq _check
+	sty len
+_check
+	lsr value
+	bcs *+5
+	jsr cursor_dec_Y
+	lsr value
+	bcs *+5
+	jsr cursor_inc_Y
+	lsr value
+	bcs *+5
+	jsr cursor_dec_X
+	lsr value
+	bcs *+5
+	jsr cursor_inc_X
+	rts
+
+MOD_LEN	equ *-JOY
+	.ENDL ; JOY

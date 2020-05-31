@@ -1,0 +1,127 @@
+MENU	.LOCAL
+
+init
+	mva #$ff MENUTABLE_END
+	rts
+
+enter
+	mwa #DL.gr0 $230
+	mwa #gr0_mem $58
+	mva >[gr0_mem+$400] $6a	;set ramtop, so CLS worx
+
+	mva #0 $2c6
+	sta $2c8
+	ldy #7
+_e1	sta $d000,y
+	dey
+	bpl _e1
+
+	mva #$0f $2c5
+	sta $d017
+
+	jsr print
+
+	jsr choose
+
+	rts
+
+chosen_msg	dta c' ',eol
+
+choose
+	jsr $f2f8
+	pha
+	sta chosen_msg
+	ldxy chosen_msg IO.msg_adr
+	jsr IO.msg
+	pla
+	tay
+	ldx #0
+_ch1
+	lda MENUTABLE,x
+	cmp #$ff
+	beq _chend
+	tya
+	cmp MENUTABLE,x
+	bne _chnext
+;found
+	lda MENUTABLE+1,x
+	sta _ch_jmp+1
+	lda MENUTABLE+2,x
+	sta _ch_jmp+2
+_ch_jmp jmp $e474 ;)
+_chnext
+	txa
+	clc
+	adc #5
+	tax
+	bne _ch1
+	jsr ERROR
+_chend
+	rts
+
+
+reset	JMP $E474
+
+; prints menu
+print	ldx #0
+_p0	stx _p_oldX+1
+	lda MENUTABLE,x
+	cmp #$FF
+	beq _pex
+	ldy MENUTABLE+4,x
+	lda MENUTABLE+3,x
+	tax
+	jsr IO.msg
+_p_oldX	lda #0
+	clc
+	adc #5
+	tax
+	bne _p0
+	jsr ERROR
+_pex	rts
+
+* ****************************************************************************
+* adds set of options to MENUTABLE, X/Y lo/hi address of the new table
+extend_menutable
+	stx zer0
+	sty zer0+1
+	ldx #0
+lk	lda MENUTABLE,x
+	cmp #$ff
+	beq fnd
+:5	inx
+	bne lk
+	jsr ERROR ;
+fnd	ldy #0
+cpy	lda (zer0),y+				; copy 1st byte
+	sta MENUTABLE,x+
+	cmp #$ff
+	beq ex
+	mva #4 zerHlp
+lp	lda (zer0),y
+	sta MENUTABLE,x
+	iny
+	inx
+	dec zerHlp
+	bne lp
+	beq cpy
+ex
+	rts
+
+* ****************************************************************************
+
+reset_msg	dta cls,esc,esc,c' - Exit',eol
+
+MENU_return	equ *
+
+	org MENU_MENUTABLE
+MENUTABLE
+	dta esc,a(reset),a(reset_msg)
+MENUTABLE_END
+	dta $ff
+
+	org MENU_return
+
+
+MOD_LEN	equ *-MENU
+	.ENDL ; MENU

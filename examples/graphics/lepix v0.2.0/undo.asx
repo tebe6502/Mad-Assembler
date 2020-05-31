@@ -1,0 +1,361 @@
+* UNDO module
+*
+* UNDO information is stored from buffer in the following format (per element)
+*
+* Single-pixel mode - 4 bytes
+* 1byte - X position (0..253)
+* 1byte - old color (we assume every mode fits in 1 byte, true for now)
+* 1byte - new color
+* 1byte - Y position (0..253)
+*
+* Multi-pixel mode - 4 * N + 4 bytes
+* 1byte - multi-pixel mode marker (MARK_MULTI)
+* 1byte - N - number of pixels
+* 4*N - pixels, each saved as in standard mode.
+* 1byte - N - number of pixels
+* 1byte - multi-pixel mode marker (MARK_MULTI)
+*
+* This organization allows easy deletion both from the beginning of the list
+* (when we run out of space) as well as from the end (when we do UNDO)
+* 
+* The correct list is ALWAYS finished with MARK_END, 
+* so we will not do REDO too far.
+UNDO	.LOCAL
+
+MARK_MULTI	equ 255
+MARK_END	equ 254
+
+buffer_beg	dta a(0)	; starts with :undo_buffer
+buffer_end	dta a(0)	; starts with :undo_buffer
+
+; saved data for save_pixel call
+pos_x	dta 0
+pos_y	dta 0
+old_c	dta 0
+new_c	dta 0
+hlp		dta 0
+cnt		dta 0
+length	dta 0
+ignore	dta 0	; if set, we're in the (un|re)doing phase
+
+init	
+	mwa #undo_buffer buffer_beg
+	mwa #undo_buffer buffer_end
+	mva #MARK_END undo_buffer
+	rts
+
+; make sure we have enough space
+reserve_memory	.LOCAL
+	lda cnt
+	cmp #1
+	beq single
+multi
+	asl @
+	asl @
+	clc
+	adc #4	; cnt * 4 + 4
+	bne do
+single
+	lda #4
+do
+	sta length
+	; TODO: here we make sure we have enough space and possibly free some
+	; memory
+	lda buffer_end+1
+	cmp >[undo_buffer+undo_length-1]
+	beq shift
+	; the last page is all free
+	rts
+	; we need to free the first page and shift the data
+shift
+	mwa buffer_beg zer
+	; keep on freeing segments
+_loo
+	ldy #0
+	ldx #4
+	lda (zer),y
+	cmp #MARK_MULTI
+	bne free_single
+	iny
+	lda (zer),y
+	asl @
+	asl @
+	clc
+	adc #4
+	tax
+free_single	
+	txa
+	clc
+	adc zer
+	sta zer
+	bcc _loo
+; now, all segments from the first page are freed, shift memory one page back
+	lda zer
+	sta buffer_beg
+	dec buffer_end+1
+	ldy #0
+	ldx #>[undo_length-1]
+	mva >[undo_buffer+$100] _src+2
+	mva >[undo_buffer] _dst+2
+_mv
+_src	lda undo_buffer+$100,y
+_dst	sta undo_buffer,y
+	dey
+	bne _mv
+	inc _src+2
+	inc _dst+2
+	dex
+	bne _mv
+	rts
+	.ENDL  ; reserve_memory
+	
+; Call before setting a pixel - creates a header for multi-pixel if needed
+put_pixel_prelude .LOCAL
+	lda ignore
+	bne ex
+	ldx cursor_h
+	lda #0
+_l	clc
+	adc cursor_w
+	dex
+	bne _l
+	sta cnt
+	
+	jsr reserve_memory
+	mwa buffer_end save_byte+1
+
+	lda cnt
+	cmp #1
+	beq done
+multi
+	lda #MARK_MULTI
+	jsr save_byte
+	lda cnt
+	jsr save_byte
+done
+ex	rts
+	.ENDL  ; put_pixel_prelude
+
+; Call after setting a pixel - creates a tail for multi-pixel if needed
+put_pixel_epilogue	.LOCAL
+	lda ignore
+	bne ex
+	lda cnt
+	cmp #1
+	beq done
+multi
+	lda cnt
+	jsr save_byte
+	lda #MARK_MULTI
+	jsr save_byte
+done
+	lda #MARK_END
+	jsr save_byte
+	lda buffer_end
+	clc
+	adc length
+	sta buffer_end
+	bcc *+5
+	inc buffer_end+1
+ex	rts
+	.ENDL  ; put_pixel_save
+
+; Save single-pixel information
+put_pixel_save	.LOCAL
+	lda ignore
+	bne ex
+	lda pos_x
+	jsr save_byte
+	lda old_c
+	jsr save_byte
+	lda new_c
+	jsr save_byte
+	lda pos_y
+	jsr save_byte
+ex	rts
+	.ENDL  ; put_pixel_save
+	
+save_byte	sta undo_buffer
+	inw save_byte+1
+	rts
+
+***********************************************************************
+* UNDO
+
+do_undo	.LOCAL
+	lda buffer_beg
+	cmp buffer_end
+	bne go
+	lda buffer_beg+1
+	cmp buffer_end+1
+	bne go
+; nothing to undo
+	rts
+
+go	
+	jsr save_old_values
+
+	mwa buffer_end zer
+	decZer zer
+	ldy #0
+	ldx #1
+	lda (zer),y
+	cmp #MARK_MULTI
+	bne single
+	decZer zer
+	lda (zer),y
+	tax
+	decZer zer
+single
+	stx hlp
+	stx cnt
+_lo
+	ldy #0
+	lda (zer),y
+	sta pos_y
+	sta cursor_y
+	decZer zer  ; skip pos y
+	decZer zer  ; skip new color
+	lda (zer),y
+	sta old_c
+	jsr MOD_set_color
+	decZer zer  ; skip old color
+	lda (zer),y
+	sta pos_x
+	sta cursor_x
+	
+	jsr update_pixel
+
+	decZer zer  ; skip pos x
+	dec hlp
+	bne _lo
+	
+	lda cnt
+	cmp #1
+	beq done
+; skip multi header
+	decZer zer
+	decZer zer
+done
+	incZer zer
+	mwa zer buffer_end
+
+	jsr restore_old_values
+	rts
+	.ENDL  ; do_undo
+	
+
+***********************************************************************
+* REDO
+
+do_redo	.LOCAL
+	mwa buffer_end zer
+	ldy #0
+	lda (zer),y
+	cmp #MARK_END
+	bne go
+; nothing to redo
+	rts
+
+go	
+	jsr save_old_values
+
+	ldy #0
+	ldx #1
+	lda (zer),y
+	cmp #MARK_MULTI
+	bne single
+	incZer zer
+	lda (zer),y
+	tax
+	incZer zer
+single
+	stx hlp
+	stx cnt
+_lo
+	ldy #0
+	lda (zer),y
+	sta pos_x
+	sta cursor_x
+	incZer zer  ; skip pos x
+	incZer zer  ; skip old color
+	lda (zer),y
+	sta new_c
+	jsr MOD_set_color
+	incZer zer  ; skip new color 
+	lda (zer),y
+	sta pos_y
+	sta cursor_y
+	
+	jsr update_pixel
+	
+	incZer zer  ; skip pos y
+	dec hlp
+	bne _lo
+	
+	lda cnt
+	cmp #1
+	beq done
+; skip multi header
+	incZer zer
+	incZer zer
+done
+	mwa zer buffer_end
+
+	jsr restore_old_values
+	rts
+	.ENDL  ; do_redo
+
+***********************************************************************
+update_pixel
+	jsr MOD_put_pixel
+
+	lda ZOOM.state
+	beq dont_update_zoom
+	lda ZOOM.zoom_y
+	clc
+	adc MOD_zoom_h
+	cmp cursor_Y
+	bcc dont_update_zoom
+	beq dont_update_zoom
+	lda cursor_Y
+	cmp zoom.zoom_y
+	bcc dont_update_zoom
+	jsr zoom.zul_add
+dont_update_zoom	
+	rts
+
+
+
+save_old_values
+	mva cursor_x cx
+	mva cursor_y cy
+	mva cursor_h ch
+	mva cursor_w cw
+	jsr MOD_get_color
+	sta col
+	
+	mva #1 ignore	
+	mva #1 cursor_h
+	mva #1 cursor_w
+	rts
+	
+restore_old_values
+	mva #0 ignore
+
+	mva cx cursor_x
+	mva cy cursor_y
+	mva ch cursor_h
+	mva cw cursor_w
+	lda col
+	jsr MOD_set_color
+	rts
+
+cx	dta 0
+cy	dta 0
+ch	dta 0
+cw	dta 0
+col	dta 0
+
+UNDO_LEN	equ *-UNDO
+	.ENDL	; UNDO

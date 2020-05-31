@@ -1,0 +1,121 @@
+* ****************************************************************************
+* varia
+* ****************************************************************************
+
+eol		equ 155
+eof		equ 136
+esc		equ $1b
+;cls		equ $1d
+cls		equ $7d
+
+* ****************************************************************************
+* MEMORY MAP
+* ****************************************************************************
+STICK0	equ $278
+STICK1	equ $279
+STICK2	equ $27A
+STICK3	equ $27B
+PTRIG0	equ $27C
+PTRIG1	equ $27D
+PTRIG2	equ $27E
+PTRIG3	equ $27F
+PTRIG4	equ $280
+PTRIG5	equ $281
+PTRIG6	equ $282
+PTRIG7	equ $283
+STRIG0	equ $284
+STRIG1	equ $285
+STRIG2	equ $286
+STRIG3	equ $287
+CHBAS	equ $02f4
+
+HPOSP0	equ $d000 ;R
+HPOSP1	equ $d001 ;R
+HPOSP2	equ $d002 ;R
+HPOSP3	equ $d003 ;R
+HPOSM0	equ $d004 ;R
+HPOSM1	equ $d005 ;R
+HPOSM2	equ $d006 ;R
+HPOSM3	equ $d007 ;R
+
+SIZEP0	equ $d008 ;W
+SIZEP1	equ $d009 ;W
+SIZEP2	equ $d00a ;W
+SIZEP3	equ $d00b ;W
+SIZEM	equ $d00c ;W
+
+TRIG0	equ $d010 ;R
+TRIG1	equ $d011 ;R
+TRIG2	equ $d012 ;R
+TRIG3	equ $d013 ;R
+PRIOR	equ $d01b ;W
+
+KBCODE	equ $d209 ;R
+SKCTL	equ $d20f ;W
+SKSTAT	equ $d20f ;R
+
+PORTA	equ $d300
+PORTB	equ $d301
+
+DMACTL	equ $d400
+CHACTL	equ $d401
+DLIST	equ $d402
+DLISTL	equ $d402
+DLISTH	equ $d403
+HSCROL	equ $d404
+VSCROL	equ $d405
+CHBASE	equ $d409
+
+NMIVEC		equ $FFFA
+RESETVEC	equ $FFFC
+IRQVEC		equ $FFFE
+
+* ****************************************************************************
+* KEYCODES
+* ****************************************************************************
+
+KEYCODE_A	equ 63
+KEYCODE_B	equ 21
+KEYCODE_C	equ 18
+KEYCODE_D	equ 58
+KEYCODE_E	equ 42
+KEYCODE_F	equ 56
+KEYCODE_G	equ 61
+KEYCODE_H	equ 57
+KEYCODE_I	equ 13
+KEYCODE_J	equ 1
+KEYCODE_K	equ 5
+KEYCODE_L	equ 0
+KEYCODE_M	equ 37
+KEYCODE_N	equ 35
+KEYCODE_O	equ 8
+KEYCODE_P	equ 10
+KEYCODE_Q	equ 47
+KEYCODE_R	equ 40
+KEYCODE_S	equ 62
+KEYCODE_T	equ 45
+KEYCODE_U	equ 11
+KEYCODE_V	equ 16
+KEYCODE_W	equ 46
+KEYCODE_X	equ 22
+KEYCODE_Y	equ 43
+KEYCODE_Z	equ 23
+
+KEYCODE_0	equ 50
+KEYCODE_1	equ 31
+KEYCODE_2	equ 30
+KEYCODE_3	equ 26
+KEYCODE_4	equ 24
+KEYCODE_5	equ 29
+KEYCODE_6	equ 27
+KEYCODE_7	equ 51
+KEYCODE_8	equ 53
+KEYCODE_9	equ 48
+
+KEYCODE_ESC	equ 28
+KEYCODE_TAB	equ 44
+
+KEYCODE_LEFT	equ 6
+KEYCODE_RIGHT	equ 7
+KEYCODE_UP		equ 14
+KEYCODE_DOWN	equ 15
