@@ -1,0 +1,259 @@
+
+/*************************************************************************************************
+  @CALL.MAC - zbior makr realizujacych przekazywanie parametrow do procedur
+             (zadeklarowanych dyrektywa .PROC) przy uzyciu stosu programowego @STACK_ADDRESS
+
+  @CALL     - glowne makro, ktore wywoluje makra @PUSH, @PUSHN, @PUSHA w zaleznosci od trybu adresowania
+
+  @PUSH     - tryb adresowania absolutny, na stos programowy odkladane sa wartosci spod wskazanego adresu
+  @PUSHN    - tryb adresowania natychmiastowy, na stos programowy odkladane sa wartosci
+  @PUSHA    - tryb adresowania natychmiastowy akumulatora, na stos programowy odkladana jest wartosc akumulatora
+
+  Dopuszczalne typy trybow adresowania przekazywanych do makra @CALL:
+
+  ' '   absolutny
+  '#'   natychmiastowy
+  '@'   natychmiastowy akumulatora
+
+  Dopuszczalne typy parametrow przekazywanych do makra @CALL:
+
+  'B'   BYTE
+  'W'   WORD
+  'L'   LONG
+  'D'   DWORD
+
+  Kody operacji przekazywane do makr:
+
+  'I'   inicjalizacja
+  'J'   inicjalizacja, inna wersja
+  'X'   zakonczenie makra
+
+  ostatnie zmiany: 25.10.2005
+
+*************************************************************************************************/
+
+
+/*************************************************************************************************
+  @PUSHA
+  
+  makro realizuje przekazania parametru za pomoca akumulatora '@' (BYTE)
+
+  zawartosc akumulatora zapisywana jest na programowym stosie
+  
+  nastepnie zwiekszana jest definicja lokalna ?@STACK_OFFSET, ktora zlicza bajty przekazane na stos
+  
+*************************************************************************************************/
+
+.macro @PUSHA
+
+ sta @stack_address-?@stack_offset,x
+
+ .def ?@stack_offset = ?@stack_offset - 1
+
+.endm
+
+
+/*************************************************************************************************
+  @PUSHN
+  
+  makro realizuje przekazanie wartosci (#) parametrow na stos programowy,
+  ktore moga byc typu 'B'yte, 'W'ord, 'L'ong, 'D'word
+  
+  definicja lokalna ?@STACK_OFFSET zwiekszana jest o liczbe przekazanych na stos bajtow  
+  
+*************************************************************************************************/
+
+.macro @PUSHN
+
+ ift :1='B'
+  lda #:2
+  sta @stack_address-?@stack_offset,x
+
+  .def ?@stack_offset = ?@stack_offset - 1
+
+ eli :1='W' 
+  lda <:2
+  sta @stack_address-?@stack_offset,x
+  lda >:2
+  sta @stack_address-?@stack_offset+1,x
+
+  .def ?@stack_offset = ?@stack_offset - 2
+
+ eli :1='L'
+  ert '.LONG not supported'
+
+ els
+  ert '.DWORD not supported'
+
+ eif
+
+.endm
+
+
+/*************************************************************************************************
+  @PUSH 'I'
+
+  przepisujemy :2 bajtow od adresu @PROC_VARS_ADR na stos programowych od adresu @STACK_ADDRESS-:2
+
+  zamiast rozpisywac kod petli jak w @CALL.MAC poslugujemy sie tutaj procedura @PUSH_PROC.ASM
+  z katalogu ../EXAMPLES/PROCEDURES/@PUSH_PROC.ASM
+
+  Example:
+  	  @push 'I',4
+  	  @push 'I',2
+
+**************************************************************************************************
+  @PUSH 'B' , @PUSH 'W' , @PUSH 'L' , @PUSH 'D'
+
+  makro realizuje przekazanie wartosci parametru spod wskazanego adresu na stos programowy,
+  przekazywane parametry sa typu 'B'yte, 'W'ord, 'L'ong, 'D'word
+
+  zmienna lokalna ?@STACK_OFFSET zwiekszana jest o liczbe przekazanych na stos bajtow
+
+  zawartosc akumulatora jest zachowana dzieki sprzetowemu stosowi
+
+  Example:
+          @push 'B',par1
+          @push 'W',temp
+
+*************************************************************************************************/
+
+.macro @PUSH
+
+// @PUSH 'I'
+ ift :1='I'
+  ldx #:2
+  jsr @push_proc
+
+  .exit
+ eif
+
+
+// @PUSH 'B' , @PUSH 'W' , @PUSH 'L' , @PUSH 'D'
+ ift :1='B'
+  lda :2
+  sta @stack_address-?@stack_offset,x
+
+  .def ?@stack_offset = ?@stack_offset - 1
+
+ eli :1='W'
+  lda :2
+  sta @stack_address-?@stack_offset,x
+  lda :2+1
+  sta @stack_address-?@stack_offset+1,x
+
+  .def ?@stack_offset = ?@stack_offset - 2
+
+ eli :1='L'
+  lda :2
+  sta @stack_address-?@stack_offset,x
+  lda :2+1
+  sta @stack_address-?@stack_offset+1,x
+  lda :2+2
+  sta @stack_address-?@stack_offset+2,x
+
+  .def ?@stack_offset = ?@stack_offset - 3
+
+ els
+  lda :2
+  sta @stack_address-?@stack_offset,x
+  lda :2+1
+  sta @stack_address-?@stack_offset+1,x
+  lda :2+2
+  sta @stack_address-?@stack_offset+2,x
+  lda :2+3
+  sta @stack_address-?@stack_offset+3,x
+
+  .def ?@stack_offset = ?@stack_offset - 4
+
+ eif
+
+.endm
+
+
+/*************************************************************************************************
+  @CALL 'I' - Call initialization, inicjalizacja dla makra @CALL
+
+  zawartosc akumulatora zostaje zachowana na stosie sprzetowym
+
+  zwiekszamy wskaznik stosu programowego @STACK_POINTER o liczbe bajtow zajmowana przez parametry procedury
+
+  Example:
+  	  @call 'I',2      -> inicjalizacja makra @CALL 2-oma bajtami
+  	  @call 'I',5      -> inicjalizacja makra @CALL 5-oma bajtami
+
+**************************************************************************************************
+  @CALL 'X' - zakonczenie makra @CALL, wywolujemy procedure o adresie podanym w parametrze :2
+
+  Example:
+          @call 'X',LHEX   -> zakonczenie makra @CALL rozkazem JSR LHEX
+          @call 'X',NAME   -> zakonczenie makra @CALL rozkazem JSR NAME
+
+**************************************************************************************************
+  @CALL - Call procedure
+
+  Makro realizuje przekazanie parametrow na stos programowy przy uzyciu makr @PUSH, @PUSHA, @PUSHN
+
+  Tylko pierwszy parametr moze byc przekazany przez akumulator '@'
+
+  Example:
+          @call '#','B',22  -> wartosc typu 'B'yte = 22
+          @call '@','B',0   -> wartosc przekazywana przez akumulator typu 'B'yte = 0
+          @call ' ','B',560 -> wartosc odczytana spod adresu 560 typu 'B'yte
+
+  Parameters:
+             :1 - tryb adresowania
+             :2 - typ danych
+             :3 - wartosc liczbowa lub adres
+
+*************************************************************************************************/
+
+.macro @CALL
+
+ ift :1='I'
+
+// @CALL 'I'
+   ift :2=1
+    inc @stack_pointer
+
+   eli :2=2
+    inc @stack_pointer
+    inc @stack_pointer
+
+   els
+    pha
+    lda @stack_pointer
+    clc
+    adc #:2
+    sta @stack_pointer
+    pla
+
+   eif
+
+   ldx @stack_pointer
+   .def ?@stack_offset = :2
+
+ eli :1='X'
+
+// @CALL 'X'
+   jsr :2
+
+ eif
+
+
+ ift :1>>24<>$FF .and :2>>24<>$FF .and :3>>24<>$FF
+
+  ift :1='@'
+   @PUSHA
+
+  eli :1='#'
+   @PUSHN :2,:3
+
+  els
+   @PUSH :2,:3
+
+  eif
+
+ eif
+
+.endm

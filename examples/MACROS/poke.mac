@@ -1,0 +1,34 @@
+/*
+  POKE:
+  POKE address,value
+
+  Examples:
+            poke 712,12
+*/
+
+.macro poke
+
+ lda #:2
+ sta :1
+
+.endm
+
+
+/*
+  DPOKE:
+  POKE address,<value
+  POKE address+1,>value
+
+  Examples:
+            dpoke $a000,1024
+*/
+
+.macro dpoke
+
+ lda <:2
+ sta :1
+
+ lda >:2
+ sta :1+1
+
+.endm

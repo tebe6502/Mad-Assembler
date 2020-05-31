@@ -1,0 +1,72 @@
+// last changes: 13.01.2008
+
+ opt l-
+
+/*************************************************************************
+  @BANK_JMP
+
+  Makro realizujace skok do obszaru innego banku pamieci dodatkowej
+
+*************************************************************************/
+
+.macro @BANK_JMP
+
+ phr
+
+ ldx @TAB_MEM_BANKS+(=:1)
+ lda <:1
+ ldy >:1
+ jmp @BANK_JMP_PROC
+
+.endm
+
+
+.macro @BANK_JSR
+
+ pha
+ lda $d301
+ sta ?portb
+ pla
+
+ jsr ?skip
+
+ pha
+ lda ?portb
+ sta $d301
+ pla
+
+ jmp ?cont
+
+?portb	brk
+?skip	@BANK_JMP :1
+
+?cont
+
+.endm
+
+
+/*************************************************************************
+  @BANK_JMP_PROC - procedura pomocnicza dla makra @BANK_JMP
+
+  ta procedura zawsze powinna znajdowac sie poza obszarem <$4000..$7FFF>
+
+*************************************************************************/
+ opt l+
+
+.proc @BANK_JMP_PROC
+
+ ift (*>$3FFF) .and (*<$8000)
+  ert 'Address @BANK_JMP_PROC inside <$4000..$7FFF> area'
+ eif
+
+ sta _jmp+1
+ sty _jmp+2
+
+ stx $d301
+
+ plr
+
+_jmp jmp $ffff
+
+.endp
+

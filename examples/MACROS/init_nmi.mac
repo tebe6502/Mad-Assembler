@@ -1,0 +1,37 @@
+/* 
+  Name: INIT_NMI
+
+  Info:
+        INIT_NMI $14 , address_new_nmi_routine , init_nmi_value
+        
+        init_nmi_value = ($40,$c0)
+*/
+.macro init_nmi
+
+ .if .def wait
+ 
+  jsr wait
+  
+ .else
+
+   lda:cmp:req :1
+ 
+ .endif
+ 
+ sei
+ lda #0
+ sta $d40e
+ sta $d400
+ 
+ lda #$fe
+ sta $d301
+ 
+ lda <:2
+ sta $fffa
+ lda >:2
+ sta $fffa+1
+ 
+ lda #:3
+ sta $d40e
+
+.endm

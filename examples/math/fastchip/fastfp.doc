@@ -1,0 +1,82 @@
+
+   FLOATING POINT ROM ENTRY POINTS
+
+Entry  Addr Function
+Point
+AFP    D800 Extract a floating point
+            number from an ASCII str.
+            (FR0<--[INBUFF+CIX])
+FASC   D8E6 Convert a floating point
+            number to an ASCII string
+            returns pointer in INBUFF
+IFP    D9AA Convert a 2-byte integer
+            (FR0) to a floating point
+            number (in FR0)
+FPI    D9D2 Convert a floating point
+            number to an integer
+ZFR0   DA44 Zero the floating point
+            register (FR0)
+ZF1    DA46 Zero 6 zero page bytes
+            pointed to by "X"
+ZPG0   DA48 Zero "Y" bytes pointed to
+            by "X"
+INITBF DA51 Store the address of
+            LBUFF in INBUFF
+DBLZ2  DA5A Shift Z2 left one bit
+            (16-bit High/Low format)
+FSUB   DA60 Subtract FR1 from FR0
+FADD   DA66 Add FR1 to FR0
+            (result in FR0)
+FMUL   DADB Multiply FR0 by FR1
+            (result in FR0)
+FDIV   DB28 Divide FR0 by FR1
+            (result in FR0)
+SKBLK  DBA1 Skip 0 or more blanks
+            pointed to by
+            [INBUFF,CIX], result
+            modifies CIX
+GCHAR  DBAF Read a byte, convert it
+            as an ASCII decimal
+            number, set CY if it is
+            not
+SH0L4  DBE4 Shift the contents of FR0
+            left 4 bits
+NORMAL DC00 Normalize the contents of
+            FR0
+PLYEVL DD40 Evaluate the polynomial
+            [Y.X](FR0), with A terms
+FLD0R  DD89 Load FR0 from [Y.X]
+FLD0P  DD8D Load FR0 from [FLPTR]
+FLD1R  DD98 Load FR1 from [Y.X]
+FLD1P  DD9C Load FR1 from [FLPTR]
+FST0R  DDA7 Store FR0 into 6 bytes
+            pointed to by [Y.X]
+FST0P  DDAB Store FR0 into [FLPTR]
+FMOVE  DDB6 Copy FR0 over into FR1
+EXP    DDC0 FR0 <-- exponential
+            function of FR0
+EXP10  DDCC FR0 <-- 10^FR0
+            (exponent of 10)
+REDARG DE95 FR0 <--
+            (FR0-[Y.X])/(FR0+[Y.X])
+LOG    DECD FR0 <-- natural log of
+            FR0
+LOG10  DED1 FR0 <-- base 10 log of
+            FR0
+HALF   DF6C Constant = 0.5000000000
+PLYSIN DFAE 11 Constant table for SIN
+            polynomial
+NONE   DFEA Constant = 0.9999999999
+SIN45  DFF0 Constant = sin(45 deg.)
+
+Entry points not in the ATARI "D" ROM
+
+RSTARG DD22 Copy PLYARG over into FR1
+LDARG  DD2D Copy PLYARG over into FR0
+PLYONE DD38 Same as PLYEVL except
+            implicit 1.0 coefficient
+LDPLY  DD62 Copy [FPTR2] into FR1,
+            add 6 to FPTR2
+SAVARG DD78 Store X into FPTR2, Y
+            into FPTR2+1, copy FR0
+            over into PLYARG

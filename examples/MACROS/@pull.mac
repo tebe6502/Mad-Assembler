@@ -1,0 +1,90 @@
+
+/*************************************************************************************************
+  @PULL 'I'
+
+  inicjalizacja makra @PULL, parametrem :1 jest liczba bajtow do zdjecia ze stosu
+
+  do rejestru X ladujemy aktualna wartosc wskaznika stosu programowego @STACK_POINTER
+
+  parametr makra zapisywany jest w definicji tymczasowej ?@STACK_OFFSET
+
+  zerowana jest wartosc definicji tymczasowej ?@PROC_VARS_OFS, ktora bedzie pomocna przy
+  odkladaniu parametrow pod adresem @PROC_VARS_ADR
+
+  Example:
+          @PULL 'I',3  ->  ldx @stack_pointer
+                           ?@stack_offset = 3
+                           ?@proc_vars_ofs = 0
+
+**************************************************************************************************
+  @PULL 'J'
+
+  druga wersja inicjalizacji makra @PULL, ta sama zasada dzialani co @PULL 'I'
+
+  dodatkowo na samym poczatku zapamietywane sa na stosie sprzetowym rejestry A i X
+
+  to makro bedzie uruchamiane przy powrocie z procedury wywolanej z ciala innej procedury
+
+  Example:
+          @PULL 'J',2  ->  pha
+                           txa
+                           pha
+                           ldx @stack_pointer
+                           ?@stack_offset = 2
+                           ?@proc_vars_ofs = 0
+
+*************************************************************************************************/
+
+
+.macro @PULL_MOVE
+
+ ldx @stack_pointer
+
+ ift :1=1
+  lda @stack_address-1,x
+  sta @proc_vars_adr
+
+ els
+  ldy #:1-1
+  lp:
+  lda @stack_address-1,x
+  sta @proc_vars_adr,y
+
+  dex
+  dey
+  bpl lp
+
+ eif
+
+.endm
+
+
+.macro @PULL
+
+// @PULL 'I'
+ ift :1='I'
+  pha
+
+  @PULL_MOVE :2
+
+  pla
+
+// @PULL 'J'
+ eli :1='J'
+  pha
+  txa
+  pha
+  tya
+  pha
+
+  @PULL_MOVE :2
+
+  pla
+  tay
+  pla
+  tax
+  pla 
+
+ eif
+
+.endm
