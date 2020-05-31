@@ -1,0 +1,215 @@
+Atari 7800 Video System
+by Daniel Boris 12/30/98
+
+Disclaimer: The material in this document was derived from the official
+Atari Maria programmers guide, as well as my experience while working on
+the Atari 7800 driver for MESS. I have made every attempt to be as accurate
+as possible, but there are very likely errors in this document. Use this
+information at your own risk.
+
+
+Introduction
+
+The 7800 uses a very unique system for generating the display. Each scanline
+on the display has an associated display list that describes how to create
+that scanline. (Note: Don't confuse this with the Atari 8-bit display list
+since they work in very different ways). Each entry in a display list
+describes a single object on that scanline. The objects are drawn into a
+temporary scanline buffer one after another so that later object can be
+drawn over earlier ones. The 7800 has 2 scanline buffers, while one is
+being drawn to the screen the other is being loaded from the display list.
+At the end of each scanline the buffers are swapped. The only limitation
+on the number of objects on each line is the amount of time it takes to
+build the line.
+
+
+The Display List List (no that's not a typo, that's what it's called)
+
+The top level structure for the video display is the Display List List (DLL).
+Each entry in the DLL defines a block of scanlines and points to the DL that
+should be used for that block. The system steps through each of the DLL
+entries until every scanline on the screen has been filled, at which point
+it starts over. The start of the DLL is pointed to by Maria registers
+$2C (High byte) and $30 (Low byte). Each DLL entry has this format:
+
+Byte 0 : Bit 7 - DLI
+         Bit 6 - Holey DMA 16
+         Bit 5 - Holey DMA 8
+         Bit 4 - Unused
+         Bit 0..3 - Offset
+Byte 1:  Bit 0..7 - DL address high
+Byte 2:  Bit 0..7 - DL address low
+
+DLI  (Display list interrupt): When set to 1 an NMI interrupt to the processor
+will occur at the start of the current region.
+
+Holey DMA 8 - 1 = DMA interprets odd 2K blocks (A11 = 1) as zeros.
+
+Holey DMA 16 - 1 = DMA interprets odd 4K blocks (A12 = 1) as zeros.
+
+Offset: This determines how many scanlines will be drawn using the specified
+display list. After each scanline is drawn offset is decremented until it
+reached -1 at which point the next DLL entry is read
+
+DL address: This is the pointer to the DL that is used to draw these scanlines
+
+
+Display List (DL)
+
+A Display List is used to describe how a scanline should be drawn. It consists
+of a series of entries, one for each object on the line. Each entry is read
+and data is moved from memory to the appropriate location on the scanline. As
+the scanline is drawn earlier objects may be over drawn by later ones thus
+giving certain object priority over others. There are two formats for the
+display list entry:
+
+Normal:
+byte 0: Address Low
+byte 1: bits 5..7  Palette
+        bits 0..4  Width
+byte 2: Address High
+byte 3: Horizontal Position
+
+Extended:
+byte 0: Address Low
+byte 1: bit 7    Write mode
+        bit 6    1
+        bit 5    Indirect mode
+        bit 0..4 0
+byte 2: Address High
+byte 3: bits 5..7  Palette
+        bits 0..4  Width
+byte 4: Horizontal Position
+
+Address high/low: This is the address where the data that is to me copied to
+the scanline is stored.
+
+Horizontal Position: This is the horizontal position on the scanline where
+the data should start being copied to.
+
+Width: This indicates how many bytes of data will be transferred to the
+scanline. This is a 2's complement value in the range from 1 - 31.
+
+Palette: This determines which of the 8 palettes will be used for drawing
+the current object.
+
+Write mode: This is used along with the read mode in the maria control register
+to determine how data is drawn to the screen. 
+
+Indirect mode: 1 = Enable indirect mode. Indirect mode is used for character type graphics and
+adds a layer of indirection to the data transfer. 
+
+In direct mode the address of the data is calculated like this:
+
+graph_addr - graphics data address from the DL entry
+x - counts from 0 to width
+offset - current offset from the DLL de-incremented each scanline
+chbase - character base from MARIA register
+
+data_address = graph_addr + x + (offset << 8)
+
+for indirect mode:
+
+c = data at (graph_addr+x)	/* This is the character number */
+data_address = (chbase << 8) + c + (offset << 8)
+
+
+Graphics modes
+
+The graphics modes are as follows:
+
+Mode            WM      RM1     RM0
+160A (160x2)    0       0       0
+160B (160x4)    1       0       0
+320A (320x1)    0       1       1
+320B (320x2)    1       1       0
+320C (320x2)    1       1       1
+320D (320x1)    0       1       0
+
+160A (160x2) Mode
+
+This mode has 2 bits per pixel and a maximum width of 160 pixels. The color
+of each pixel (left to right) is determined as follows:
+
+pixel 0 - bits 7..6
+pixel 1 - bits 5..4
+pixel 2 - bits 3..2
+pixel 3 - bits 1..0
+
+160B (160x4) Mode
+
+This mode has 4 bits per pixel and a maximum width of 160 pixels. The color
+of each pixel (left to right) is determined as follows:
+
+pixel 0 - bits 3,2,7,6
+pixel 1 - bits 1,0,5,4
+
+320A (320x1) Mode
+
+This mode has one bit per pixel and a maximum width of 320 pixels. The color
+of each pixel (left to right) is determined as follows:
+
+pixel 0 - bit 7
+pixel 1 - bit 6
+pixel 2 - bit 5
+pixel 3 - bit 4
+pixel 4 - bit 3
+pixel 5 - bit 2
+pixel 6 - bit 1
+pixel 7 - bit 0
+
+320B (320x2) Mode
+
+This mode has two bits per pixel and a maximum width of 320 pixels. The color
+of each pixel (left to right) is determined as follows:
+
+pixel 0 - bits 7,3
+pixel 1 - bits 6,2
+pixel 2 - bits 5,1
+pixel 3 - bits 4,0
+
+320C (320x2) Mode
+
+This mode is a little different then the others. Each byte can specify 4 pixels.
+The remaining bits are used to determine which palette the color for the pixel
+will come from. If a pixel is on it is color 2, if it off it is either transparent
+or the background color. The pixels are specified by bits 7..4:
+
+pixel 0 = bit 7
+pixel 1 = bit 6
+pixel 2 = bit 5
+pixel 3 = bit 4
+
+The palette for pixels 0 and 1 is specified by bits 3..2 and bit 2 of the
+palette select from the DL. So the palette number is like this:
+
+[P2][bit3][bit2]
+
+thus selecting one of the 8 palettes.
+
+The palette for pixels 2 and 3 is specified by bits 1..0 and bit 2 of the
+palette select from the DL. So the palette number is like this:
+
+[P2][bit1][bit0]
+
+thus selecting one of the 8 palettes.
+
+320D (320x1) Mode
+
+This is probably the most unusual mode. Each byte specifies 8 pixels and each
+pixel can be 1 of four colors. If 'P' are the palette bits from the DL and
+'D' are the data bits from the graphics data, the data is formatted as follows:
+
+palette     P2  P2  P2  P2  P2  P2  P2  P2
+
+color       DP  DP  DP  DP  DP  DP  DP  DP
+            71  60  51  40  31  20  11  00
+
+pixel       0   1   2   3   4   5   6   7
+
+So for example, the color for pixel 0 (the left most pixel) is determined by
+combining bit 7 of the graphics data, and but 1 from the palette select.
+
+
+
+
