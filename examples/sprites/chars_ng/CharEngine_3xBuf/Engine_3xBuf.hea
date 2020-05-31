@@ -1,0 +1,30 @@
+
+PlayfieldWidth	= 40+8
+PlayfieldHeight	= 24
+
+	ert PlayfieldWidth-8>40||PlayfieldHeight>24
+
+PlayfieldB0	= $c000		; !!! od pocz¹tku strony pamiêci
+PlayfieldB1	= $c800		; !!! od pocz¹tku strony pamiêci
+
+PlayfieldBuf	= $d800		; !!! od pocz¹tku strony pamiêci
+
+	ert PlayfieldBuf<PlayfieldB0||PlayfieldBuf<PlayfieldB1
+
+Charset0	= $e000
+Charset1	= $e400
+Charset2	= $e800
+Charset3	= $ec00
+
+Charset4	= $f000
+Charset5	= $f400	
+Charset6	= $f800
+Charset7	= $fc00		; znak $7f nie jest u¿ywany dziêki czemu obszar $fff8..$ffff jest bezpieczny
+
+Charset8	= $1000
+Charset9	= $1400
+Charset10	= $1800
+Charset11	= $1c00
+
+Program		= $2000
+

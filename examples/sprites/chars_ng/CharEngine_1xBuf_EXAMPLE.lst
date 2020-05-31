@@ -1,0 +1,533 @@
+mads 2.0.9 build 24 (12 May 19)
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+     1
+     2 				//---------------------------------------------------------------------
+     3 				// CHAR ENGINE 1x BUFFER EXAMPLE
+     4 				//---------------------------------------------------------------------
+     5
+     6 = 0000				pmg = $0
+     7
+     8 					icl 'atari.hea'
+Source: d:\!atari\macro\atari.hea
+   290 					opt l+
+     9
+    10 					icl 'CharEngine_1xBuf\Engine_1xBuf.hea'
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf\Engine_1xBuf.hea
+     1
+     2 = 0030			PlayfieldWidth	= 40+8
+     3 = 0018			PlayfieldHeight	= 24
+     4
+     5 					ert PlayfieldWidth-8>40||PlayfieldHeight>24
+     6
+     7 = D800			PlayfieldBuf	= $d800		; !!! od pocz¹tku strony pamiêci
+     8
+     9 = C000			Charset0	= $c000
+    10 = C400			Charset1	= $c400
+    11 = C800			Charset2	= $c800
+    12 = CC00			Charset3	= $cc00
+    13
+    14 = E000			Charset4	= $e000
+    15 = E400			Charset5	= $e400	
+    16 = E800			Charset6	= $e800
+    17 = EC00			Charset7	= $ec00		; znak $7f nie jest u¿ywany dziêki czemu obszar $fff8..$ffff jest bezpieczny
+    18
+    19 = F000			Charset8	= $f000
+    20 = F400			Charset9	= $f400
+    21 = F800			Charset10	= $f800
+    22 = FC00			Charset11	= $fc00
+    11
+    12 				//---------------------------------------------------------------------
+    13
+    14 					org $80
+    15
+    16 = 0080			zp	.ds 36
+    17 = 00A4			regA	.ds 1
+    18 = 00A5			regX	.ds 1
+    19 = 00A6			regY	.ds 1
+    20
+    21 					.print 'ZP: $0080..',*-1
+    21 				ZP: $0080..$00A6
+    22
+    23 				//---------------------------------------------------------------------
+    24
+    25 					org $1000
+    26
+    27 				.macro	@DLIST
+    28 					dta d'pp',$70+$80
+    29 					dta $44+$80,a(:1)
+    30 					:PlayfieldHeight-2 dta $44+$80,a(:1+#*[PlayfieldWidth]+PlayfieldWidth)
+    31 					dta $44,a(:1+[PlayfieldHeight-1]*[PlayfieldWidth])
+    32 					dta $41,a(:2)
+    33 				.endm
+    34
+    35 1000			dlist0	@DLIST PlayfieldBuf+4*PlayfieldWidth+4, dlist0
+Macro: @DLIST [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+     1 FFFF> 1000-104D> 70 70 + 	dta d'pp',$70+$80
+     2 1003 C4 C4 D8			dta $44+$80,a(PLAYFIELDBUF+4*PLAYFIELDWIDTH+4)
+     3 1006 C4 F4 D8 C4 24 D9 + 	:PlayfieldHeight-2 dta $44+$80,a(PLAYFIELDBUF+4*PLAYFIELDWIDTH+4+#*[PlayfieldWidth]+PlayfieldWidth)
+     4 1048 44 14 DD			dta $44,a(PLAYFIELDBUF+4*PLAYFIELDWIDTH+4+[PlayfieldHeight-1]*[PlayfieldWidth])
+     5 104B 41 00 10			dta $41,a(DLIST0)
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+    36
+    37
+    38 104E				.align
+    39
+    40 1100-111F> 00 00 00 00		:4 brk			; minimalna liczba zestawow znakowych = 4
+    41 1104			Charsets
+    42 1104 C0				dta	>Charset0	; row #0
+    43 1105 C4				dta	>Charset1	; row #1
+    44 1106 C8				dta	>Charset2	; row #2
+    45 1107 CC				dta	>Charset3	; row #3
+    46 1108 E0				dta	>Charset4	; row #4
+    47 1109 E4				dta	>Charset5	; row #5
+    48 110A E8				dta	>Charset6	; row #6
+    49 110B EC				dta	>Charset7	; row #7
+    50 110C F0				dta	>Charset8	; row #8
+    51 110D F4				dta	>Charset9	; row #9
+    52 110E F8				dta	>Charset10	; row #10
+    53 110F FC				dta	>Charset11	; row #11
+    54
+    55 1110 C0				dta	>Charset0	; row #12
+    56 1111 C4				dta	>Charset1	; row #13
+    57 1112 C8				dta	>Charset2	; row #14
+    58 1113 CC				dta	>Charset3	; row #15
+    59 1114 E0				dta	>Charset4	; row #16
+    60 1115 E4				dta	>Charset5	; row #17
+    61 1116 E8				dta	>Charset6	; row #18
+    62 1117 EC				dta	>Charset7	; row #19
+    63 1118 F0				dta	>Charset8	; row #20
+    64 1119 F4				dta	>Charset9	; row #21
+    65 111A F8				dta	>Charset10	; row #22
+    66 111B FC				dta	>Charset11	; row #23
+    67
+    68 111C 00 00 00 00			:4 brk
+    69
+    70 1120				.align
+    71 1200-1217> 00 00 00 00 + tColor1 :PlayfieldHeight dta $00	; maksymalnie 256 wpisów
+    72
+    73 1218				.align
+    74 1300-1317> 1A 1A 1A 1A + tColor2 :PlayfieldHeight dta $1a	; maksymalnie 256 wpisów
+    75
+    76 1318				.align
+    77 1400-16BB> F6 F6 F6 F6 + tColor3 :PlayfieldHeight dta $f6	; maksymalnie 256 wpisów
+    78
+    79
+    80 1418 00			cloc		.byte
+    81 1419 00 10		dlist		.word dlist0
+    82
+    83 141B 00 12		tColor1Addr	.word tColor1		; mo¿liwoœæ przemieszczania adresu w przypadku scrolla pionowego
+    84 141D 00 13		tColor2Addr	.word tColor2		; mo¿liwoœæ przemieszczania adresu w przypadku scrolla pionowego
+    85 141F 00 14		tColor3Addr	.word tColor3		; mo¿liwoœæ przemieszczania adresu w przypadku scrolla pionowego
+    86
+    87 				//---------------------------------------------------------------------
+    88
+    89 1421 A5 14 C5 14 F0 FC	main	lda:cmp:req 20
+    90
+    91 1427 78				sei
+    92 1428 A9 00 8D 0E D4		mva #0 nmien
+    93 142D 8D 00 D4			sta dmactl
+    94
+    95 1430 A9 FE 8D 01 D3		mva #$fe portb
+    96
+    97 1435 A9 03 8D 1D D0		mva #3 pmcntl
+    98 143A A9 00 8D 07 D4		mva >pmg pmbase
+    99
+   100 143F A0 00			ldy #0
+   101 1441 A9 FF			lda #$ff
+   102 1443 99 00 04		fpmg	sta pmg+$400,y
+   103 1446 99 00 05			sta pmg+$500,y
+   104 1449 99 00 06			sta pmg+$600,y
+   105 144C 99 00 07			sta pmg+$700,y
+   106 144F C8				iny
+   107 1450 D0 F1			bne fpmg
+   108
+   109 1452 A9 74 8D 12 D0		mva #$74 colpm0
+   110 1457 A9 A4 8D 13 D0		mva #$a4 colpm1
+   111 145C A9 24 8D 14 D0		mva #$24 colpm2
+   112 1461 A9 D4 8D 15 D0		mva #$d4 colpm3
+   113
+   114 1466 A9 03			lda #3
+   115 1468 8D 08 D0			sta sizep0
+   116 146B 8D 09 D0			sta sizep1
+   117 146E 8D 0A D0			sta sizep2
+   118 1471 8D 0B D0			sta sizep3
+   119
+   120 1474 A9 38 8D 00 D0 A9 + 	:4 mva #56+#*32 hposp0+#
+   121
+   122
+   123 1488 A0 17			ldy #3*8-1
+   124 148A A9 FF		chr	lda #$ff	;$d20a
+   125 148C 99 08 C0			sta Charset0+8,y
+   126 148F 99 08 C4			sta Charset1+8,y
+   127 1492 99 08 C8			sta Charset2+8,y
+   128 1495 99 08 CC			sta Charset3+8,y
+   129 1498 99 08 E0			sta Charset4+8,y
+   130 149B 99 08 E4			sta Charset5+8,y
+   131 149E 99 08 E8			sta Charset6+8,y
+   132 14A1 99 08 EC			sta Charset7+8,y
+   133 14A4 99 08 F0			sta Charset8+8,y
+   134 14A7 99 08 F4			sta Charset9+8,y
+   135 14AA 99 08 F8			sta Charset10+8,y
+   136 14AD 99 08 FC			sta Charset11+8,y
+   137 14B0 88				dey
+   138 14B1 10 D7			bpl chr
+   139
+   140 14B3 A9 24 8D FA FF A9 + 	mwa #nmi nmivec
+   141
+   142 14BD A9 C0 8D 0E D4		mva #$c0 nmien
+   143
+   144
+   145 14C2 A2 08			ldx #8
+   146 14C4 A0 00			ldy #0
+   147 14C6 A9 01		f0	lda #1
+   148 14C8 99 00 D8		a0	sta PlayfieldBuf,y
+   149 14CB C8				iny
+   150 14CC A9 82			lda #2+$80
+   151 14CE 99 00 D8		a1	sta PlayfieldBuf,y
+   152 14D1 C8				iny
+   153 14D2 AD 0A D2			lda $d20a
+   154 14D5 29 3F			and #$3f
+   155 14D7 99 00 D8		a2	sta PlayfieldBuf,y
+   156 14DA C8				iny
+   157 14DB D0 E9			bne f0
+   158 14DD EE CA 14			inc a0+2
+   159 14E0 EE D0 14			inc a1+2
+   160 14E3 EE D9 14			inc a2+2
+   161 14E6 CA				dex
+   162 14E7 D0 DD			bne f0
+   163
+   164
+   165 14E9 20 03 30			jsr Engine.reset
+   166
+   167 					.rept 6,#
+   168 					MVA #64+:1*12 SPRITE:1.Y
+   169 					MVA #33+#*32 SPRITE:1.X
+   170 					STA SPRITE:1.NEW
+   171 					.ENDR
+   171 					.endr
+Source: REPT
+   168 14EC A9 40 8D 01 29		MVA #64+0*12 SPRITE0.Y
+   168 14F1 A9 21 8D 00 29		MVA #33+#*32 SPRITE0.X
+   168 14F6 8D 09 29			STA SPRITE0.NEW
+   168 14F9 A9 4C 8D 0B 29		MVA #64+1*12 SPRITE1.Y
+   168 14FE A9 41 8D 0A 29		MVA #33+#*32 SPRITE1.X
+   168 1503 8D 13 29			STA SPRITE1.NEW
+   168 1506 A9 58 8D 15 29		MVA #64+2*12 SPRITE2.Y
+   168 150B A9 61 8D 14 29		MVA #33+#*32 SPRITE2.X
+   168 1510 8D 1D 29			STA SPRITE2.NEW
+   168 1513 A9 64 8D 1F 29		MVA #64+3*12 SPRITE3.Y
+   168 1518 A9 81 8D 1E 29		MVA #33+#*32 SPRITE3.X
+   168 151D 8D 27 29			STA SPRITE3.NEW
+   168 1520 A9 70 8D 29 29		MVA #64+4*12 SPRITE4.Y
+   168 1525 A9 A1 8D 28 29		MVA #33+#*32 SPRITE4.X
+   168 152A 8D 31 29			STA SPRITE4.NEW
+   168 152D A9 7C 8D 33 29		MVA #64+5*12 SPRITE5.Y
+   168 1532 A9 C1 8D 32 29		MVA #33+#*32 SPRITE5.X
+   168 1537 8D 3B 29			STA SPRITE5.NEW
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   172
+   173 153A A9 EE 8D 05 29 A9 + 	mwa #spr0 Sprite0.bitmaps
+   174 1544 A9 EE 8D 23 29 A9 + 	mwa #spr0 Sprite3.bitmaps
+   175
+   176 154E A9 08 8D 0F 29 A9 + 	mwa #spr1 Sprite1.bitmaps
+   177 1558 A9 08 8D 2D 29 A9 + 	mwa #spr1 Sprite4.bitmaps
+   178
+   179 1562 A9 12 8D 19 29 A9 + 	mwa #spr2 Sprite2.bitmaps
+   180 156C A9 12 8D 37 29 A9 + 	mwa #spr2 Sprite5.bitmaps
+   181
+   182 1576 AD 0F D2		loop	lda $d20f
+   183 1579 29 04			and #4
+   184 157B F0 F9			beq loop
+   185
+   186 157D AD 18 14 CD 18 14 + 	lda:cmp:req cloc
+   187 1585 A9 00 8D 18 14		mva #0 cloc
+   188
+   189 158A 20 94 29			jsr Engine
+   190
+   191 158D AD 18 14 8D 00 01		mva cloc $100
+   192 1593 AD 0B D4 8D 01 01		mva vcount $101
+   193
+   194 					.rept 6,#
+   195 					LDA SPRITE:1.X
+   196 					ADD #1
+   197 					STA SPRITE:1.X
+   199 					IFT #<>5&&#<>3&&#<>1
+   200 					LDA SPRITE:1.Y
+   201 					ADD #2
+   202 					STA SPRITE:1.Y
+   203 					EIF
+   204 					.ENDR
+   204 					.endr
+Source: REPT
+   195 1599 AD 00 29			LDA SPRITE0.X
+   195 159C 18 69 01			ADD #1
+   195 159F 8D 00 29			STA SPRITE0.X
+   195 					IFT #<>5&&#<>3&&#<>1
+   195 15A2 AD 01 29			LDA SPRITE0.Y
+   195 15A5 18 69 02			ADD #2
+   195 15A8 8D 01 29			STA SPRITE0.Y
+   195 					EIF
+   195 15AB AD 0A 29			LDA SPRITE1.X
+   195 15AE 18 69 01			ADD #1
+   195 15B1 8D 0A 29			STA SPRITE1.X
+   195 					IFT #<>5&&#<>3&&#<>1
+   195 					LDA SPRITE1.Y
+   195 					ADD #2
+   195 					STA SPRITE1.Y
+   195 					EIF
+   195 15B4 AD 14 29			LDA SPRITE2.X
+   195 15B7 18 69 01			ADD #1
+   195 15BA 8D 14 29			STA SPRITE2.X
+   195 					IFT #<>5&&#<>3&&#<>1
+   195 15BD AD 15 29			LDA SPRITE2.Y
+   195 15C0 18 69 02			ADD #2
+   195 15C3 8D 15 29			STA SPRITE2.Y
+   195 					EIF
+   195 15C6 AD 1E 29			LDA SPRITE3.X
+   195 15C9 18 69 01			ADD #1
+   195 15CC 8D 1E 29			STA SPRITE3.X
+   195 					IFT #<>5&&#<>3&&#<>1
+   195 					LDA SPRITE3.Y
+   195 					ADD #2
+   195 					STA SPRITE3.Y
+   195 					EIF
+   195 15CF AD 28 29			LDA SPRITE4.X
+   195 15D2 18 69 01			ADD #1
+   195 15D5 8D 28 29			STA SPRITE4.X
+   195 					IFT #<>5&&#<>3&&#<>1
+   195 15D8 AD 29 29			LDA SPRITE4.Y
+   195 15DB 18 69 02			ADD #2
+   195 15DE 8D 29 29			STA SPRITE4.Y
+   195 					EIF
+   195 15E1 AD 32 29			LDA SPRITE5.X
+   195 15E4 18 69 01			ADD #1
+   195 15E7 8D 32 29			STA SPRITE5.X
+   195 					IFT #<>5&&#<>3&&#<>1
+   195 					LDA SPRITE5.Y
+   195 					ADD #2
+   195 					STA SPRITE5.Y
+   195 					EIF
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   205
+   206 15EA 4C 76 15			jmp loop
+   207
+   208
+   209 15ED			Playfield_Update
+   210 15ED 60				rts
+   211
+   212 15EE 00 17 40 17 80 17 + spr0	.word s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11
+   213 1606 00 00			dta a(0)
+   214
+   215 1608 00 1A 40 1A 80 1A + spr1	.word m0,m1,m2,m1
+   216 1610 00 00			dta a(0)
+   217
+   218 1612 C0 1A 00 1B 40 1B + spr2	.word b0,b1,b2,b3,b4,b5,b6,b7
+   219 1622 00 00			dta a(0)
+   220
+   221
+   222 				//---------------------------------------------------------------------
+   223
+   224 1624			.local	NMI
+   225 1624 2C 0F D4			bit nmist
+   226 1627 10 34			bpl vbl
+   227
+   228 1629 85 A4		DLI	sta regA		; DLI
+   229 162B 86 A5			stx regX
+   230 162D 84 A6			sty regY
+   231
+   232 162F AD 04 11		iCh	lda Charsets
+   233 1632 AE 00 12		iC1	ldx tColor1
+   234 1635 AC 00 13		iC2	ldy tColor2
+   235 1638 8D 0A D4			sta wsync
+   236
+   237 163B 8D 09 D4			sta chbase
+   238 163E 8E 17 D0			stx color1
+   239 1641 8C 18 D0			sty color2
+   240
+   241 1644 AD 00 14		iC3	lda tColor3
+   242 1647 8D 19 D0			sta color3
+   243
+   244 164A EE 30 16			inc iCh+1
+   245 164D EE 33 16			inc iC1+1
+   246 1650 EE 36 16			inc iC2+1
+   247 1653 EE 45 16			inc iC3+1
+   248
+   249 1656 A5 A4			lda regA
+   250 1658 A6 A5			ldx regX
+   251 165A A4 A6			ldy regY
+   252 165C 40				rti	
+   253
+   254 165D 48 8A 48 98 48	vbl	phr
+   255 1662 8D 0F D4			sta nmist
+   256
+   257 1665 EE 18 14			inc cloc
+   258
+   259 1668 AD 19 14 8D 02 D4 + 	mwa dlist dlptr
+   260
+   261 					ift PlayfieldWidth=40
+   262 					lda #scr32
+   263 					eli PlayfieldWidth=48
+   264 1674 A9 3E			lda #scr40
+   265 					els
+   266 					ert 1=1
+   267 					eif
+   268
+   269 1676 8D 00 D4			sta dmactl
+   270
+   271 1679 A9 04 8D 1B D0		mva #4 gtictl
+   272
+   273 167E A9 06 8D 1A D0	cBak	mva #$06 colbak
+   274 1683 A9 0A 8D 16 D0	c0	mva #$0a color0
+   275
+   276 1688 A9 04 8D 30 16 A9 + 	mwa #Charsets iCh+1
+   277 1692 AD 1B 14 8D 33 16 + 	mwa tColor1Addr iC1+1
+   278 169E AD 1D 14 8D 36 16 + 	mwa tColor2Addr iC2+1
+   279 16AA AD 1F 14 8D 45 16 + 	mwa tColor3Addr iC3+1
+   280
+   281 16B6 68 A8 68 AA 68		plr
+   282 16BB 40				rti
+   283 				.endl
+   284
+   285 				//---------------------------------------------------------------------
+   286
+   287 16BC				.align
+   288 				; klatka z duchem zajmuje 64 bajty, !!! wyrownujemy do poczatku strony pamieci !!!
+   289
+   290 1700				.get 'krakout_sprites.mic'
+   291
+   292 1700			s0	@@CutMIC 0 0 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   293 1740			s1	@@CutMIC 0 3 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   294 1780			s2	@@CutMIC 0 6 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   295 17C0			s3	@@CutMIC 0 9 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   296 1800			s4	@@CutMIC 0 12 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   297 1840			s5	@@CutMIC 0 15 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   298 1880			s6	@@CutMIC 0 18 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   299 18C0			s7	@@CutMIC 0 21 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   300 1900			s8	@@CutMIC 0 24 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   301 1940			s9	@@CutMIC 6 0 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   302 1980			s10	@@CutMIC 6 3 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   303 19C0			s11	@@CutMIC 6 6 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   304
+   305 1A00			m0	@@CutMIC 6 21 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   306 1A40			m1	@@CutMIC 6 24 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   307 1A80			m2	@@CutMIC 6 27 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   308
+   309 1AC0			b0	@@CutMIC 27 0 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   310 1B00			b1	@@CutMIC 27 3 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   311 1B40			b2	@@CutMIC 27 6 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   312 1B80			b3	@@CutMIC 27 9 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   313 1BC0			b4	@@CutMIC 27 12 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   314 1C00			b5	@@CutMIC 27 15 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   315 1C40			b6	@@CutMIC 27 18 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   316 1C80			b7	@@CutMIC 27 21 3 21
+Macro: @@CUTMIC [Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm]
+    12 					opt l+
+Source: D:\!Delphi\mads\examples\sprites\chars_ng\CharEngine_1xBuf_EXAMPLE.asm
+   317
+   318
+   319 1CC0				.align
+   320 				; !!! koniecznie od pocz¹tku strony pamiêci !!!
+   321
+   322 1D00			EngineProgram
+   323 					
+   324 1D00-3737> 00 00 00 00 + 	.link 'CharEngine_1xBuf\CharEngine_1xBuf.obx'	
+   325
+   326
+   327 				//---------------------------------------------------------------------
+   328 				//---------------------------------------------------------------------
+   329
+   330
+   331 				.macro	@@CutMIC
+   332 					opt l-
+   333 					.def ?x = :1
+   334 					.def ?y = :2*320
+   335 				
+   336 					.def ?dst = $4000
+   337 				
+   338 					@@CopyLine
+   339 					@@CopyLine
+   340 					@@CopyLine
+   341 				
+   342 					.sav [$4000] 64
+   343 					opt l+
+   344 				.endm
+   345
+   346
+   347 				.macro	@@CopyLine
+   348 					:+21 .put[?dst+#]=.get[?x+?y+#*40]
+   349 					
+   350 					.def ?x++
+   351 					.def ?dst+=21
+   352 				.endm
+   353
+   354
+   355 					.print *
+   355 				$3738
+   356
+   357 02E0-02E1> 21 14			run main

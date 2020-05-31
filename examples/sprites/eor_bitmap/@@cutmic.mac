@@ -1,0 +1,24 @@
+.macro	@@CutMIC
+	opt l-
+	.def ?x = :1
+	.def ?y = :2*320
+	.def ?w = :3
+	.def ?h = :4
+
+	.def ?dst = $4000
+
+	.rept ?h
+	@@CopyLine
+	.endr
+
+	.sav [$4000] ?w*?h
+	opt l+
+.endm
+
+
+.macro	@@CopyLine
+	:+?w .put[?dst+#]=.get[?x+?y+#]
+	
+	.def ?y = ?y + 40
+	.def ?dst = ?dst + ?w
+.endm
