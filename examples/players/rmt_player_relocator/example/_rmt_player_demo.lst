@@ -1,0 +1,1633 @@
+mads 2.0.1 build 40 (28 Feb 16)
+Source: D:\!Delphi\mads\examples\music\rmt_player_relocator\example\_rmt_player_demo.asm
+     1 				;
+     2 				; MUSIC init & play
+     3 				; example by Raster/C.P.U., 2003-2004
+     4 				;
+     5 				;
+     6 = 0000			STEREOMODE	equ 0				;0 => compile RMTplayer for mono 4 tracks
+     7 				;						;1 => compile RMTplayer for stereo 8 tracks
+     8 				;						;2 => compile RMTplayer for 4 tracks stereo L1 R2 R3 L4
+     9 				;						;3 => compile RMTplayer for 4 tracks stereo L1 L2 R3 R4
+    10 				;
+    11 				;
+    12 					icl "..\rmt_player.a65"			;include RMT player routine
+Source: D:\!Delphi\mads\examples\music\rmt_player_relocator\example\..\rmt_player.a65
+     1 				;*
+     2 				;* Raster Music Tracker, RMT Atari routine version 1.20090108
+     3 				;* (c) Radek Sterba, Raster/C.P.U., 2002 - 2009
+     4 				;* http://raster.atari.org
+     5 				;*
+     6 				;* Warnings:
+     7 				;*
+     8 				;* 1. RMT player routine needs 19 itself reserved bytes in zero page (no accessed
+     9 				;*    from any other routines) as well as cca 1KB of memory before the "PLAYER"
+    10 				;*    address for frequency tables and functionary variables. It's:
+    11 				;*	  a) from PLAYER-$03c0 to PLAYER for stereo RMTplayer
+    12 				;*    b) from PLAYER-$0320 to PLAYER for mono RMTplayer
+    13 				;*
+    14 				;* 2. RMT player routine MUST (!!!) be compiled from the begin of the memory page.
+    15 				;*    i.e. "PLAYER" address can be $..00 only!
+    16 				;*
+    17 				;* 3. Because of RMTplayer provides a lot of effects, it spent a lot of CPU time.
+    18 				;*
+    19 				;* STEREOMODE	equ 0..3			;0 => compile RMTplayer for 4 tracks mono
+    20 				;*									;1 => compile RMTplayer for 8 tracks stereo
+    21 				;*									;2 => compile RMTplayer for 4 tracks stereo L1 R2 R3 L4
+    22 				;*									;3 => compile RMTplayer for 4 tracks stereo L1 L2 R3 R4
+    23 				;*
+    24 					IFT STEREOMODE==1
+    25 				TRACKS		equ 8
+    26 					ELS
+    27 = 0004			TRACKS		equ 4
+    28 					EIF
+    29 				;*
+    30 = 3400			PLAYER		equ $3400
+    31 				;*
+    32 				;* RMT FEATures definitions file
+    33 				;* For optimizations of RMT player routine to concrete RMT modul only!
+    34 				;	icl "rmt_feat.a65"
+    35 				;*
+    36 				;* RMT ZeroPage addresses
+    37 					org 203
+    38 				p_tis
+    39 				p_instrstable	org *+2
+    40 				p_trackslbstable	org *+2
+    41 				p_trackshbstable	org *+2
+    42 				p_song			org *+2
+    43 				ns				org *+2
+    44 				nr				org *+2
+    45 				nt				org *+2
+    46 				reg1			org *+1
+    47 				reg2			org *+1
+    48 				reg3			org *+1
+    49 				tmp				org *+1
+    50 					IFT FEAT_COMMAND2
+    51 				frqaddcmd2		org *+1
+    52 					EIF
+    53 					IFT TRACKS>4
+    54 					org PLAYER-$400+$40
+    55 					ELS
+    56 					org PLAYER-$400+$e0
+    57 					EIF
+    58 				track_variables
+    59 				trackn_db	org *+TRACKS
+    60 				trackn_hb	org *+TRACKS
+    61 				trackn_idx	org *+TRACKS
+    62 				trackn_pause	org *+TRACKS
+    63 				trackn_note	org *+TRACKS
+    64 				trackn_volume	org *+TRACKS
+    65 				trackn_distor 	org *+TRACKS
+    66 				trackn_shiftfrq	org *+TRACKS
+    67 					IFT FEAT_PORTAMENTO
+    68 				trackn_portafrqc org *+TRACKS
+    69 				trackn_portafrqa org *+TRACKS
+    70 				trackn_portaspeed org *+TRACKS
+    71 				trackn_portaspeeda org *+TRACKS
+    72 				trackn_portadepth org *+TRACKS
+    73 					EIF
+    74 				trackn_instrx2	org *+TRACKS
+    75 				trackn_instrdb	org *+TRACKS
+    76 				trackn_instrhb	org *+TRACKS
+    77 				trackn_instridx	org *+TRACKS
+    78 				trackn_instrlen	org *+TRACKS
+    79 				trackn_instrlop	org *+TRACKS
+    80 				trackn_instrreachend	org *+TRACKS
+    81 				trackn_volumeslidedepth org *+TRACKS
+    82 				trackn_volumeslidevalue org *+TRACKS
+    83 					IFT FEAT_VOLUMEMIN
+    84 				trackn_volumemin		org *+TRACKS
+    85 					EIF
+    86 = 0000			FEAT_EFFECTS equ FEAT_EFFECTVIBRATO||FEAT_EFFECTFSHIFT
+    87 					IFT FEAT_EFFECTS
+    88 				trackn_effdelay			org *+TRACKS
+    89 					EIF
+    90 					IFT FEAT_EFFECTVIBRATO
+    91 				trackn_effvibratoa		org *+TRACKS
+    92 					EIF
+    93 					IFT FEAT_EFFECTFSHIFT
+    94 				trackn_effshift		org *+TRACKS
+    95 					EIF
+    96 				trackn_tabletypespeed org *+TRACKS
+    97 					IFT FEAT_TABLEMODE
+    98 				trackn_tablemode	org *+TRACKS
+    99 					EIF
+   100 				trackn_tablenote	org *+TRACKS
+   101 				trackn_tablea		org *+TRACKS
+   102 				trackn_tableend		org *+TRACKS
+   103 					IFT FEAT_TABLEGO
+   104 				trackn_tablelop		org *+TRACKS
+   105 					EIF
+   106 				trackn_tablespeeda	org *+TRACKS
+   107 					IFT FEAT_FILTER||FEAT_BASS16
+   108 				trackn_command		org *+TRACKS
+   109 					EIF
+   110 					IFT FEAT_BASS16
+   111 				trackn_outnote		org *+TRACKS
+   112 					EIF
+   113 					IFT FEAT_FILTER
+   114 				trackn_filter		org *+TRACKS
+   115 					EIF
+   116 				trackn_audf	org *+TRACKS
+   117 				trackn_audc	org *+TRACKS
+   118 					IFT FEAT_AUDCTLMANUALSET
+   119 				trackn_audctl	org *+TRACKS
+   120 					EIF
+   121 				v_aspeed		org *+1
+   122 				track_endvariables
+   123 						org PLAYER-$100-$140-$40+2
+   124 = 000C			INSTRPAR	equ 12
+   125 				tabbeganddistor
+   126 FFFF> 3182-3191> 80 00	 dta frqtabpure-frqtab,$00
+   127 3184 80 20		 dta frqtabpure-frqtab,$20
+   128 3186 80 40		 dta frqtabpure-frqtab,$40
+   129 3188 00 C0		 dta frqtabbass1-frqtab,$c0
+   130 318A 80 80		 dta frqtabpure-frqtab,$80
+   131 318C 80 A0		 dta frqtabpure-frqtab,$a0
+   132 318E 00 C0		 dta frqtabbass1-frqtab,$c0
+   133 3190 40 C0		 dta frqtabbass2-frqtab,$c0
+   134 						IFT FEAT_EFFECTVIBRATO
+   135 				vibtabbeg dta 0,vib1-vib0,vib2-vib0,vib3-vib0
+   136 				vib0	dta 0
+   137 				vib1	dta 1,-1,-1,1
+   138 				vib2	dta 1,0,-1,-1,0,1
+   139 				vib3	dta 1,1,0,-1,-1,-1,-1,0,1,1
+   140 				vibtabnext
+   141 						dta vib0-vib0+0
+   142 						dta vib1-vib0+1,vib1-vib0+2,vib1-vib0+3,vib1-vib0+0
+   143 						dta vib2-vib0+1,vib2-vib0+2,vib2-vib0+3,vib2-vib0+4,vib2-vib0+5,vib2-vib0+0
+   144 						dta vib3-vib0+1,vib3-vib0+2,vib3-vib0+3,vib3-vib0+4,vib3-vib0+5,vib3-vib0+6,vib3-vib0+7,vib3-vib0+8,vib3-vib0+9,vib3-vib0+0
+   145 						EIF
+   146 3192					org PLAYER-$100-$140
+   147 					IFT FEAT_BASS16
+   148 				frqtabbasslo
+   149 					dta $F2,$33,$96,$E2,$38,$8C,$00,$6A,$E8,$6A,$EF,$80,$08,$AE,$46,$E6
+   150 					dta $95,$41,$F6,$B0,$6E,$30,$F6,$BB,$84,$52,$22,$F4,$C8,$A0,$7A,$55
+   151 					dta $34,$14,$F5,$D8,$BD,$A4,$8D,$77,$60,$4E,$38,$27,$15,$06,$F7,$E8
+   152 					dta $DB,$CF,$C3,$B8,$AC,$A2,$9A,$90,$88,$7F,$78,$70,$6A,$64,$5E,$00
+   153 					EIF
+   154 31C0					org PLAYER-$100-$100
+   155 3200			frqtab
+   156 					ERT [<frqtab]!=0	;* frqtab must begin at the memory page bound! (i.e. $..00 address)
+   157 3200			frqtabbass1
+   158 3200-32BF> BF B6 AA A1 + 	dta $BF,$B6,$AA,$A1,$98,$8F,$89,$80,$F2,$E6,$DA,$CE,$BF,$B6,$AA,$A1
+   159 3210 98 8F 89 80 7A 71 + 	dta $98,$8F,$89,$80,$7A,$71,$6B,$65,$5F,$5C,$56,$50,$4D,$47,$44,$3E
+   160 3220 3C 38 35 32 2F 2D + 	dta $3C,$38,$35,$32,$2F,$2D,$2A,$28,$25,$23,$21,$1F,$1D,$1C,$1A,$18
+   161 3230 17 16 14 13 12 11 + 	dta $17,$16,$14,$13,$12,$11,$10,$0F,$0E,$0D,$0C,$0B,$0A,$09,$08,$07
+   162 3240			frqtabbass2
+   163 3240 FF F1 E4 D8 CA C0 + 	dta $FF,$F1,$E4,$D8,$CA,$C0,$B5,$AB,$A2,$99,$8E,$87,$7F,$79,$73,$70
+   164 3250 66 61 5A 55 52 4B + 	dta $66,$61,$5A,$55,$52,$4B,$48,$43,$3F,$3C,$39,$37,$33,$30,$2D,$2A
+   165 3260 28 25 24 21 1F 1E + 	dta $28,$25,$24,$21,$1F,$1E,$1C,$1B,$19,$17,$16,$15,$13,$12,$11,$10
+   166 3270 0F 0E 0D 0C 0B 0A + 	dta $0F,$0E,$0D,$0C,$0B,$0A,$09,$08,$07,$06,$05,$04,$03,$02,$01,$00
+   167 3280			frqtabpure
+   168 3280 F3 E6 D9 CC C1 B5 + 	dta $F3,$E6,$D9,$CC,$C1,$B5,$AD,$A2,$99,$90,$88,$80,$79,$72,$6C,$66
+   169 3290 60 5B 55 51 4C 48 + 	dta $60,$5B,$55,$51,$4C,$48,$44,$40,$3C,$39,$35,$32,$2F,$2D,$2A,$28
+   170 32A0 25 23 21 1F 1D 1C + 	dta $25,$23,$21,$1F,$1D,$1C,$1A,$18,$17,$16,$14,$13,$12,$11,$10,$0F
+   171 32B0 0E 0D 0C 0B 0A 09 + 	dta $0E,$0D,$0C,$0B,$0A,$09,$08,$07,$06,$05,$04,$03,$02,$01,$00,$00
+   172 					IFT FEAT_BASS16
+   173 				frqtabbasshi
+   174 					dta $0D,$0D,$0C,$0B,$0B,$0A,$0A,$09,$08,$08,$07,$07,$07,$06,$06,$05
+   175 					dta $05,$05,$04,$04,$04,$04,$03,$03,$03,$03,$03,$02,$02,$02,$02,$02
+   176 					dta $02,$02,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00
+   177 					dta $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+   178 					EIF
+   179 32C0					org PLAYER-$0100
+   180 3300			volumetab
+   181 3300-36C9> 00 00 00 00 + 	dta $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+   182 3310 00 00 00 00 00 00 + 	dta $00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01
+   183 3320 00 00 00 00 01 01 + 	dta $00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$02,$02,$02,$02
+   184 3330 00 00 00 01 01 01 + 	dta $00,$00,$00,$01,$01,$01,$01,$01,$02,$02,$02,$02,$02,$03,$03,$03
+   185 3340 00 00 01 01 01 01 + 	dta $00,$00,$01,$01,$01,$01,$02,$02,$02,$02,$03,$03,$03,$03,$04,$04
+   186 3350 00 00 01 01 01 02 + 	dta $00,$00,$01,$01,$01,$02,$02,$02,$03,$03,$03,$04,$04,$04,$05,$05
+   187 3360 00 00 01 01 02 02 + 	dta $00,$00,$01,$01,$02,$02,$02,$03,$03,$04,$04,$04,$05,$05,$06,$06
+   188 3370 00 00 01 01 02 02 + 	dta $00,$00,$01,$01,$02,$02,$03,$03,$04,$04,$05,$05,$06,$06,$07,$07
+   189 3380 00 01 01 02 02 03 + 	dta $00,$01,$01,$02,$02,$03,$03,$04,$04,$05,$05,$06,$06,$07,$07,$08
+   190 3390 00 01 01 02 02 03 + 	dta $00,$01,$01,$02,$02,$03,$04,$04,$05,$05,$06,$07,$07,$08,$08,$09
+   191 33A0 00 01 01 02 03 03 + 	dta $00,$01,$01,$02,$03,$03,$04,$05,$05,$06,$07,$07,$08,$09,$09,$0A
+   192 33B0 00 01 01 02 03 04 + 	dta $00,$01,$01,$02,$03,$04,$04,$05,$06,$07,$07,$08,$09,$0A,$0A,$0B
+   193 33C0 00 01 02 02 03 04 + 	dta $00,$01,$02,$02,$03,$04,$05,$06,$06,$07,$08,$09,$0A,$0A,$0B,$0C
+   194 33D0 00 01 02 03 03 04 + 	dta $00,$01,$02,$03,$03,$04,$05,$06,$07,$08,$09,$0A,$0A,$0B,$0C,$0D
+   195 33E0 00 01 02 03 04 05 + 	dta $00,$01,$02,$03,$04,$05,$06,$07,$07,$08,$09,$0A,$0B,$0C,$0D,$0E
+   196 33F0 00 01 02 03 04 05 + 	dta $00,$01,$02,$03,$04,$05,$06,$07,$08,$09,$0A,$0B,$0C,$0D,$0E,$0F
+   197 3400				org PLAYER
+   198 				;*
+   199 				;* Set of RMT main vectors:
+   200 				;*
+   201 3400			RASTERMUSICTRACKER
+   202 3400 4C 0F 34			jmp rmt_init
+   203 3403 4C 95 35			jmp rmt_play
+   204 3406 4C AF 35			jmp rmt_p3
+   205 3409 4C 4A 34			jmp rmt_silence
+   206 340C 4C 94 36			jmp SetPokey
+   207 					IFT FEAT_SFX
+   208 					jmp rmt_sfx			;* A=note(0,..,60),X=channel(0,..,3 or 0,..,7),Y=instrument*2(0,2,4,..,126)
+   209 					EIF
+   210 340F			rmt_init
+   211 340F 86 D3			stx ns
+   212 3411 84 D4			sty ns+1
+   213 					IFT FEAT_NOSTARTINGSONGLINE==0
+   214 3413 48				pha
+   215 					EIF
+   216 					IFT track_endvariables-track_variables>255
+   217 					ldy #0
+   218 					tya
+   219 				ri0	sta track_variables,y
+   220 					sta track_endvariables-$100,y
+   221 					iny
+   222 					bne ri0
+   223 					ELS
+   224 3414 A0 61			ldy #track_endvariables-track_variables
+   225 3416 A9 00			lda #0
+   226 3418 99 DF 30		ri0	sta track_variables-1,y
+   227 341B 88				dey
+   228 341C D0 FA			bne ri0
+   229 					EIF
+   230 341E A0 04			ldy #4
+   231 3420 B1 D3			lda (ns),y
+   232 3422 8D A3 35			sta v_maxtracklen
+   233 3425 C8				iny
+   234 					IFT FEAT_CONSTANTSPEED==0
+   235 					lda (ns),y
+   236 					sta v_speed
+   237 					EIF
+   238 					IFT FEAT_INSTRSPEED==0
+   239 					iny
+   240 					lda (ns),y
+   241 					sta v_instrspeed
+   242 					sta v_ainstrspeed
+   243 					ELI FEAT_INSTRSPEED>1
+   244 					lda #FEAT_INSTRSPEED
+   245 					sta v_ainstrspeed
+   246 					EIF
+   247 3426 A0 08			ldy #8
+   248 3428 B1 D3		ri1	lda (ns),y
+   249 342A 99 C3 00			sta p_tis-8,y
+   250 342D C8				iny
+   251 342E C0 10			cpy #8+8
+   252 3430 D0 F6			bne ri1
+   253 					IFT FEAT_NOSTARTINGSONGLINE==0
+   254 3432 68				pla
+   255 3433 48				pha
+   256 					IFT TRACKS>4
+   257 					asl @
+   258 					asl @
+   259 					asl @
+   260 					clc
+   261 					adc p_song
+   262 					sta p_song
+   263 					pla
+   264 					php
+   265 					and #$e0
+   266 					asl @
+   267 					rol @
+   268 					rol @
+   269 					rol @
+   270 					ELS
+   271 3434 0A				asl @
+   272 3435 0A				asl @
+   273 3436 18				clc
+   274 3437 65 D1			adc p_song
+   275 3439 85 D1			sta p_song
+   276 343B 68				pla
+   277 343C 08				php
+   278 343D 29 C0			and #$c0
+   279 343F 0A				asl @
+   280 3440 2A				rol @
+   281 3441 2A				rol @
+   282 					EIF
+   283 3442 28				plp
+   284 3443 65 D2			adc p_song+1
+   285 3445 85 D2			sta p_song+1
+   286 					EIF
+   287 3447 20 5F 34			jsr GetSongLineTrackLineInitOfNewSetInstrumentsOnlyRmtp3
+   288 344A			rmt_silence
+   289 					IFT STEREOMODE>0
+   290 					lda #0
+   291 					sta $d208
+   292 					sta $d218
+   293 					ldy #3
+   294 					sty $d20f
+   295 					sty $d21f
+   296 					ldy #8
+   297 				si1	sta $d200,y
+   298 					sta $d210,y
+   299 					dey
+   300 					bpl si1
+   301 					ELS
+   302 344A A9 00			lda #0
+   303 344C 8D 08 D2			sta $d208
+   304 344F A0 03			ldy #3
+   305 3451 8C 0F D2			sty $d20f
+   306 3454 A0 08			ldy #8
+   307 3456 99 00 D2		si1	sta $d200,y
+   308 3459 88				dey
+   309 345A 10 FA			bpl si1
+   310 					EIF
+   311 					IFT FEAT_INSTRSPEED==0
+   312 					lda v_instrspeed
+   313 					ELS
+   314 345C A9 01			lda #FEAT_INSTRSPEED
+   315 					EIF
+   316 345E 60				rts
+   317 345F			GetSongLineTrackLineInitOfNewSetInstrumentsOnlyRmtp3
+   318 345F			GetSongLine
+   319 345F A2 00			ldx #0
+   320 3461 8E A1 35			stx v_abeat
+   321 3464			nn0
+   322 3464 8A			nn1	txa
+   323 3465 A8				tay
+   324 3466 B1 D1			lda (p_song),y
+   325 3468 C9 FE			cmp #$fe
+   326 346A B0 2D			bcs nn2
+   327 346C A8				tay
+   328 346D B1 CD			lda (p_trackslbstable),y
+   329 346F 9D E0 30			sta trackn_db,x
+   330 3472 B1 CF			lda (p_trackshbstable),y
+   331 3474 9D E4 30		nn1a sta trackn_hb,x
+   332 3477 A9 00			lda #0
+   333 3479 9D E8 30			sta trackn_idx,x
+   334 347C A9 01			lda #1
+   335 347E 9D EC 30		nn1a2 sta trackn_pause,x
+   336 3481 A9 80			lda #$80
+   337 3483 9D 00 31			sta trackn_instrx2,x
+   338 3486 E8				inx
+   339 3487 E0 04		xtracks01	cpx #TRACKS
+   340 3489 D0 D9			bne nn1
+   341 348B A5 D1			lda p_song
+   342 348D 18				clc
+   343 348E 69 04		xtracks02	adc #TRACKS
+   344 3490 85 D1			sta p_song
+   345 3492 90 1B			bcc GetTrackLine
+   346 3494 E6 D2			inc p_song+1
+   347 3496			nn1b
+   348 3496 4C AF 34			jmp GetTrackLine
+   349 3499			nn2
+   350 3499 F0 04			beq nn3
+   351 349B			nn2a
+   352 349B A9 00			lda #0
+   353 349D F0 DF			beq nn1a2
+   354 349F			nn3
+   355 349F A0 02			ldy #2
+   356 34A1 B1 D1			lda (p_song),y
+   357 34A3 AA				tax
+   358 34A4 C8				iny
+   359 34A5 B1 D1			lda (p_song),y
+   360 34A7 85 D2			sta p_song+1
+   361 34A9 86 D1			stx p_song
+   362 34AB A2 00			ldx #0
+   363 34AD F0 B5			beq nn0
+   364 34AF			GetTrackLine
+   365 34AF			oo0
+   366 34AF			oo0a
+   367 					IFT FEAT_CONSTANTSPEED==0
+   368 					lda #$ff
+   369 				v_speed equ *-1
+   370 					sta v_bspeed
+   371 					EIF
+   372 34AF A2 FF			ldx #-1
+   373 34B1			oo1
+   374 34B1 E8				inx
+   375 34B2 DE EC 30			dec trackn_pause,x
+   376 34B5 D0 42			bne oo1x
+   377 34B7			oo1b
+   378 34B7 BD E0 30			lda trackn_db,x
+   379 34BA 85 D3			sta ns
+   380 34BC BD E4 30			lda trackn_hb,x
+   381 34BF 85 D4			sta ns+1
+   382 34C1			oo1i
+   383 34C1 BC E8 30			ldy trackn_idx,x
+   384 34C4 FE E8 30			inc trackn_idx,x
+   385 34C7 B1 D3			lda (ns),y
+   386 34C9 85 D9			sta reg1
+   387 34CB 29 3F			and #$3f
+   388 34CD C9 3D			cmp #61
+   389 34CF F0 0E			beq oo1a
+   390 34D1 B0 32			bcs oo2
+   391 34D3 9D F0 30			sta trackn_note,x
+   392 					IFT FEAT_BASS16
+   393 					sta trackn_outnote,x
+   394 					EIF
+   395 34D6 C8				iny
+   396 34D7 B1 D3			lda (ns),y
+   397 34D9 4A				lsr @
+   398 34DA 29 7E			and #$3f*2
+   399 34DC 9D 00 31			sta trackn_instrx2,x
+   400 34DF			oo1a
+   401 34DF A9 01			lda #1
+   402 34E1 9D EC 30			sta trackn_pause,x
+   403 34E4 BC E8 30			ldy trackn_idx,x
+   404 34E7 FE E8 30			inc trackn_idx,x
+   405 34EA B1 D3			lda (ns),y
+   406 34EC 4A				lsr @
+   407 34ED 66 D9			ror reg1
+   408 34EF 4A				lsr @
+   409 34F0 66 D9			ror reg1
+   410 34F2 A5 D9			lda reg1
+   411 					IFT FEAT_GLOBALVOLUMEFADE
+   412 					sec
+   413 					sbc #$00
+   414 				RMTGLOBALVOLUMEFADE equ *-1
+   415 					bcs voig
+   416 					lda #0
+   417 				voig
+   418 					EIF
+   419 34F4 29 F0			and #$f0
+   420 34F6 9D F4 30			sta trackn_volume,x
+   421 34F9			oo1x
+   422 34F9 E0 03		xtracks03sub1	cpx #TRACKS-1
+   423 34FB D0 B4			bne oo1
+   424 					IFT FEAT_CONSTANTSPEED==0
+   425 					lda #$ff
+   426 				v_bspeed equ *-1
+   427 					sta v_speed
+   428 					ELS
+   429 34FD A9 06			lda #FEAT_CONSTANTSPEED
+   430 					EIF
+   431 34FF 8D 40 31			sta v_aspeed
+   432 3502 4C 3C 35			jmp InitOfNewSetInstrumentsOnly
+   433 3505			oo2
+   434 3505 C9 3F			cmp #63
+   435 3507 F0 1B			beq oo63
+   436 3509 A5 D9			lda reg1
+   437 350B 29 C0			and #$c0
+   438 350D F0 09			beq oo62_b
+   439 350F 0A				asl @
+   440 3510 2A				rol @
+   441 3511 2A				rol @
+   442 3512 9D EC 30			sta trackn_pause,x
+   443 3515 4C F9 34			jmp oo1x
+   444 3518			oo62_b
+   445 3518 C8				iny
+   446 3519 B1 D3			lda (ns),y
+   447 351B 9D EC 30			sta trackn_pause,x
+   448 351E FE E8 30			inc trackn_idx,x
+   449 3521 4C F9 34			jmp oo1x
+   450 3524			oo63
+   451 3524 A5 D9			lda reg1
+   452 					IFT FEAT_CONSTANTSPEED==0
+   453 					bmi oo63_1X
+   454 					iny
+   455 					lda (ns),y
+   456 					sta v_bspeed
+   457 					inc trackn_idx,x
+   458 					jmp oo1i
+   459 				oo63_1X
+   460 					EIF
+   461 3526 C9 FF			cmp #255
+   462 3528 F0 09			beq oo63_11
+   463 352A C8				iny
+   464 352B B1 D3			lda (ns),y
+   465 352D 9D E8 30			sta trackn_idx,x
+   466 3530 4C C1 34			jmp oo1i
+   467 3533			oo63_11
+   468 3533 4C 5F 34			jmp GetSongLine
+   469 3536 4C AF 35		p2xrmtp3	jmp rmt_p3
+   470 3539 CA			p2x0 dex
+   471 353A 30 FA			 bmi p2xrmtp3
+   472 353C			InitOfNewSetInstrumentsOnly
+   473 353C BC 00 31		p2x1 ldy trackn_instrx2,x
+   474 353F 30 F8			bmi p2x0
+   475 					IFT FEAT_SFX
+   476 					jsr SetUpInstrumentY2
+   477 					jmp p2x0
+   478 				rmt_sfx
+   479 					sta trackn_note,x
+   480 					IFT FEAT_BASS16
+   481 					sta trackn_outnote,x
+   482 					EIF
+   483 					lda #$f0				;* sfx note volume*16
+   484 				RMTSFXVOLUME equ *-1		;* label for sfx note volume parameter overwriting
+   485 					sta trackn_volume,x
+   486 					EIF
+   487 3541			SetUpInstrumentY2
+   488 3541 B1 CB			lda (p_instrstable),y
+   489 3543 9D 04 31			sta trackn_instrdb,x
+   490 3546 85 D7			sta nt
+   491 3548 C8				iny
+   492 3549 B1 CB			lda (p_instrstable),y
+   493 354B 9D 08 31			sta trackn_instrhb,x
+   494 354E 85 D8			sta nt+1
+   495 					IFT FEAT_FILTER
+   496 					lda #1
+   497 					sta trackn_filter,x
+   498 					EIF
+   499 					IFT FEAT_TABLEGO
+   500 					IFT FEAT_FILTER
+   501 					tay
+   502 					ELS
+   503 					ldy #1
+   504 					EIF
+   505 					lda (nt),y
+   506 					sta trackn_tablelop,x
+   507 					iny
+   508 					ELS
+   509 3550 A0 02			ldy #2
+   510 					EIF
+   511 3552 B1 D7			lda (nt),y
+   512 3554 9D 10 31			sta trackn_instrlen,x
+   513 3557 C8				iny
+   514 3558 B1 D7			lda (nt),y
+   515 355A 9D 14 31			sta trackn_instrlop,x
+   516 355D C8				iny
+   517 355E B1 D7			lda (nt),y
+   518 3560 9D 24 31			sta trackn_tabletypespeed,x
+   519 					IFT FEAT_TABLETYPE||FEAT_TABLEMODE
+   520 					and #$3f
+   521 					EIF
+   522 3563 9D 34 31			sta trackn_tablespeeda,x
+   523 					IFT FEAT_TABLEMODE
+   524 					lda (nt),y
+   525 					and #$40
+   526 					sta trackn_tablemode,x
+   527 					EIF
+   528 					IFT FEAT_AUDCTLMANUALSET
+   529 					iny
+   530 					lda (nt),y
+   531 					sta trackn_audctl,x
+   532 					iny
+   533 					ELS
+   534 3566 A0 06			ldy #6
+   535 					EIF
+   536 3568 B1 D7			lda (nt),y
+   537 356A 9D 1C 31			sta trackn_volumeslidedepth,x
+   538 					IFT FEAT_VOLUMEMIN
+   539 					iny
+   540 					lda (nt),y
+   541 					sta trackn_volumemin,x
+   542 					IFT FEAT_EFFECTS
+   543 					iny
+   544 					EIF
+   545 					ELS
+   546 					IFT FEAT_EFFECTS
+   547 					ldy #8
+   548 					EIF
+   549 					EIF
+   550 					IFT FEAT_EFFECTS
+   551 					lda (nt),y
+   552 					sta trackn_effdelay,x
+   553 					IFT FEAT_EFFECTVIBRATO
+   554 					iny
+   555 					lda (nt),y
+   556 					tay
+   557 					lda vibtabbeg,y
+   558 					sta trackn_effvibratoa,x
+   559 					EIF
+   560 					IFT FEAT_EFFECTFSHIFT
+   561 					ldy #10
+   562 					lda (nt),y
+   563 					sta trackn_effshift,x
+   564 					EIF
+   565 					EIF
+   566 356D A9 80			lda #128
+   567 356F 9D 20 31			sta trackn_volumeslidevalue,x
+   568 3572 9D 00 31			sta trackn_instrx2,x
+   569 3575 0A				asl @
+   570 3576 9D 18 31			sta trackn_instrreachend,x
+   571 3579 9D FC 30			sta trackn_shiftfrq,x
+   572 357C A8				tay
+   573 357D B1 D7			lda (nt),y
+   574 357F 9D 30 31			sta trackn_tableend,x
+   575 3582 69 00			adc #0
+   576 3584 9D 0C 31			sta trackn_instridx,x
+   577 3587 A9 0C			lda #INSTRPAR
+   578 3589 9D 2C 31			sta trackn_tablea,x
+   579 358C A8				tay
+   580 358D B1 D7			lda (nt),y
+   581 358F 9D 28 31			sta trackn_tablenote,x
+   582 3592			xata_rtshere
+   583 					IFT FEAT_SFX
+   584 					rts
+   585 					ELS
+   586 3592 4C 39 35			jmp p2x0
+   587 					EIF
+   588 3595			rmt_play
+   589 3595			rmt_p0
+   590 3595 20 94 36			jsr SetPokey
+   591 3598			rmt_p1
+   592 					IFT FEAT_INSTRSPEED==0||FEAT_INSTRSPEED>1
+   593 					dec v_ainstrspeed
+   594 					bne rmt_p3
+   595 					EIF
+   596 					IFT FEAT_INSTRSPEED==0
+   597 					lda #$ff
+   598 				v_instrspeed	equ *-1
+   599 					sta v_ainstrspeed
+   600 					ELI FEAT_INSTRSPEED>1
+   601 					lda #FEAT_INSTRSPEED
+   602 					sta v_ainstrspeed
+   603 					EIF
+   604 3598			rmt_p2
+   605 3598 CE 40 31			dec v_aspeed
+   606 359B D0 12			bne rmt_p3
+   607 359D EE A1 35			inc v_abeat
+   608 35A0 A9 FF			lda #$ff
+   609 = 35A1			v_abeat equ *-1
+   610 35A2 C9 FF			cmp #$ff
+   611 = 35A3			v_maxtracklen equ *-1
+   612 35A4 F0 03			beq p2o3
+   613 35A6 4C AF 34			jmp GetTrackLine
+   614 35A9			p2o3
+   615 35A9 4C 5F 34			jmp GetSongLineTrackLineInitOfNewSetInstrumentsOnlyRmtp3
+   616 35AC 4C 83 36		go_ppnext	jmp ppnext
+   617 35AF			rmt_p3
+   618 35AF A9 32			lda #>frqtab
+   619 35B1 85 D6			sta nr+1
+   620 35B3 A2 03		xtracks05sub1	ldx #TRACKS-1
+   621 35B5			pp1
+   622 35B5 BD 08 31			lda trackn_instrhb,x
+   623 35B8 F0 F2			beq go_ppnext
+   624 35BA 85 D4			sta ns+1
+   625 35BC BD 04 31			lda trackn_instrdb,x
+   626 35BF 85 D3			sta ns
+   627 35C1 BC 0C 31			ldy trackn_instridx,x
+   628 35C4 B1 D3			lda (ns),y
+   629 35C6 85 D9			sta reg1
+   630 35C8 C8				iny
+   631 35C9 B1 D3			lda (ns),y
+   632 35CB 85 DA			sta reg2
+   633 35CD C8				iny
+   634 35CE B1 D3			lda (ns),y
+   635 35D0 85 DB			sta reg3
+   636 35D2 C8				iny
+   637 35D3 98				tya
+   638 35D4 DD 10 31			cmp trackn_instrlen,x
+   639 35D7 90 0A			bcc pp2
+   640 35D9 F0 08			beq pp2
+   641 35DB A9 80			lda #$80
+   642 35DD 9D 18 31			sta trackn_instrreachend,x
+   643 35E0			pp1b
+   644 35E0 BD 14 31			lda trackn_instrlop,x
+   645 35E3 9D 0C 31		pp2	sta trackn_instridx,x
+   646 35E6 A5 D9			lda reg1
+   647 					IFT TRACKS>4
+   648 					cpx #4
+   649 					bcc pp2s
+   650 					lsr @
+   651 					lsr @
+   652 					lsr @
+   653 					lsr @
+   654 				pp2s
+   655 					EIF
+   656 35E8 29 0F			and #$0f
+   657 35EA 1D F4 30			ora trackn_volume,x
+   658 35ED A8				tay
+   659 35EE B9 00 33			lda volumetab,y
+   660 35F1 85 DC			sta tmp
+   661 35F3 A5 DA			lda reg2
+   662 35F5 29 0E			and #$0e
+   663 35F7 A8				tay
+   664 35F8 B9 82 31			lda tabbeganddistor,y
+   665 35FB 85 D5			sta nr
+   666 35FD A5 DC			lda tmp
+   667 35FF 19 83 31			ora tabbeganddistor+1,y
+   668 3602 9D 3C 31			sta trackn_audc,x
+   669 3605			InstrumentsEffects
+   670 					IFT FEAT_EFFECTS
+   671 					lda trackn_effdelay,x
+   672 					beq ei2
+   673 					cmp #1
+   674 					bne ei1
+   675 					lda trackn_shiftfrq,x
+   676 					IFT FEAT_EFFECTFSHIFT
+   677 					clc
+   678 					adc trackn_effshift,x
+   679 					EIF
+   680 					IFT FEAT_EFFECTVIBRATO
+   681 					clc
+   682 					ldy trackn_effvibratoa,x
+   683 					adc vib0,y
+   684 					EIF
+   685 					sta trackn_shiftfrq,x
+   686 					IFT FEAT_EFFECTVIBRATO
+   687 					lda vibtabnext,y
+   688 					sta trackn_effvibratoa,x
+   689 					EIF
+   690 					jmp ei2
+   691 				ei1
+   692 					dec trackn_effdelay,x
+   693 				ei2
+   694 					EIF
+   695 3605 BC 30 31			ldy trackn_tableend,x
+   696 3608 C0 0D			cpy #INSTRPAR+1
+   697 360A 90 30			bcc ei3
+   698 360C BD 34 31			lda trackn_tablespeeda,x
+   699 360F 10 25			bpl ei2f
+   700 3611			ei2c
+   701 3611 98				tya
+   702 3612 DD 2C 31			cmp trackn_tablea,x
+   703 3615 D0 07			bne ei2c2
+   704 					IFT FEAT_TABLEGO
+   705 					lda trackn_tablelop,x
+   706 					ELS
+   707 3617 A9 0C			lda #INSTRPAR
+   708 					EIF
+   709 3619 9D 2C 31			sta trackn_tablea,x
+   710 361C D0 03			bne ei2a
+   711 361E			ei2c2
+   712 361E FE 2C 31			inc trackn_tablea,x
+   713 3621			ei2a
+   714 3621 BD 04 31			lda trackn_instrdb,x
+   715 3624 85 D7			sta nt
+   716 3626 BD 08 31			lda trackn_instrhb,x
+   717 3629 85 D8			sta nt+1
+   718 362B BC 2C 31			ldy trackn_tablea,x
+   719 362E B1 D7			lda (nt),y
+   720 					IFT FEAT_TABLEMODE
+   721 					ldy trackn_tablemode,x
+   722 					beq ei2e
+   723 					clc
+   724 					adc trackn_tablenote,x
+   725 				ei2e
+   726 					EIF
+   727 3630 9D 28 31			sta trackn_tablenote,x
+   728 3633 BD 24 31			lda trackn_tabletypespeed,x
+   729 					IFT FEAT_TABLETYPE||FEAT_TABLEMODE
+   730 					and #$3f
+   731 					EIF
+   732 3636			ei2f
+   733 3636 38				sec
+   734 3637 E9 01			sbc #1
+   735 3639 9D 34 31			sta trackn_tablespeeda,x
+   736 363C			ei3
+   737 363C BD 18 31			lda trackn_instrreachend,x
+   738 363F 10 18			bpl ei4
+   739 3641 BD F4 30			lda trackn_volume,x
+   740 3644 F0 13			beq ei4
+   741 					IFT FEAT_VOLUMEMIN
+   742 					cmp trackn_volumemin,x
+   743 					beq ei4
+   744 					bcc ei4
+   745 					EIF
+   746 3646 A8				tay
+   747 3647 BD 20 31			lda trackn_volumeslidevalue,x
+   748 364A 18				clc
+   749 364B 7D 1C 31			adc trackn_volumeslidedepth,x
+   750 364E 9D 20 31			sta trackn_volumeslidevalue,x
+   751 3651 90 06			bcc ei4
+   752 3653 98				tya
+   753 3654 E9 10			sbc #16
+   754 3656 9D F4 30			sta trackn_volume,x
+   755 3659			ei4
+   756 					IFT FEAT_COMMAND2
+   757 					lda #0
+   758 					sta frqaddcmd2
+   759 					EIF
+   760 					IFT FEAT_COMMAND1||FEAT_COMMAND2||FEAT_COMMAND3||FEAT_COMMAND4||FEAT_COMMAND5||FEAT_COMMAND6||FEAT_COMMAND7SETNOTE||FEAT_COMMAND7VOLUMEONLY
+   761 3659 A5 DA			lda reg2
+   762 					IFT FEAT_FILTER||FEAT_BASS16
+   763 					sta trackn_command,x
+   764 					EIF
+   765 365B 29 70			and #$70
+   766 					IFT 1==[FEAT_COMMAND1+FEAT_COMMAND2+FEAT_COMMAND3+FEAT_COMMAND4+FEAT_COMMAND5+FEAT_COMMAND6+[FEAT_COMMAND7SETNOTE||FEAT_COMMAND7VOLUMEONLY]]
+   767 365D F0 05			beq cmd0
+   768 					ELS
+   769 					lsr @
+   770 					lsr @
+   771 					sta jmx+1
+   772 				jmx	bcc *
+   773 					jmp cmd0
+   774 					nop
+   775 					jmp cmd1
+   776 					IFT FEAT_COMMAND2||FEAT_COMMAND3||FEAT_COMMAND4||FEAT_COMMAND5||FEAT_COMMAND6||FEAT_COMMAND7SETNOTE||FEAT_COMMAND7VOLUMEONLY
+   777 					nop
+   778 					jmp cmd2
+   779 					EIF
+   780 					IFT FEAT_COMMAND3||FEAT_COMMAND4||FEAT_COMMAND5||FEAT_COMMAND6||FEAT_COMMAND7SETNOTE||FEAT_COMMAND7VOLUMEONLY
+   781 					nop
+   782 					jmp cmd3
+   783 					EIF
+   784 					IFT FEAT_COMMAND4||FEAT_COMMAND5||FEAT_COMMAND6||FEAT_COMMAND7SETNOTE||FEAT_COMMAND7VOLUMEONLY
+   785 					nop
+   786 					jmp cmd4
+   787 					EIF
+   788 					IFT FEAT_COMMAND5||FEAT_COMMAND6||FEAT_COMMAND7SETNOTE||FEAT_COMMAND7VOLUMEONLY
+   789 					nop
+   790 					jmp cmd5
+   791 					EIF
+   792 					IFT FEAT_COMMAND6||FEAT_COMMAND7SETNOTE||FEAT_COMMAND7VOLUMEONLY
+   793 					nop
+   794 					jmp cmd6
+   795 					EIF
+   796 					IFT FEAT_COMMAND7SETNOTE||FEAT_COMMAND7VOLUMEONLY
+   797 					nop
+   798 					jmp cmd7
+   799 					EIF
+   800 					EIF
+   801 					ELS
+   802 					IFT FEAT_FILTER||FEAT_BASS16
+   803 					lda reg2
+   804 					sta trackn_command,x
+   805 					EIF
+   806 					EIF
+   807 365F			cmd1
+   808 					IFT FEAT_COMMAND1
+   809 365F A5 DB			lda reg3
+   810 3661 4C 80 36			jmp cmd0c
+   811 					EIF
+   812 3664			cmd2
+   813 					IFT FEAT_COMMAND2
+   814 					lda reg3
+   815 					sta frqaddcmd2
+   816 					lda trackn_note,x
+   817 					jmp cmd0a
+   818 					EIF
+   819 3664			cmd3
+   820 					IFT FEAT_COMMAND3
+   821 					lda trackn_note,x
+   822 					clc
+   823 					adc reg3
+   824 					sta trackn_note,x
+   825 					jmp cmd0a
+   826 					EIF
+   827 3664			cmd4
+   828 					IFT FEAT_COMMAND4
+   829 					lda trackn_shiftfrq,x
+   830 					clc
+   831 					adc reg3
+   832 					sta trackn_shiftfrq,x
+   833 					lda trackn_note,x
+   834 					jmp cmd0a
+   835 					EIF
+   836 3664			cmd5
+   837 					IFT FEAT_COMMAND5&&FEAT_PORTAMENTO
+   838 					IFT FEAT_TABLETYPE
+   839 					lda trackn_tabletypespeed,x
+   840 					bpl cmd5a1
+   841 					ldy trackn_note,x
+   842 					lda (nr),y
+   843 					clc
+   844 					adc trackn_tablenote,x
+   845 					jmp cmd5ax
+   846 					EIF
+   847 				cmd5a1
+   848 					lda trackn_note,x
+   849 					clc
+   850 					adc trackn_tablenote,x
+   851 					cmp #61
+   852 					bcc cmd5a2
+   853 					lda #63
+   854 				cmd5a2
+   855 					tay
+   856 					lda (nr),y
+   857 				cmd5ax
+   858 					sta trackn_portafrqc,x
+   859 					ldy reg3
+   860 					bne cmd5a
+   861 					sta trackn_portafrqa,x
+   862 				cmd5a
+   863 					tya
+   864 					lsr @
+   865 					lsr @
+   866 					lsr @
+   867 					lsr @
+   868 					sta trackn_portaspeed,x
+   869 					sta trackn_portaspeeda,x
+   870 					lda reg3
+   871 					and #$0f
+   872 					sta trackn_portadepth,x
+   873 					lda trackn_note,x
+   874 					jmp cmd0a
+   875 					ELI FEAT_COMMAND5
+   876 					lda trackn_note,x
+   877 					jmp cmd0a
+   878 					EIF
+   879 3664			cmd6
+   880 					IFT FEAT_COMMAND6&&FEAT_FILTER
+   881 					lda reg3
+   882 					clc
+   883 					adc trackn_filter,x
+   884 					sta trackn_filter,x
+   885 					lda trackn_note,x
+   886 					jmp cmd0a
+   887 					ELI FEAT_COMMAND6
+   888 					lda trackn_note,x
+   889 					jmp cmd0a
+   890 					EIF
+   891 3664			cmd7
+   892 					IFT FEAT_COMMAND7SETNOTE||FEAT_COMMAND7VOLUMEONLY
+   893 					IFT FEAT_COMMAND7SETNOTE
+   894 					lda reg3
+   895 					IFT FEAT_COMMAND7VOLUMEONLY
+   896 					cmp #$80
+   897 					beq cmd7a
+   898 					EIF
+   899 					sta trackn_note,x
+   900 					jmp cmd0a
+   901 					EIF
+   902 					IFT FEAT_COMMAND7VOLUMEONLY
+   903 				cmd7a
+   904 					lda trackn_audc,x
+   905 					ora #$f0
+   906 					sta trackn_audc,x
+   907 					lda trackn_note,x
+   908 					jmp cmd0a
+   909 					EIF
+   910 					EIF
+   911 3664			cmd0
+   912 3664 BD F0 30			lda trackn_note,x
+   913 3667 18				clc
+   914 3668 65 DB			adc reg3
+   915 366A			cmd0a
+   916 					IFT FEAT_TABLETYPE
+   917 					ldy trackn_tabletypespeed,x
+   918 					bmi cmd0b
+   919 					EIF
+   920 366A 18				clc
+   921 366B 7D 28 31			adc trackn_tablenote,x
+   922 366E C9 3D			cmp #61
+   923 3670 90 07			bcc cmd0a1
+   924 3672 A9 00			lda #0
+   925 3674 9D 3C 31			sta trackn_audc,x
+   926 3677 A9 3F			lda #63
+   927 3679			cmd0a1
+   928 					IFT FEAT_BASS16
+   929 					sta trackn_outnote,x
+   930 					EIF
+   931 3679 A8				tay
+   932 367A B1 D5			lda (nr),y
+   933 367C 18				clc
+   934 367D 7D FC 30			adc trackn_shiftfrq,x
+   935 					IFT FEAT_COMMAND2
+   936 					clc
+   937 					adc frqaddcmd2
+   938 					EIF
+   939 					IFT FEAT_TABLETYPE
+   940 					jmp cmd0c
+   941 				cmd0b
+   942 					cmp #61
+   943 					bcc cmd0b1
+   944 					lda #0
+   945 					sta trackn_audc,x
+   946 					lda #63
+   947 				cmd0b1
+   948 					tay
+   949 					lda trackn_shiftfrq,x
+   950 					clc
+   951 					adc trackn_tablenote,x
+   952 					clc
+   953 					adc (nr),y
+   954 					IFT FEAT_COMMAND2
+   955 					clc
+   956 					adc frqaddcmd2
+   957 					EIF
+   958 					EIF
+   959 3680			cmd0c
+   960 3680 9D 38 31			sta trackn_audf,x
+   961 3683			pp9
+   962 					IFT FEAT_PORTAMENTO
+   963 					lda trackn_portaspeeda,x
+   964 					beq pp10
+   965 					dec trackn_portaspeeda,x
+   966 					bne pp10
+   967 					lda trackn_portaspeed,x
+   968 					sta trackn_portaspeeda,x
+   969 					lda trackn_portafrqa,x
+   970 					cmp trackn_portafrqc,x
+   971 					beq pp10
+   972 					bcs pps1
+   973 					adc trackn_portadepth,x
+   974 					bcs pps8
+   975 					cmp trackn_portafrqc,x
+   976 					bcs pps8
+   977 					jmp pps9
+   978 				pps1
+   979 					sbc trackn_portadepth,x
+   980 					bcc pps8
+   981 					cmp trackn_portafrqc,x
+   982 					bcs pps9
+   983 				pps8
+   984 					lda trackn_portafrqc,x
+   985 				pps9
+   986 					sta trackn_portafrqa,x
+   987 				pp10
+   988 					lda reg2
+   989 					and #$01
+   990 					beq pp11
+   991 					lda trackn_portafrqa,x
+   992 					clc
+   993 					adc trackn_shiftfrq,x
+   994 					sta trackn_audf,x
+   995 				pp11
+   996 					EIF
+   997 3683			ppnext
+   998 3683 CA				dex
+   999 3684 30 03			bmi rmt_p4
+  1000 3686 4C B5 35			jmp pp1
+  1001 3689			rmt_p4
+  1002 					IFT FEAT_AUDCTLMANUALSET
+  1003 					lda trackn_audctl+0
+  1004 					ora trackn_audctl+1
+  1005 					ora trackn_audctl+2
+  1006 					ora trackn_audctl+3
+  1007 					tax
+  1008 					ELS
+  1009 3689 A2 00			ldx #0
+  1010 					EIF
+  1011 368B			qq1
+  1012 368B 8E 95 36			stx v_audctl
+  1013 					IFT FEAT_FILTER
+  1014 					IFT FEAT_FILTERG0L
+  1015 					lda trackn_command+0
+  1016 					bpl qq2
+  1017 					lda trackn_audc+0
+  1018 					and #$0f
+  1019 					beq qq2
+  1020 					lda trackn_audf+0
+  1021 					clc
+  1022 					adc trackn_filter+0
+  1023 					sta trackn_audf+2
+  1024 					IFT FEAT_COMMAND7VOLUMEONLY&&FEAT_VOLUMEONLYG2L
+  1025 					lda trackn_audc+2
+  1026 					and #$10
+  1027 					bne qq1a
+  1028 					EIF
+  1029 					lda #0
+  1030 					sta trackn_audc+2
+  1031 				qq1a
+  1032 					txa
+  1033 					ora #4
+  1034 					tax
+  1035 					EIF
+  1036 				qq2
+  1037 					IFT FEAT_FILTERG1L
+  1038 					lda trackn_command+1
+  1039 					bpl qq3
+  1040 					lda trackn_audc+1
+  1041 					and #$0f
+  1042 					beq qq3
+  1043 					lda trackn_audf+1
+  1044 					clc
+  1045 					adc trackn_filter+1
+  1046 					sta trackn_audf+3
+  1047 					IFT FEAT_COMMAND7VOLUMEONLY&&FEAT_VOLUMEONLYG3L
+  1048 					lda trackn_audc+3
+  1049 					and #$10
+  1050 					bne qq2a
+  1051 					EIF
+  1052 					lda #0
+  1053 					sta trackn_audc+3
+  1054 				qq2a
+  1055 					txa
+  1056 					ora #2
+  1057 					tax
+  1058 					EIF
+  1059 				qq3
+  1060 					IFT FEAT_FILTERG0L||FEAT_FILTERG1L
+  1061 					cpx v_audctl
+  1062 					bne qq5
+  1063 					EIF
+  1064 					EIF
+  1065 					IFT FEAT_BASS16
+  1066 					IFT FEAT_BASS16G1L
+  1067 					lda trackn_command+1
+  1068 					and #$0e
+  1069 					cmp #6
+  1070 					bne qq4
+  1071 					lda trackn_audc+1
+  1072 					and #$0f
+  1073 					beq qq4
+  1074 					ldy trackn_outnote+1
+  1075 					lda frqtabbasslo,y
+  1076 					sta trackn_audf+0
+  1077 					lda frqtabbasshi,y
+  1078 					sta trackn_audf+1
+  1079 					IFT FEAT_COMMAND7VOLUMEONLY&&FEAT_VOLUMEONLYG0L
+  1080 					lda trackn_audc+0
+  1081 					and #$10
+  1082 					bne qq3a
+  1083 					EIF
+  1084 					lda #0
+  1085 					sta trackn_audc+0
+  1086 				qq3a
+  1087 					txa
+  1088 					ora #$50
+  1089 					tax
+  1090 					EIF
+  1091 				qq4
+  1092 					IFT FEAT_BASS16G3L
+  1093 					lda trackn_command+3
+  1094 					and #$0e
+  1095 					cmp #6
+  1096 					bne qq5
+  1097 					lda trackn_audc+3
+  1098 					and #$0f
+  1099 					beq qq5
+  1100 					ldy trackn_outnote+3
+  1101 					lda frqtabbasslo,y
+  1102 					sta trackn_audf+2
+  1103 					lda frqtabbasshi,y
+  1104 					sta trackn_audf+3
+  1105 					IFT FEAT_COMMAND7VOLUMEONLY&&FEAT_VOLUMEONLYG2L
+  1106 					lda trackn_audc+2
+  1107 					and #$10
+  1108 					bne qq4a
+  1109 					EIF
+  1110 					lda #0
+  1111 					sta trackn_audc+2
+  1112 				qq4a
+  1113 					txa
+  1114 					ora #$28
+  1115 					tax
+  1116 					EIF
+  1117 					EIF
+  1118 368E			qq5
+  1119 368E 8E 95 36			stx v_audctl
+  1120 					IFT TRACKS>4
+  1121 					IFT FEAT_AUDCTLMANUALSET
+  1122 					lda trackn_audctl+4
+  1123 					ora trackn_audctl+5
+  1124 					ora trackn_audctl+6
+  1125 					ora trackn_audctl+7
+  1126 					tax
+  1127 					ELS
+  1128 					ldx #0
+  1129 					EIF
+  1130 					stx v_audctl2
+  1131 					IFT FEAT_FILTER
+  1132 					IFT FEAT_FILTERG0R
+  1133 					lda trackn_command+0+4
+  1134 					bpl qs2
+  1135 					lda trackn_audc+0+4
+  1136 					and #$0f
+  1137 					beq qs2
+  1138 					lda trackn_audf+0+4
+  1139 					clc
+  1140 					adc trackn_filter+0+4
+  1141 					sta trackn_audf+2+4
+  1142 					IFT FEAT_COMMAND7VOLUMEONLY&&FEAT_VOLUMEONLYG2R
+  1143 					lda trackn_audc+2+4
+  1144 					and #$10
+  1145 					bne qs1a
+  1146 					EIF
+  1147 					lda #0
+  1148 					sta trackn_audc+2+4
+  1149 				qs1a
+  1150 					txa
+  1151 					ora #4
+  1152 					tax
+  1153 					EIF
+  1154 				qs2
+  1155 					IFT FEAT_FILTERG1R
+  1156 					lda trackn_command+1+4
+  1157 					bpl qs3
+  1158 					lda trackn_audc+1+4
+  1159 					and #$0f
+  1160 					beq qs3
+  1161 					lda trackn_audf+1+4
+  1162 					clc
+  1163 					adc trackn_filter+1+4
+  1164 					sta trackn_audf+3+4
+  1165 					IFT FEAT_COMMAND7VOLUMEONLY&&FEAT_VOLUMEONLYG3R
+  1166 					lda trackn_audc+3+4
+  1167 					and #$10
+  1168 					bne qs2a
+  1169 					EIF
+  1170 					lda #0
+  1171 					sta trackn_audc+3+4
+  1172 				qs2a
+  1173 					txa
+  1174 					ora #2
+  1175 					tax
+  1176 					EIF
+  1177 				qs3
+  1178 					IFT FEAT_FILTERG0R||FEAT_FILTERG1R
+  1179 					cpx v_audctl2
+  1180 					bne qs5
+  1181 					EIF
+  1182 					EIF
+  1183 					IFT FEAT_BASS16
+  1184 					IFT FEAT_BASS16G1R
+  1185 					lda trackn_command+1+4
+  1186 					and #$0e
+  1187 					cmp #6
+  1188 					bne qs4
+  1189 					lda trackn_audc+1+4
+  1190 					and #$0f
+  1191 					beq qs4
+  1192 					ldy trackn_outnote+1+4
+  1193 					lda frqtabbasslo,y
+  1194 					sta trackn_audf+0+4
+  1195 					lda frqtabbasshi,y
+  1196 					sta trackn_audf+1+4
+  1197 					IFT FEAT_COMMAND7VOLUMEONLY&&FEAT_VOLUMEONLYG0R
+  1198 					lda trackn_audc+0+4
+  1199 					and #$10
+  1200 					bne qs3a
+  1201 					EIF
+  1202 					lda #0
+  1203 					sta trackn_audc+0+4
+  1204 				qs3a
+  1205 					txa
+  1206 					ora #$50
+  1207 					tax
+  1208 					EIF
+  1209 				qs4
+  1210 					IFT FEAT_BASS16G3R
+  1211 					lda trackn_command+3+4
+  1212 					and #$0e
+  1213 					cmp #6
+  1214 					bne qs5
+  1215 					lda trackn_audc+3+4
+  1216 					and #$0f
+  1217 					beq qs5
+  1218 					ldy trackn_outnote+3+4
+  1219 					lda frqtabbasslo,y
+  1220 					sta trackn_audf+2+4
+  1221 					lda frqtabbasshi,y
+  1222 					sta trackn_audf+3+4
+  1223 					IFT FEAT_COMMAND7VOLUMEONLY&&FEAT_VOLUMEONLYG2R
+  1224 					lda trackn_audc+2+4
+  1225 					and #$10
+  1226 					bne qs4a
+  1227 					EIF
+  1228 					lda #0
+  1229 					sta trackn_audc+2+4
+  1230 				qs4a
+  1231 					txa
+  1232 					ora #$28
+  1233 					tax
+  1234 					EIF
+  1235 					EIF
+  1236 				qs5
+  1237 					stx v_audctl2
+  1238 					EIF
+  1239 3691			rmt_p5
+  1240 					IFT FEAT_INSTRSPEED==0||FEAT_INSTRSPEED>1
+  1241 					lda #$ff
+  1242 				v_ainstrspeed equ *-1
+  1243 					ELS
+  1244 3691 A9 01			lda #1
+  1245 					EIF
+  1246 3693 60				rts
+  1247 3694			SetPokey
+  1248 					IFT STEREOMODE==1		;* L1 L2 L3 L4 R1 R2 R3 R4
+  1249 					ldy #$ff
+  1250 				v_audctl2 equ *-1
+  1251 					lda trackn_audf+0+4
+  1252 					ldx trackn_audf+0
+  1253 				xstastx01	sta $d210
+  1254 					stx $d200
+  1255 					lda trackn_audc+0+4
+  1256 					ldx trackn_audc+0
+  1257 				xstastx02	sta $d211
+  1258 					stx $d201
+  1259 					lda trackn_audf+1+4
+  1260 					ldx trackn_audf+1
+  1261 				xstastx03	sta $d212
+  1262 					stx $d202
+  1263 					lda trackn_audc+1+4
+  1264 					ldx trackn_audc+1
+  1265 				xstastx04	sta $d213
+  1266 					stx $d203
+  1267 					lda trackn_audf+2+4
+  1268 					ldx trackn_audf+2
+  1269 				xstastx05	sta $d214
+  1270 					stx $d204
+  1271 					lda trackn_audc+2+4
+  1272 					ldx trackn_audc+2
+  1273 				xstastx06	sta $d215
+  1274 					stx $d205
+  1275 					lda trackn_audf+3+4
+  1276 					ldx trackn_audf+3
+  1277 				xstastx07	sta $d216
+  1278 					stx $d206
+  1279 					lda trackn_audc+3+4
+  1280 					ldx trackn_audc+3
+  1281 				xstastx08	sta $d217
+  1282 					stx $d207
+  1283 					lda #$ff
+  1284 				v_audctl equ *-1
+  1285 				xstysta01	sty $d218
+  1286 					sta $d208
+  1287 					ELI STEREOMODE==0		;* L1 L2 L3 L4
+  1288 3694 A0 FF			ldy #$ff
+  1289 = 3695			v_audctl equ *-1
+  1290 3696 AD 38 31			lda trackn_audf+0
+  1291 3699 AE 3C 31			ldx trackn_audc+0
+  1292 369C 8D 00 D2			sta $d200
+  1293 369F 8E 01 D2			stx $d201
+  1294 36A2 AD 39 31			lda trackn_audf+1
+  1295 36A5 AE 3D 31			ldx trackn_audc+1
+  1296 36A8 8D 02 D2			sta $d200+2
+  1297 36AB 8E 03 D2			stx $d201+2
+  1298 36AE AD 3A 31			lda trackn_audf+2
+  1299 36B1 AE 3E 31			ldx trackn_audc+2
+  1300 36B4 8D 04 D2			sta $d200+4
+  1301 36B7 8E 05 D2			stx $d201+4
+  1302 36BA AD 3B 31			lda trackn_audf+3
+  1303 36BD AE 3F 31			ldx trackn_audc+3
+  1304 36C0 8D 06 D2			sta $d200+6
+  1305 36C3 8E 07 D2			stx $d201+6
+  1306 36C6 8C 08 D2			sty $d208
+  1307 					ELI STEREOMODE==2		;* L1 R2 R3 L4
+  1308 					ldy #$ff
+  1309 				v_audctl equ *-1
+  1310 					lda trackn_audf+0
+  1311 					ldx trackn_audc+0
+  1312 					sta $d200
+  1313 					stx $d201
+  1314 					sta $d210
+  1315 					lda trackn_audf+1
+  1316 					ldx trackn_audc+1
+  1317 					sta $d210+2
+  1318 					stx $d211+2
+  1319 					lda trackn_audf+2
+  1320 					ldx trackn_audc+2
+  1321 					sta $d210+4
+  1322 					stx $d211+4
+  1323 					sta $d200+4
+  1324 					lda trackn_audf+3
+  1325 					ldx trackn_audc+3
+  1326 					sta $d200+6
+  1327 					stx $d201+6
+  1328 					sta $d210+6
+  1329 					sty $d218
+  1330 					sty $d208
+  1331 					ELI STEREOMODE==3		;* L1 L2 R3 R4
+  1332 					ldy #$ff
+  1333 				v_audctl equ *-1
+  1334 					lda trackn_audf+0
+  1335 					ldx trackn_audc+0
+  1336 					sta $d200
+  1337 					stx $d201
+  1338 					lda trackn_audf+1
+  1339 					ldx trackn_audc+1
+  1340 					sta $d200+2
+  1341 					stx $d201+2
+  1342 					lda trackn_audf+2
+  1343 					ldx trackn_audc+2
+  1344 					sta $d210+4
+  1345 					stx $d211+4
+  1346 					sta $d200+4
+  1347 					lda trackn_audf+3
+  1348 					ldx trackn_audc+3
+  1349 					sta $d210+6
+  1350 					stx $d211+6
+  1351 					sta $d200+6
+  1352 					sty $d218
+  1353 					sty $d208
+  1354 					EIF
+  1355 36C9 60				rts
+  1356 36CA			RMTPLAYEREND
+    13 				;
+    14 				;
+    15 = 1000			MODUL	equ $1000				;address of RMT module
+    16
+    17 36CA				org MODUL
+    18
+    19 				;*
+    20 				;* RMT FEATures definitions file
+    21 				;* For optimizations of RMT player routine to concrete RMT modul only!
+    22
+    23 1000				icl "music.feat"
+Source: D:\!Delphi\mads\examples\music\rmt_player_relocator\example\music.feat
+     1 				;* --------BEGIN--------
+     2 				;* D:\!Atari\P O K E Y\RMT\songs\dddsd.rmt
+     3 = 0000			FEAT_SFX		equ 0
+     4 = 0000			FEAT_GLOBALVOLUMEFADE	equ 0		;RMTGLOBALVOLUMEFADE variable
+     5 = 0000			FEAT_NOSTARTINGSONGLINE	equ 0
+     6 = 0001			FEAT_INSTRSPEED		equ 1
+     7 = 0006			FEAT_CONSTANTSPEED		equ 6		;(0 times)
+     8 = 0001			FEAT_COMMAND1		equ 1		;(11 times)
+     9 = 0000			FEAT_COMMAND2		equ 0		;(0 times)
+    10 = 0000			FEAT_COMMAND3		equ 0		;(0 times)
+    11 = 0000			FEAT_COMMAND4		equ 0		;(0 times)
+    12 = 0000			FEAT_COMMAND5		equ 0		;(0 times)
+    13 = 0000			FEAT_COMMAND6		equ 0		;(0 times)
+    14 = 0000			FEAT_COMMAND7SETNOTE		equ 0		;(0 times)
+    15 = 0000			FEAT_COMMAND7VOLUMEONLY		equ 0		;(0 times)
+    16 = 0000			FEAT_PORTAMENTO		equ 0		;(0 times)
+    17 = 0000			FEAT_FILTER		equ 0		;(0 times)
+    18 = 0000			FEAT_FILTERG0L		equ 0		;(0 times)
+    19 = 0000			FEAT_FILTERG1L		equ 0		;(0 times)
+    20 = 0000			FEAT_FILTERG0R		equ 0		;(0 times)
+    21 = 0000			FEAT_FILTERG1R		equ 0		;(0 times)
+    22 = 0000			FEAT_BASS16		equ 0		;(0 times)
+    23 = 0000			FEAT_BASS16G1L		equ 0		;(0 times)
+    24 = 0000			FEAT_BASS16G3L		equ 0		;(0 times)
+    25 = 0000			FEAT_BASS16G1R		equ 0		;(0 times)
+    26 = 0000			FEAT_BASS16G3R		equ 0		;(0 times)
+    27 = 0000			FEAT_VOLUMEONLYG0L		equ 0		;(0 times)
+    28 = 0000			FEAT_VOLUMEONLYG2L		equ 0		;(0 times)
+    29 = 0000			FEAT_VOLUMEONLYG3L		equ 0		;(0 times)
+    30 = 0000			FEAT_VOLUMEONLYG0R		equ 0		;(0 times)
+    31 = 0000			FEAT_VOLUMEONLYG2R		equ 0		;(0 times)
+    32 = 0000			FEAT_VOLUMEONLYG3R		equ 0		;(0 times)
+    33 = 0000			FEAT_TABLETYPE		equ 0		;(0 times)
+    34 = 0000			FEAT_TABLEMODE		equ 0		;(0 times)
+    35 = 0000			FEAT_TABLEGO		equ 0		;(0 times)
+    36 = 0000			FEAT_AUDCTLMANUALSET		equ 0		;(0 times)
+    37 = 0000			FEAT_VOLUMEMIN		equ 0		;(0 times)
+    38 = 0000			FEAT_EFFECTVIBRATO		equ 0		;(0 times)
+    39 = 0000			FEAT_EFFECTFSHIFT		equ 0		;(0 times)
+    40 				;* --------END--------
+    24
+    25 1000				rmt_relocator 'music.rmt' MODUL		;include music RMT module
+Macro: RMT_RELOCATOR [Source: D:\!Delphi\mads\examples\music\rmt_player_relocator\example\..\rmt_relocator.mac]
+     2 1000				.get [$100] 'music.rmt',0,6				// wczytujemy plik do bufora MADS'a
+     6 = 1000			new_add = MODUL						// nowy adres dla modulu RMT
+     8 = 4000			old_add	= .get[$102] + .get[$103]<<8			// stary adres modulu RMT
+    10 = 0116			length	= .get[$104] + .get[$105]<<8 - old_add + 1	// dlugosc pliku RMT bez naglowka DOS'u
+    12 = FFFFD000		ofset	= new_add-old_add
+    14 1000				.get [old_add-6] 'music.rmt'
+    16  [3FFC] 00			.put[old_add-4] = .lo(new_add)				// poprawiamy nag³ówek DOS'a
+    17  [3FFD] 10			.put[old_add-3] = .hi(new_add)				// tak aby zawieral informacje o nowym
+    19  [3FFE] 15			.put[old_add-2] = .lo(new_add + length - 1)		// adresie modulu RMT
+    20  [3FFF] 11			.put[old_add-1] = .hi(new_add + length - 1)
+    22 = 0034			type	= .get[old_add+3]
+    24 = 4010			pinst	= .get[old_add+8] + .get[old_add+9]<<8
+    25 = 401A			pltrc	= .get[old_add+10] + .get[old_add+11]<<8
+    26 = 401E			phtrc	= .get[old_add+12] + .get[old_add+13]<<8
+    27 = 410E			ptlst	= .get[old_add+14] + .get[old_add+15]<<8
+    29  [4008] 10			.put[old_add+8] = .lo(pinst+ofset)
+    30  [4009] 10			.put[old_add+9] = .hi(pinst+ofset)
+    32  [400A] 1A			.put[old_add+10] = .lo(pltrc+ofset)
+    33  [400B] 10			.put[old_add+11] = .hi(pltrc+ofset)
+    35  [400C] 1E			.put[old_add+12] = .lo(phtrc+ofset)
+    36  [400D] 10			.put[old_add+13] = .hi(phtrc+ofset)
+    38  [400E] 0E			.put[old_add+14] = .lo(ptlst+ofset)
+    39  [400F] 11			.put[old_add+15] = .hi(ptlst+ofset)
+    43 = 4022				?TMP = .GET[PINST+#*2] + .GET[PINST+#*2+1]<<8
+    43  [4010] 22			.PUT[PINST+#*2] = .LO(?TMP+OFSET)
+    43  [4011] 10			.PUT[PINST+#*2+1] = .HI(?TMP+OFSET)
+    43 = 4034				?TMP = .GET[PINST+#*2] + .GET[PINST+#*2+1]<<8
+    43  [4012] 34			.PUT[PINST+#*2] = .LO(?TMP+OFSET)
+    43  [4013] 10			.PUT[PINST+#*2+1] = .HI(?TMP+OFSET)
+    43 = 4044				?TMP = .GET[PINST+#*2] + .GET[PINST+#*2+1]<<8
+    43  [4014] 44			.PUT[PINST+#*2] = .LO(?TMP+OFSET)
+    43  [4015] 10			.PUT[PINST+#*2+1] = .HI(?TMP+OFSET)
+    43 = 4054				?TMP = .GET[PINST+#*2] + .GET[PINST+#*2+1]<<8
+    43  [4016] 54			.PUT[PINST+#*2] = .LO(?TMP+OFSET)
+    43  [4017] 10			.PUT[PINST+#*2+1] = .HI(?TMP+OFSET)
+    43 = 407F				?TMP = .GET[PINST+#*2] + .GET[PINST+#*2+1]<<8
+    43  [4018] 7F			.PUT[PINST+#*2] = .LO(?TMP+OFSET)
+    43  [4019] 10			.PUT[PINST+#*2+1] = .HI(?TMP+OFSET)
+    52 = 409B				?TMP = .GET[PLTRC+#] + .GET[PHTRC+#]<<8
+    52  [401A] 9B			.PUT[PLTRC+#] = .LO(?TMP+OFSET)
+    52  [401E] 10			.PUT[PHTRC+#] = .HI(?TMP+OFSET)
+    52 = 40A7				?TMP = .GET[PLTRC+#] + .GET[PHTRC+#]<<8
+    52  [401B] A7			.PUT[PLTRC+#] = .LO(?TMP+OFSET)
+    52  [401F] 10			.PUT[PHTRC+#] = .HI(?TMP+OFSET)
+    52 = 40D9				?TMP = .GET[PLTRC+#] + .GET[PHTRC+#]<<8
+    52  [401C] D9			.PUT[PLTRC+#] = .LO(?TMP+OFSET)
+    52  [4020] 10			.PUT[PHTRC+#] = .HI(?TMP+OFSET)
+    52 = 40EB				?TMP = .GET[PLTRC+#] + .GET[PHTRC+#]<<8
+    52  [401D] EB			.PUT[PLTRC+#] = .LO(?TMP+OFSET)
+    52  [4021] 10			.PUT[PHTRC+#] = .HI(?TMP+OFSET)
+    66 = 0004				skip=4
+    70 = 410E				?TMP = .GET[PTLST+#*SKIP+2] + .GET[PTLST+#*SKIP+3]<<8
+    70  [4114] 0E			.PUT[PTLST+#*SKIP+2] = .LO(?TMP+OFSET)
+    70  [4115] 11			.PUT[PTLST+#*SKIP+3] = .HI(?TMP+OFSET)
+Source: D:\!Delphi\mads\examples\music\rmt_player_relocator\example\_rmt_player_demo.asm
+    26 							
+    27 				;
+    28 				;
+    29 = D40B			VCOUNT	equ $d40b				;vertical screen lines counter address
+    30 = 02FC			KEY	equ $2fc				;keypressed code
+    31 = 0010			VLINE	equ 16					;screen line for synchronization
+    32 				;
+    33 1116				org $3e00
+    34 3E00			start
+    35 				;
+    36 3E00-3E4F> A2 00			ldx #<MODUL				;low byte of RMT module to X reg
+    37 3E02 A0 10			ldy #>MODUL				;hi byte of RMT module to Y reg
+    38 3E04 A9 00			lda #0					;starting song line 0-255 to A reg
+    39 3E06 20 00 34			jsr RASTERMUSICTRACKER		;Init
+    40 				;Init returns instrument speed (1..4 => from 1/screen to 4/screen)
+    41 3E09 A8				tay
+    42 3E0A B9 4B 3E			lda tabpp-1,y
+    43 3E0D 8D 1E 3E			sta acpapx2+1				;sync counter spacing
+    44 3E10 A9 10			lda #16+0
+    45 3E12 8D 1B 3E			sta acpapx1+1				;sync counter init
+    46 				;
+    47 3E15 A9 FF			lda #255
+    48 3E17 8D FC 02			sta KEY					;no key pressed
+    49 				;
+    50 3E1A			loop
+    51 3E1A A9 FF		acpapx1	lda #$ff				;parameter overwrite (sync line counter value)
+    52 3E1C 18				clc
+    53 3E1D 69 FF		acpapx2	adc #$ff				;parameter overwrite (sync line counter spacing)
+    54 3E1F C9 9C			cmp #156
+    55 3E21 90 02			bcc lop4
+    56 3E23 E9 9C			sbc #156
+    57 3E25			lop4
+    58 3E25 8D 1B 3E			sta acpapx1+1
+    59 3E28			waipap
+    60 3E28 CD 0B D4			cmp VCOUNT				;vertical line counter synchro
+    61 3E2B D0 FB			bne waipap
+    62 				;
+    63 3E2D A9 0F 8D 1A D0		mva #$0f $d01a
+    64
+    65 3E32 20 03 34			jsr RASTERMUSICTRACKER+3        	;1 play
+    66
+    67 3E35 A9 00 8D 1A D0		mva #$00 $d01a
+    68 				;
+    69 3E3A AD FC 02			lda KEY					;keyboard
+    70 3E3D C9 1C			cmp #28					;ESCape key?
+    71 3E3F D0 D9			bne loop				;no => loop
+    72 				;
+    73 3E41			stopmusic
+    74 3E41 A9 FF			lda #255
+    75 3E43 8D FC 02			sta KEY				        ;no key pressed
+    76 				;
+    77 3E46 20 09 34			jsr RASTERMUSICTRACKER+9	        ;all sounds off
+    78 				;
+    79 3E49 6C 0A 00			jmp (10)			        ;DOSVEC => exit to DOS
+    80 				;
+    81 3E4C 9C 4E 34 27		tabpp  dta 156,78,52,39			        ;line counter spacing table for instrument speed from 1 to 4
+    82 				;
+    83 				;
+    84 02E0-02E1> 00 3E			run start			        ;run addr
+    85 				;
+    86 				;that's all... ;-)
+    87
+    88 3E50				icl '..\rmt_relocator.mac'
+Source: D:\!Delphi\mads\examples\music\rmt_player_relocator\example\..\rmt_relocator.mac
+     1
+     2 				/*
+     3 				  RMT Relocator v1.1 (16.12.2008)
+     4
+     5 				  Example:
+     6 						rmt_relocator 'file.rmt' , new_address
+     7 				*/
+     7
+     8
+     9 				.macro	rmt_relocator
+    10 				
+    11 					.get [$100] :1,0,6				// wczytujemy plik do bufora MADS'a
+    12 				
+    13 					ert (.get[$100] + .get[$101]<<8) <> $FFFF , 'Bad file format'
+    14 				
+    15 				new_add = :2						// nowy adres dla modulu RMT
+    16 				
+    17 				old_add	= .get[$102] + .get[$103]<<8			// stary adres modulu RMT
+    18 				
+    19 				length	= .get[$104] + .get[$105]<<8 - old_add + 1	// dlugosc pliku RMT bez naglowka DOS'u
+    20 				
+    21 				ofset	= new_add-old_add
+    22 				
+    23 					.get [old_add-6] :1
+    24 				
+    25 					.put[old_add-4] = .lo(new_add)				// poprawiamy nag³ówek DOS'a
+    26 					.put[old_add-3] = .hi(new_add)				// tak aby zawieral informacje o nowym
+    27 				
+    28 					.put[old_add-2] = .lo(new_add + length - 1)		// adresie modulu RMT
+    29 					.put[old_add-1] = .hi(new_add + length - 1)
+    30 				
+    31 				type	= .get[old_add+3]
+    32 				
+    33 				pinst	= .get[old_add+8] + .get[old_add+9]<<8
+    34 				pltrc	= .get[old_add+10] + .get[old_add+11]<<8
+    35 				phtrc	= .get[old_add+12] + .get[old_add+13]<<8
+    36 				ptlst	= .get[old_add+14] + .get[old_add+15]<<8
+    37 				
+    38 					.put[old_add+8] = .lo(pinst+ofset)
+    39 					.put[old_add+9] = .hi(pinst+ofset)
+    40 				
+    41 					.put[old_add+10] = .lo(pltrc+ofset)
+    42 					.put[old_add+11] = .hi(pltrc+ofset)
+    43 				
+    44 					.put[old_add+12] = .lo(phtrc+ofset)
+    45 					.put[old_add+13] = .hi(phtrc+ofset)
+    46 				
+    47 					.put[old_add+14] = .lo(ptlst+ofset)
+    48 					.put[old_add+15] = .hi(ptlst+ofset)
+    49 				
+    50 				//	ISTRUMENTS
+    51 					.rept (pltrc-pinst)/2
+    52 					?tmp = .get[pinst+#*2] + .get[pinst+#*2+1]<<8
+    53 				
+    54 					.put[pinst+#*2] = .lo(?tmp+ofset)
+    55 					.put[pinst+#*2+1] = .hi(?tmp+ofset)
+    56 				
+    57 					.endr
+    58 				
+    59 				//	TRACKS
+    60 					.rept phtrc-pltrc
+    61 					?tmp = .get[pltrc+#] + .get[phtrc+#]<<8
+    62 				
+    63 					ift ?tmp>0
+    64 					.put[pltrc+#] = .lo(?tmp+ofset)
+    65 					.put[phtrc+#] = .hi(?tmp+ofset)
+    66 					eif
+    67 				
+    68 					.endr
+    69 				
+    70 				//	TRACK LIST
+    71 				
+    72 					ift type='8'
+    73 					skip=8
+    74 					els
+    75 					skip=4
+    76 					eif
+    77 				
+    78 					.rept [(old_add+length-ptlst)/skip]+1
+    79 					ift .get[ptlst+#*skip]=$fe
+    80 					?tmp = .get[ptlst+#*skip+2] + .get[ptlst+#*skip+3]<<8
+    81 					.put[ptlst+#*skip+2] = .lo(?tmp+ofset)
+    82 					.put[ptlst+#*skip+3] = .hi(?tmp+ofset)
+    83 					eif
+    84 					.endr
+    85 				
+    86 					.sav [old_add] length
+    87 				.endm

@@ -1,0 +1,113 @@
+
+RMT 1.x module format
+--------------------------------
+
+
+header struct
+=============
+
+offset	type	desc
+------	----	----
+00	WORD	header string 'RMT4' or 'RMT8'
+04	BYTE	track len ($00 means 256)
+05	BYTE	song speed
+06	BYTE	player freq
+07	BYTE	format version number ($01 for player routine 1.x compatible format)
+08	WORD	pointer to instruments table
+0a	WORD 	pointer to tracks table (lo)
+0c	WORD	pointer to tracks table (hi)
+0e	WORD	pointer to tracks list (SONG)
+
+
+instrument struct
+=================
+
+offset	type	desc
+------	----	----
+00	BYTE	tlen (pointer to end of table of notes)
+01	BYTE 	tgo (pointer to loop of table of notes)
+02	BYTE	elen (pointer to end of envelope)
+03	BYTE	ego (pointer to loop of envelope)
+04	BYTE	tspd (bit 0-5), tmode (bit 6), ttype (bit 7)
+05	BYTE	audctl
+06	BYTE	vslide
+07	BYTE	vmin(bit 4-7)
+08	BYTE	delay ($00 for no vibrato & no fshift)
+09	BYTE	vibrato
+0a	BYTE	fshift
+0b	BYTE	unused
+0c		table of notes
+?		envelope
+
+
+TABLE OF NOTES struct
+=====================
+	BYTE	note or frequence (according to the ttype)
+
+
+ENVELOPE struct
+===============
+	BYTE	volume (bit 0-3 left channel) (bits 4-7 right channel (in RMT4 it's the same as bits 0-3))
+	BYTE	portamento (bit 0), distortion(bit 1-3), command (bit 4-6), filter (bit 7)
+	BYTE	XY
+
+
+TRACK struct
+============
+
+BYTE
+	bit 0-5	note
+	bit 6-7	volume(LO) or pause(1-3 beats) or special
+
+if note is $00-$3c:
+BYTE
+	bit 0-1	volume(HI)
+	bit 2-7 instrument number
+
+if note is $3d:
+BYTE
+	bit 0-1	volume(HI)	volume only
+
+if note is $3e:
+	bit 6-7 pause
+	if pause is $01-$03:	pause 1-3 beats
+	if pause is $00:	next byte pause 1-255 beats
+
+if note is $3f:
+	if bit 6-7 is zero:	next byte speed $01-$ff
+	if bit 6 is zero, 7 is set up:	next byte is track jump pointer (go to $00-$ff from the begin of track data)
+	if bit 6-7 is set up:	END of track
+
+INSTRUMENTS TABLE
+=================
+	WORD	ptr_instr0
+	WORD	ptr_instr1
+	WORD	ptr_instr3
+	...
+
+TRACKS TABLE (LO)
+=================
+	BYTE	lowbyte_of_ptr_track0
+	BYTE	lowbyte_of_ptr_track1
+	BYTE	lowbyte_of_ptr_track2
+	...
+
+TRACKS TABLE (HI)
+=================
+	BYTE	highbyte_of_ptr_track0
+	BYTE	highbyte_of_ptr_track1
+	BYTE	highbyte_of_ptr_track2
+	...
+
+TRACK LIST struct (SONG)
+========================
+	BYTE	tracknumL1,tracknumL2,tracknumL3,tracknumL4,[tracknumR1,..,tracknumR4]
+	BYTE	tracknumL1,tracknumL2,tracknumL3,tracknumL4,[tracknumR1,..,tracknumR4]
+	BYTE	tracknumL1,tracknumL2,tracknumL3,tracknumL4,[tracknumR1,..,tracknumR4]
+	...
+
+if tracknum is FF, then empty track is used
+
+if tracknumL1 is FE, then gotoline(BYTE)=tracknumL2, goto_pointer(WORD)=(tracknumL3,4)
+	Note: gotoline(BYTE) is not used in player (but tracker uses it)
+

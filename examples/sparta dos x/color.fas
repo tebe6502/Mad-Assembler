@@ -1,0 +1,54 @@
+* Symbole SDX
+INSTALL  SMB 'INSTALL'
+S_ADDIZ  SMB 'S_ADDIZ'
+PRINTF   SMB 'PRINTF'
+
+NOCLIK   EQU $02DB
+SOUNDR   EQU $0041
+SHFLOK   EQU $02BE
+KEYREP   EQU $02DA
+KRPDER   EQU $02D9
+COLOR1   EQU $02C5
+COLOR2   EQU $02C6
+COLOR4   EQU $02C8
+LMARGIN  EQU $0052
+
+         BLK SPARTA $2000
+
+         LDA VMAIN
+         LDX VMAIN+1
+         JSR S_ADDIZ
+         BCS ERR
+         DEC INSTALL
+         JMP MAINPROC
+ERR      JSR PRINTF
+         DTA B($9B),C'Cannot install',B($9B)
+         DTA B(0)
+         RTS
+
+VMAIN    DTA V(MAINPROC)
+
+         BLK RELOC MAIN
+
+MAINPROC EQU *
+         LDX #$00
+         STX SHFLOK
+         INX
+         STX NOCLIK
+         STX SOUNDR
+         STX LMARGIN
+         STX COLOR4
+         INX
+         STX KEYREP
+         LDX #$0A
+         STX KRPDER
+         LDX #$0F
+         STX COLOR1
+         LDX #$02
+         STX COLOR2
+         RTS
+
+         BLK UPDATE ADDRESS
+         BLK UPDATE SYMBOL
+
+         END

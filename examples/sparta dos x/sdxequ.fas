@@ -1,0 +1,161 @@
+u_load   smb 'u_load'
+u_unload smb 'u_unload'
+status   smb 'status'
+install  smb 'install'
+_dos     smb '_dos'
+extended smb 'extended'
+_initz   smb '_initz'
+t_       smb 't_'
+u_fail   smb 'u_fail'
+u_sfail  smb 'u_sfail'
+u_xfail  smb 'u_xfail'
+s_add    smb 's_add'
+s_lookup smb 's_lookup'
+s_clear  smb 's_clear'
+symbol   smb 'symbol'
+syslevel smb 'syslevel'
+h_fence  smb 'h_fence'
+s_addiZ  smb 's_addiZ'
+curdev   smb 'curdev'
+u_gefina smb 'u_gefina'
+u_gepath smb 'u_gepath'
+file_p   smb 'file_p'
+flag     smb 'flag'
+pro_name smb 'pro_name'
+u_expand smb 'u_expand'
+fopen    smb 'fopen'
+fclose   smb 'fclose'
+fread    smb 'fread'
+fwrite   smb 'fwrite'
+fgetc    smb 'fgetc'
+fgets    smb 'fgets'
+fputc    smb 'fputc'
+fputs    smb 'fputs'
+fprintf  smb 'fprintf'
+ftell    smb 'ftell'
+fseek    smb 'fseek'
+fileleng smb 'fileleng'
+fcloseal smb 'fcloseal'
+fclevel  smb 'fclevel'
+ffirst   smb 'ffirst'
+fnext    smb 'fnext'
+fdopen   smb 'fdopen'
+fdgetc   smb 'fdgetc'
+fdclose  smb 'fdclose'
+rename   smb 'rename'
+remove   smb 'remove'
+mkdir    smb 'mkdir'
+rmdir    smb 'rmdir'
+chdir    smb 'chdir'
+getcwd   smb 'getcwd'
+chmod    smb 'chmod'
+getdfree smb 'getdfree'
+setboot  smb 'setboot'
+printf   smb 'printf'
+putc     smb 'putc'
+puts     smb 'puts'
+getc     smb 'getc'
+gets     smb 'gets'
+vprintf  smb 'vprintf'
+put_v    smb 'put_v'
+divio    smb 'divio'
+xdivio   smb 'xdivio'
+format   smb 'format'
+builddir smb 'builddir'
+malloc   smb 'malloc'
+mul_32   smb 'mul_32'
+div_32   smb 'div_32'
+u_getpar smb 'u_getpar'
+u_getnum smb 'u_getnum'
+u_getatr smb 'u_getatr'
+u_slash  smb 'u_slash'
+u_param  smb 'u_param'
+u_gonoff smb 'u_gonoff'
+u_token  smb 'u_token'
+u_fspec  smb 'u_fspec'
+u_error  smb 'u_error'
+toupper  smb 'toupper'
+ckspec   smb 'ckspec'
+_cio     smb '_cio'
+_edit    smb '_edit'
+_crunch  smb '_crunch'
+getenv   smb 'getenv'
+putenv   smb 'putenv'
+numenv   smb 'numenv'
+comtab   smb 'comtab'
+
+* COMTAB offsets
+
+dater    equ 13
+timer    equ 16
+_800flg  equ 27
+pbmask   equ 28
+nbnks    equ 29
+bankflg  equ 30
+confnam  equ 33
+
+* COMTAB variables
+
+jlsio    equ $070c
+sioidx   equ $070f
+siotbl   equ $0718
+siocbidx equ $0760
+device   equ $0761
+name     equ $0762
+names    equ $076d
+opmode   equ $0778
+fatr1    equ $0779
+fatr2    equ $077a
+date     equ $077b
+time     equ $077e
+dateset  equ $0781
+faux1    equ $0782
+faux2    equ $0783
+faux3    equ $0784
+faux4    equ $0785
+faux5    equ $0786
+syscall  equ $0787
+
+* Directory entry
+
+dirbuf   equ $0789
+dirfatr  equ dirbuf
+dirf1sec equ dirbuf+1
+dirflen  equ dirbuf+3
+dirfname equ dirbuf+6
+dirfdate equ dirbuf+17
+dirftime equ dirbuf+20
+
+path     equ $07a0
+
+* Disk characteristic
+
+chkdsk   equ $07a0
+dskver   equ chkdsk
+bpsec    equ chkdsk+1
+sectot   equ chkdsk+2
+secfree  equ chkdsk+4
+dskname  equ chkdsk+6
+dskns    equ chkdsk+14
+dskrn    equ chkdsk+15
+
+* Memory management
+
+jext_on  equ $07f1
+jext_off equ $07f4
+jext_sw  equ $07f7
+
+* Multiplication & division registers
+
+v3_32    equ $0b57
+v2_32    equ $0b5b
+v1_32    equ $0b5f
+
+* Vectors under ROM
+
+jgettd   equ $ffc0
+jsettd   equ $ffc3
+jtdon    equ $ffc6
+jfmttd   equ $ffc9
+jxcomli  equ $ffd2
+jkeyon   equ $ffd5
