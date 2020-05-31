@@ -1,0 +1,114 @@
+mads 2.0.0 build 18 (5 Jun 15)
+Source: D:\!Delphi\mads\examples\LIBRARIES\graph_os\example.asm
+     1
+     2 				/*
+     3 				  Przyk³ad wykorzystania biblioteki procedur graficznych GRAPH_OS.OBX
+     4 				*/
+     4
+     5
+     6 					org $2000
+     7
+     8 				main
+     9
+    10 					graphics #$60 #$f #%00010000	; kana³, tryb OS, typ_ekranu
+    10 				 LDX# $60\ LDY# $F\ LDA# %00010000\ JSR GRAPHICS
+    10 FFFF> 2000-21A4> A2 60	 LDX# $60
+    10 2002 A0 0F		 LDY# $F
+    10 2004 A9 10		 LDA# %00010000
+    10 2006 20 A1 20		 JSR GRAPHICS
+    11
+    12 				; typ_ekranu:
+    13 				;		bit 5 - bez kasowanie pamieci ekranu
+    14 				;		bit 4 - z oknem tekstowym
+    15 				;		bit 2 - odczyt z ekranu
+    16
+    17 					color #3			; kolor pisaka
+    17 				 LDX# 3\ JSR COLOR
+    17 2009 A2 03		 LDX# 3
+    17 200B 20 D7 20		 JSR COLOR
+    18 					plot #0 #0			; punkt
+    18 				 LDA> 0\ LDX< 0\ LDY# 0\ JSR PLOT
+    18 200E A9 00		 LDA> 0
+    18 2010 A2 00		 LDX< 0
+    18 2012 A0 00		 LDY# 0
+    18 2014 20 DB 20		 JSR PLOT
+    19 					drawto #159 #191		; linia ³¹cz¹ca ostatnio narysowany punkt
+    19 				 LDA> 159\ LDX< 159\ LDY# 191\ JSR DRAWTO
+    19 2017 A9 00		 LDA> 159
+    19 2019 A2 9F		 LDX< 159
+    19 201B A0 BF		 LDY# 191
+    19 201D 20 E3 20		 JSR DRAWTO
+    20
+    21 					color #2
+    21 				 LDX# 2\ JSR COLOR
+    21 2020 A2 02		 LDX# 2
+    21 2022 20 D7 20		 JSR COLOR
+    22 					plot #12 #32
+    22 				 LDA> 12\ LDX< 12\ LDY# 32\ JSR PLOT
+    22 2025 A9 00		 LDA> 12
+    22 2027 A2 0C		 LDX< 12
+    22 2029 A0 20		 LDY# 32
+    22 202B 20 DB 20		 JSR PLOT
+    23
+    24 					plot #32 #64
+    24 				 LDA> 32\ LDX< 32\ LDY# 64\ JSR PLOT
+    24 202E A9 00		 LDA> 32
+    24 2030 A2 20		 LDX< 32
+    24 2032 A0 40		 LDY# 64
+    24 2034 20 DB 20		 JSR PLOT
+    25 					drawto #100 #180
+    25 				 LDA> 100\ LDX< 100\ LDY# 180\ JSR DRAWTO
+    25 2037 A9 00		 LDA> 100
+    25 2039 A2 64		 LDX< 100
+    25 203B A0 B4		 LDY# 180
+    25 203D 20 E3 20		 JSR DRAWTO
+    26
+    27 					color #1
+    27 				 LDX# 1\ JSR COLOR
+    27 2040 A2 01		 LDX# 1
+    27 2042 20 D7 20		 JSR COLOR
+    28 					plot #100 #40
+    28 				 LDA> 100\ LDX< 100\ LDY# 40\ JSR PLOT
+    28 2045 A9 00		 LDA> 100
+    28 2047 A2 64		 LDX< 100
+    28 2049 A0 28		 LDY# 40
+    28 204B 20 DB 20		 JSR PLOT
+    29 					drawto #120 #80
+    29 				 LDA> 120\ LDX< 120\ LDY# 80\ JSR DRAWTO
+    29 204E A9 00		 LDA> 120
+    29 2050 A2 78		 LDX< 120
+    29 2052 A0 50		 LDY# 80
+    29 2054 20 E3 20		 JSR DRAWTO
+    30 					drawto #80 #90
+    30 				 LDA> 80\ LDX< 80\ LDY# 90\ JSR DRAWTO
+    30 2057 A9 00		 LDA> 80
+    30 2059 A2 50		 LDX< 80
+    30 205B A0 5A		 LDY# 90
+    30 205D 20 E3 20		 JSR DRAWTO
+    31 					drawto #80 #30
+    31 				 LDA> 80\ LDX< 80\ LDY# 30\ JSR DRAWTO
+    31 2060 A9 00		 LDA> 80
+    31 2062 A2 50		 LDX< 80
+    31 2064 A0 1E		 LDY# 30
+    31 2066 20 E3 20		 JSR DRAWTO
+    32 					drawto #100 #40
+    32 				 LDA> 100\ LDX< 100\ LDY# 40\ JSR DRAWTO
+    32 2069 A9 00		 LDA> 100
+    32 206B A2 64		 LDX< 100
+    32 206D A0 28		 LDY# 40
+    32 206F 20 E3 20		 JSR DRAWTO
+    33
+    34
+    35 2072 20 ED 20			printf				; wypisujemy tekst, koñczymy znakiem EOF ($88 = 136)
+    36 2075 48 65 6C 6C 6F 20 + 	.by 'Hello %' $9b
+    37 207D 57 6F 72 6C 64 9B + 	.by 'World' $9b 0
+    38 2084 14 00			dta a(20)
+    39
+    40 2086 4C 86 20			jmp *
+    41
+    42 				;---
+    43 2089 84 54 86 55 29 01 + 	.link 'lib\graph_os.obx'
+    44
+    45 20ED 18 68 69 01 85 32 + 	.link '..\stdio\lib\printf.obx'
+    46 				;---
+    47 02E0-02E1> 00 20			run main

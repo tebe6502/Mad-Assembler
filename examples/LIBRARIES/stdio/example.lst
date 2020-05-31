@@ -1,0 +1,73 @@
+mads 1.9.9 build 2 (14 Jan 14)
+Source: D:\!Delphi\mads\examples\LIBRARIES\stdio\example.asm
+     1
+     2 				/*
+     3 				  Przyklad biblioteki standardowych operacji IO dla trybu znakowego (Graphics 0) (zrodla AtariWiki)
+     4
+     5 				  POSXY   (BYTE,BYTE)	- ustawia nowa pozycje X,Y kursora
+     6 				  PUTCHAR (BYTE)	- wyprowadza znak na ekran, na wczesniej ustalonej pozycji kursora X,Y
+     7 				  PUTLINE (WORD)	- wyprowadza ciag znakow ograniczony wartoscia $9B na ekran,
+     8 				  	                  na wczesniej ustalonej pozycji kursora X,Y
+     9 				  GETLINE		- odczyt znakow z klawiatury i zapisanie ich pod wskazanym adresem
+    10
+    11 				  PRINTF		- wyprowadza ciag znakow ograniczony wartoscia $9B na ekran,
+    12 				  	                  na wczesniej ustalonej pozycji kursora X,Y  
+    13 				*/
+    13
+    14
+    15 					org $2000
+    16
+    17 				main
+    18 					putchar	#'}'		; clear screen
+    18 				 LDA# '}'\ JSR PUTCHAR
+    18 FFFF> 2000-2147> A9 7D	 LDA# '}'
+    18 2002 20 4D 20		 JSR PUTCHAR
+    19
+    20 					posxy	#14 , #11	; set cursor position x,y
+    20 				 LDX# 14\ LDY# 11\ JSR POSXY
+    20 2005 A2 0E		 LDX# 14
+    20 2007 A0 0B		 LDY# 11
+    20 2009 20 44 20		 JSR POSXY
+    21
+    22 					putline	#text		; print text
+    22 				 LDY> TEXT\ LDA< TEXT\ JSR PUTLINE
+    22 200C A0 20		 LDY> TEXT
+    22 200E A9 30		 LDA< TEXT
+    22 2010 20 5A 20		 JSR PUTLINE
+    23
+    24
+    25 2013 A9 23			lda	#'#'
+    26 2015 8D 3C 20			sta	text+12		; PRINTF pod znak '#' podstawi wskazany ciag znakowy (STRING)
+    27 					
+    28 					posxy	#20 , #5
+    28 				 LDX# 20\ LDY# 5\ JSR POSXY
+    28 2018 A2 14		 LDX# 20
+    28 201A A0 05		 LDY# 5
+    28 201C 20 44 20		 JSR POSXY
+    29 					putchar	#'>'
+    29 				 LDA# '>'\ JSR PUTCHAR
+    29 201F A9 3E		 LDA# '>'
+    29 2021 20 4D 20		 JSR PUTCHAR
+    30 					getline	#string
+    30 				 LDY> STRING\ LDA< STRING\ JSR GETLINE
+    30 2024 A0 21		 LDY> STRING
+    30 2026 A9 48		 LDA< STRING
+    30 2028 20 2D 21		 JSR GETLINE
+    31
+    32 202B 20 75 20			jsr	printf
+    33 202E 9B				.by	$9b
+    34 202F 9B				.by	$9b
+    35 2030 48 65 6C 6C 6F 20 + text	.by 'Hello World  ' $9b 0
+    36 203F 48 21			.wo	string
+    37
+    38 2041 4C 41 20			jmp	*
+    39
+    40 2044 86 55 84 54 A9 00 + 	.link 'lib\posxy.obx'
+    41 204D A2 00 A8 BD 47 03 + 	.link 'lib\putchar.obx'
+    42 205A A2 00 9D 44 03 98 + 	.link 'lib\putline.obx'
+    43 2075 18 68 69 01 85 32 + 	.link 'lib\printf.obx'
+    44 212D A2 00 9D 44 03 98 + 	.link 'lib\getline.obx'
+    45
+    46 2148			string
+    47
+    48 02E0-02E1> 00 20			run main
