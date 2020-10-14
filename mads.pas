@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2019-12-22                                                  *)
+(*  last changes: 2020-07-01                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -25,7 +25,7 @@ program MADS;
 type
 
     t_Dirop  = (_unknown, _r=1, _or, _lo, _hi, _get, _wget, _lget, _dget, _and, _xor, _not,
-		_len, _adr, _def, _filesize, _sizeof, _zpvar, _rnd, _asize, _isize, 
+		_len, _adr, _def, _filesize, _sizeof, _zpvar, _rnd, _asize, _isize,
 		_fileexists, _array);
 
     t_Mads   = (__STACK_POINTER, __STACK_ADDRESS, __PROC_VARS_ADR);
@@ -714,7 +714,7 @@ var lst, lab, hhh, mmm: textfile;
 {122} chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','E',
 {123} chr(ord('M') + $80),'u','l','t','i','-','l','i','n','e',' ','a','r','g','u','m','e','n','t',' ','i','s',' ','n','o','t',' ','s','u','p','p','o','r','t','e','d',
 {124} chr(ord('B') + $80),'u','g','g','y',' ','i','n','d','i','r','e','c','t',' ','j','u','m','p',
-              
+
 {125} chr(ord('S') + $80),
      'y','n','t','a','x',':',' ','m','a','d','s',' ','s','o','u','r','c','e',' ','[','s','w','i','t','c','h','e','s',']',#13,#10,
      '-','b',':','a','d','d','r','e','s','s',#9,'G','e','n','e','r','a','t','e',' ','b','i','n','a','r','y',' ','f','i','l','e',' ','a','t',' ','s','p','e','c','i','f','i','c',' ','a','d','d','r','e','s','s',#13,#10,
@@ -1886,8 +1886,8 @@ function load_lab(var a:string; const test:Boolean): integer;
 (*----------------------------------------------------------------------------*)
 var txt: string;
     i: integer;
-    
-    
+
+
 	function search(var x: string): integer;
 	(*----------------------------------------------------------------------------*)
 	(*  szukamy nazwy etykiety w tablicy T_LAB, jesli w nazwie wystepuje kropka   *)
@@ -1895,9 +1895,9 @@ var txt: string;
 	(*----------------------------------------------------------------------------*)
 	var b, t: string;
 	begin
-	
+
 	  b:=x+lokal_name;
-	
+
 	  t:=b+a;
 	  Result:=l_lab(t);
 
@@ -1909,9 +1909,9 @@ var txt: string;
 		Result:=l_lab(t);
 	  end;
 
-	end;    
-    
-    
+	end;
+
+
 begin
 
  Result:=-1;
@@ -3964,12 +3964,12 @@ LOOP:
 
             value:=true;
            end;
-	   
+
      _rnd: begin					// .RND
 	    //randomize;
 	    war:=random(256);
-	    value:=true;     
-	   end;	   
+	    value:=true;
+	   end;
 
      _asize:						// .ASIZE
            begin
@@ -3981,7 +3981,7 @@ LOOP:
            begin
 	    war:=isize;
 	    value:=true;
-	   end;     
+	   end;
 
      _get, _wget, _lget, _dget:
            begin					// .GET, .WGET, .LGET, .DGET
@@ -4014,9 +4014,9 @@ LOOP:
      _xor: oper:=OperNew(k,old,'^',value,true);     // .XOR
 
      _not: oper:=OperNew(k,old,'!',value,false);    // .NOT
-     
+
      _fileexists:				    // .FILEEXISTS
-           begin  
+           begin
 
             if a[i] in AllowStringBrackets then
              txt := ciag_ograniczony(i, a, true)
@@ -4030,13 +4030,13 @@ LOOP:
              txt:=get_string(k,txt,old,true);
 
              txt:=GetFile(txt,a);
-	     
+
 	    end;
-	    
+
             war:=ord(TestFile(txt));
-	    
+
 	    value:=true;
-	   
+
 	   end;
 
      _len,_filesize,_sizeof:
@@ -4573,8 +4573,8 @@ LOOP:
               SetLength(tmp,k-1);
 
               arg:=l_lab(tmp);
-	      
-	      if arg<0 then arg:=l_lab(lokal_name+tmp);	      
+
+	      if arg<0 then arg:=l_lab(lokal_name+tmp);
 
               pomoc:=t_lab[arg].adr;
 
@@ -5091,7 +5091,7 @@ begin
    end;
 
  // ND(
-   $4E4428: begin		
+   $4E4428: begin
     inc(i,3);
 
    // sprawdzamy poprawnosc nawiasow
@@ -9352,11 +9352,11 @@ begin
 end;
 
 
-function BCD(const l,r: char): byte;
+function BCD(const l: integer): byte;
 (*----------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------*)
 begin
- Result:=byte( (ord(l)-ord('0')) shl 4 + (ord(r)-ord('0')) );
+ Result := (l div 10) * 16 + (l mod 10);
 end;
 
 
@@ -9365,74 +9365,59 @@ procedure save_fl(var a,old:string);
 (*  zapisujemy liczbe real w formacie FP Atari                                *)
 (*  wykorzystujemy wlasciwosci kodowania liczby real przez Delphi             *)
 (*----------------------------------------------------------------------------*)
-var i, c, e: integer;
-    fl, tmp: string;
+var i, e: integer;
     x: double;
-    v: byte;
+    n: int64;
+const
+    powers : array[0..98] of double = (
+    1e-98, 1e-96, 1e-94, 1e-92, 1e-90, 1e-88, 1e-86, 1e-84, 1e-82, 1e-80,
+    1e-78, 1e-76, 1e-74, 1e-72, 1e-70, 1e-68, 1e-66, 1e-64, 1e-62, 1e-60,
+    1e-58, 1e-56, 1e-54, 1e-52, 1e-50, 1e-48, 1e-46, 1e-44, 1e-42, 1e-40,
+    1e-38, 1e-36, 1e-34, 1e-32, 1e-30, 1e-28, 1e-26, 1e-24, 1e-22, 1e-20,
+    1e-18, 1e-16, 1e-14, 1e-12, 1e-10, 1e-08, 1e-06, 1e-04, 1e-02, 1e+00,
+    1e+02, 1e+04, 1e+06, 1e+08, 1e+10, 1e+12, 1e+14, 1e+16, 1e+18, 1e+20,
+    1e+22, 1e+24, 1e+26, 1e+28, 1e+30, 1e+32, 1e+34, 1e+36, 1e+38, 1e+40,
+    1e+42, 1e+44, 1e+46, 1e+48, 1e+50, 1e+52, 1e+54, 1e+56, 1e+58, 1e+60,
+    1e+62, 1e+64, 1e+66, 1e+68, 1e+70, 1e+72, 1e+74, 1e+76, 1e+78, 1e+80,
+    1e+82, 1e+84, 1e+86, 1e+88, 1e+90, 1e+92, 1e+94, 1e+96, 1e+98 );
 begin
 
  val(a, x, i);
  if i>0 then blad(old,8,a[i]);
 
- if x<1e-2 then                          // konieczny warunek
-  str(x, fl)
- else
-  str(x:1:10, fl);                       // normalizacja, do 10 miejsc po przecinku
-
- val(fl, x, i);
-
- str(x, fl);                             // nasza nowa liczba po normalizacji
-
- tmp:=copy(fl,pos('E',fl)+1,length(fl)); // odczytujemy wartosc E
- e:=integer( StrToInt(tmp) );
-
- c:=pos('.',fl);                         // pozycja znaku '.'
-
- if e and 1<>0 then                      // jesli E jest nieparzyste to modyfikujemy
-  while c<>4 do begin
-
-   if c<4 then begin
-    fl[c]:=fl[c+1];                      // przesuwamy w prawo, np. 0,000004
-    fl[c+1]:='.';
-    dec(e);
-    inc(c);
-   end else begin
-    fl[c]:=fl[c-1];                      // przesuwamy w lewo, np. 60,8239
-    fl[c-1]:='.';
-    inc(e);
-    dec(c);
-   end;
-
-  end;
-
- e:=e div 2;     // !!! DIV !!!
-
- if (c>4) or (abs(e)>64) then blad(old,0);   // przekroczony zakres FP Atari
-
- if x=0 then
-  v:=0
- else begin
-  v:=byte(64+e);
-  if fl[1]='-' then v:=v or $80;
+ // Make X positive
+ e := $0E;
+ if x < 0 then begin
+  e := $8E;
+  x := -x;
  end;
 
- save_dst(v);
+ // If number is too small, store 0
+ if x < 1e-99 then begin
+  save_dst(0);
+  save_dst(0);
+  save_dst(0);
+  save_dst(0);
+  save_dst(0);
+  save_dst(0);
+ end;
 
- if c=4 then               // dwie cyfry
-  v:=BCD(fl[2],fl[3])
- else                      // jedna cyfra
-  v:=BCD('0',fl[2]);
+ if x >= 1e+98 then blad(old,0);   // przekroczony zakres FP Atari
 
- save_dst(v);
-
- i:=c+1;
-
- v:=BCD(fl[i+0], fl[i+1]); save_dst(v);
- v:=BCD(fl[i+2], fl[i+3]); save_dst(v);
- v:=BCD(fl[i+4], fl[i+5]); save_dst(v);
- v:=BCD(fl[i+6], fl[i+7]); save_dst(v);
-
- inc(adres,6);             // zapisalismy 6 bajtow
+ // Search correct exponent
+ for i := 0 to 98 do begin
+  if x < powers[i] then begin
+   n := Round(x * 10000000000.0 / powers[i]);
+   save_dst(e + i);
+   save_dst(BCD( n div 100000000 ));
+   save_dst(BCD( (n div 1000000) mod 100 ));
+   save_dst(BCD( (n div 10000) mod 100 ));
+   save_dst(BCD( (n div 100) mod 100 ));
+   save_dst(BCD( n mod 100 ));
+   inc(adres,6);             // zapisalismy 6 bajtow
+   exit;
+  end
+ end
 
 end;
 

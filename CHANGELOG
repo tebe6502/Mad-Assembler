@@ -1,0 +1,5 @@
+2020-07-01 (Daniel Serpell/DMSC) https://atariage.com/forums/topic/308611-mad-assembler-and-floating-point-constants/
+
+- floating-point parsing code rewritten
+- new function BCD
+- new procedure save_fl
