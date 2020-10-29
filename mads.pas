@@ -1,11 +1,11 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.1.0 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.1 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*                                                                            *)
 (*  support 6502, 65816, Sparta DOS X, virtual banks                          *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2020-07-01                                                  *)
+(*  last changes: 2020-10-28                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -65,6 +65,7 @@ type
                 rel: Boolean;     // czy relokowac
                 pas: byte;        // numer przebiegu dla danej etykiety
                 typ: char;        // typ etykiety (V-ARIABLE, P-ROCEDURE, C-ONSTANT)
+		lop: Boolean;
                 use: Boolean;     // czy etykieta jest u¿ywana
                 atr: t_attrib;    // atrybut __R, __W, __RW
               end;
@@ -740,7 +741,7 @@ var lst, lab, hhh, mmm: textfile;
 
 // version
 
-{127} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','0',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{127} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','1',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
@@ -2130,6 +2131,9 @@ begin
         next_pass := (t_lab[x].adr <> ad);
 
         if next_pass then begin
+
+	 if pass > 3 then t_lab[x].lop:=true;	// infinite loop
+
          infinite.lab:=a;
          infinite.lin:=line;
          infinite.nam:=global_name;
@@ -6512,15 +6516,22 @@ if k in [__cpbcpd..__jskip] then begin
   branch:=true;      // nie relokujemy
   war:=oblicz_wartosc(tmp,old);
 
-  test:=false; war:=war-2-adres;
+  test:=false;
+
+  war:=war-2-adres;
 
   if (war<0) and (abs(war)-128>0) then test:=true;
   if (war>0) and (war-127>0) then test:=true;
 
+
+  j:=load_lab(tmp, false);
+  if (j>=0) and (t_lab[j].lop) then test:=true;		// przeciw 'infinite loop'
+
+
   if not(test) then begin
 
    Result.l:=2;
-   Result.h[0]:=ord(m6502[k-1].kod) {xor $20};     // kod maszynowy mnemonika w pierwszej adresacji 6502
+   Result.h[0]:=ord(m6502[k-1].kod) {xor $20};		// kod maszynowy mnemonika w pierwszej adresacji 6502
    Result.h[1]:=byte(war);
 
   end else begin
@@ -6528,7 +6539,7 @@ if k in [__cpbcpd..__jskip] then begin
    inc(adres,2);
 
    Result.l:=2;
-   Result.h[0]:=ord(m6502[k-1].kod) xor $20;     // kod maszynowy mnemonika w pierwszej adresacji 6502
+   Result.h[0]:=ord(m6502[k-1].kod) xor $20;		// kod maszynowy mnemonika w pierwszej adresacji 6502
    Result.h[1]:=3;
 
    zm:='JMP ' + tmp;
