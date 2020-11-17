@@ -1,11 +1,11 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.1.1 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.0 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*                                                                            *)
 (*  support 6502, 65816, Sparta DOS X, virtual banks                          *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2020-10-29                                                  *)
+(*  last changes: 2020-07-01                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -65,7 +65,6 @@ type
                 rel: Boolean;     // czy relokowac
                 pas: byte;        // numer przebiegu dla danej etykiety
                 typ: char;        // typ etykiety (V-ARIABLE, P-ROCEDURE, C-ONSTANT)
-		lop: Boolean;
                 use: Boolean;     // czy etykieta jest u¿ywana
                 atr: t_attrib;    // atrybut __R, __W, __RW
               end;
@@ -589,7 +588,7 @@ var lst, lab, hhh, mmm: textfile;
 
 
 // komunikaty
- mes: array [0..3309] of char=(
+ mes: array [0..3268] of char=(
 {0}  chr(ord('V') + $80),'a','l','u','e',' ','o','u','t',' ','o','f',' ','r','a','n','g','e',
 {1}  chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','I','F',
 {2}  chr(ord('L') + $80),'a','b','e','l',' ',#9,' ','d','e','c','l','a','r','e','d',' ','t','w','i','c','e',
@@ -715,11 +714,8 @@ var lst, lab, hhh, mmm: textfile;
 {122} chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','E',
 {123} chr(ord('M') + $80),'u','l','t','i','-','l','i','n','e',' ','a','r','g','u','m','e','n','t',' ','i','s',' ','n','o','t',' ','s','u','p','p','o','r','t','e','d',
 {124} chr(ord('B') + $80),'u','g','g','y',' ','i','n','d','i','r','e','c','t',' ','j','u','m','p',
-{125} chr(ord('B') + $80),'r','a','n','c','h',' ','t','o','o',' ','l','o','n','g',',',' ','s','o',' ','l','o','n','g',' ','b','r','a','n','c','h',' ','w','a','s',' ','u','s','e','d',' ',
 
-//Branch too long, so long branch was used (bxx *+5 jmp)
-
-{126} chr(ord('S') + $80),
+{125} chr(ord('S') + $80),
      'y','n','t','a','x',':',' ','m','a','d','s',' ','s','o','u','r','c','e',' ','[','s','w','i','t','c','h','e','s',']',#13,#10,
      '-','b',':','a','d','d','r','e','s','s',#9,'G','e','n','e','r','a','t','e',' ','b','i','n','a','r','y',' ','f','i','l','e',' ','a','t',' ','s','p','e','c','i','f','i','c',' ','a','d','d','r','e','s','s',#13,#10,
      '-','c',#9,#9,'L','a','b','e','l',' ','c','a','s','e',' ','s','e','n','s','i','t','i','v','i','t','y',#13,#10,
@@ -740,17 +736,17 @@ var lst, lab, hhh, mmm: textfile;
      '-','v','u',#9,#9,'V','e','r','i','f','y',' ','c','o','d','e',' ','i','n','s','i','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',#13,#10,
      '-','x',#9,#9,'E','x','c','l','u','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',
 
-{127} chr($80),
+{126} chr($80),
 
 // version
 
-{128} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','1',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{127} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','0',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
 const
 
-  mads_version = 128 + 1;
+  mads_version = 127 + 1;
 
   TAB = ^I;            // Char for a TAB
   CR  = ^M;            // Char for a CR
@@ -942,14 +938,14 @@ const
   __id_proc    = $FFFF;
 
 
-  __struct_run_noLabel = lo(__id_noLab);
+  __struct_run_noLabel = byte(__id_noLab);
 
-  __array_run  = lo(__id_array);
-  __macro_run  = lo(__id_macro);
-  __define_run = lo(__id_define);
-  __enum_run   = lo(__id_enum);
-  __struct_run = lo(__id_struct);
-  __proc_run   = lo(__id_proc);
+  __array_run  = byte(__id_array);
+  __macro_run  = byte(__id_macro);
+  __define_run = byte(__id_define);
+  __enum_run   = byte(__id_enum);
+  __struct_run = byte(__id_struct);
+  __proc_run   = byte(__id_proc);
 
   __hea_dos      = $FFFF;  // naglowek dla bloku DOS
   __hea_reloc    = $0000;  // naglowek dla bloku .RELOC
@@ -1248,7 +1244,7 @@ begin
   case a of
         8: txt:=txt+'?';
       109: txt:=txt+'$'+HEX(zpvar,4);
-   69,115,120,121,125: txt:=txt+str_blad;
+   69,115,120,121: txt:=txt+str_blad;
        70: txt:=txt+'$'+HEX(adres,4);
       118: begin
             while pos(#9,txt)>0 do begin
@@ -2134,9 +2130,6 @@ begin
         next_pass := (t_lab[x].adr <> ad);
 
         if next_pass then begin
-
-	 if pass > 3 then t_lab[x].lop:=true;	// infinite loop
-
          infinite.lab:=a;
          infinite.lin:=line;
          infinite.nam:=global_name;
@@ -6519,32 +6512,23 @@ if k in [__cpbcpd..__jskip] then begin
   branch:=true;      // nie relokujemy
   war:=oblicz_wartosc(tmp,old);
 
-  test:=false;
-
-  war:=war-2-adres;
+  test:=false; war:=war-2-adres;
 
   if (war<0) and (abs(war)-128>0) then test:=true;
   if (war>0) and (war-127>0) then test:=true;
 
-
-  j:=load_lab(tmp, false);
-  if (j>=0) and (t_lab[j].lop) then test:=true;		// przeciw 'infinite loop'
-
-
   if not(test) then begin
 
    Result.l:=2;
-   Result.h[0]:=ord(m6502[k-1].kod) {xor $20};		// kod maszynowy mnemonika w pierwszej adresacji 6502
+   Result.h[0]:=ord(m6502[k-1].kod) {xor $20};     // kod maszynowy mnemonika w pierwszej adresacji 6502
    Result.h[1]:=byte(war);
 
   end else begin
 
-   if pass = pass_end then warning(125, lokal_name+tmp);
-
    inc(adres,2);
 
    Result.l:=2;
-   Result.h[0]:=ord(m6502[k-1].kod) xor $20;		// kod maszynowy mnemonika w pierwszej adresacji 6502
+   Result.h[0]:=ord(m6502[k-1].kod) xor $20;     // kod maszynowy mnemonika w pierwszej adresacji 6502
    Result.h[1]:=3;
 
    zm:='JMP ' + tmp;
