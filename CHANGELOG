@@ -1,3 +1,10 @@
+2020-11-17
+- poprawione parsowanie ciągów znakowych dla argumentu rozkazu, np. lda #'''', lda #""""
+
+2020-10-28
+- dodatkowy test przeciwdzialajacy powstaniu 'infinite loop', 't_lab[].lop = true' jeśli ta etykieta powoduje wymuszania kolejnego przebiegu asemblacji
+- dodany komunikat ostrzeżenia gdy zostaje wybrane długie odgałęzienie 'bxx *+3 jmp'
+
 2020-07-01 (Daniel Serpell/DMSC) https://atariage.com/forums/topic/308611-mad-assembler-and-floating-point-constants/
 
 - floating-point parsing code rewritten
