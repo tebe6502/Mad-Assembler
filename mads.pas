@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2021-03-07                                                  *)
+(*  last changes: 2021-03-14                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -10448,6 +10448,12 @@ LOOP:
 (*----------------------------------------------------------------------------*)
 (*  odczytaj mnemonik                                                         *)
 (*----------------------------------------------------------------------------*)
+
+  if ety = '@' then begin
+   save_lab(ety,adres,bank,zm);
+   ety:='';
+  end;
+
 
   k:=i;
 

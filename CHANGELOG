@@ -1,3 +1,6 @@
+2021-03-14
+- poprawiony skok dla '@ branch @+', który powodował pętlę bez końca
+
 2021-03-07
 - zmieniony test przeciwdziałający powstaniu 'infinite loop'
 - dodany komunikat ostrzeżenia 'Register A is changed' dla pseudo rozkazów DEW, DEL, DED
