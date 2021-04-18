@@ -452,6 +452,7 @@ var lst, lab, hhh, mmm: textfile;
     list_mmm    : Boolean = false;
     list_mac    : Boolean = false;
     next_pass   : Boolean = false;
+    BranchTest  : Boolean = false;
 
     first_lst   : Boolean = false;
     first_org   : Boolean = true;
@@ -589,7 +590,7 @@ var lst, lab, hhh, mmm: textfile;
 
 
 // komunikaty
- mes: array [0..3358] of char=(
+ mes: array [0..3386] of char=(
 {0}  chr(ord('V') + $80),'a','l','u','e',' ','o','u','t',' ','o','f',' ','r','a','n','g','e',
 {1}  chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','I','F',
 {2}  chr(ord('L') + $80),'a','b','e','l',' ',#9,' ','d','e','c','l','a','r','e','d',' ','t','w','i','c','e',
@@ -722,6 +723,7 @@ var lst, lab, hhh, mmm: textfile;
 {128} chr(ord('S') + $80),
      'y','n','t','a','x',':',' ','m','a','d','s',' ','s','o','u','r','c','e',' ','[','s','w','i','t','c','h','e','s',']',#13,#10,
      '-','b',':','a','d','d','r','e','s','s',#9,'G','e','n','e','r','a','t','e',' ','b','i','n','a','r','y',' ','f','i','l','e',' ','a','t',' ','s','p','e','c','i','f','i','c',' ','a','d','d','r','e','s','s',#13,#10,
+     '-','b','c',#9,#9,'B','r','a','n','c','h',' ','c','o','n','d','i','t','i','o','n',' ','t','e','s','t',#13,#10,
      '-','c',#9,#9,'L','a','b','e','l',' ','c','a','s','e',' ','s','e','n','s','i','t','i','v','i','t','y',#13,#10,
      '-','d',':','l','a','b','e','l','=','v','a','l','u','e',#9,'D','e','f','i','n','e',' ','a',' ','l','a','b','e','l',#13,#10,
      '-','f',#9,#9,'C','P','U',' ','c','o','m','m','a','n','d',' ','a','t',' ','f','i','r','s','t',' ','c','o','l','u','m','n',#13,#10,
@@ -744,7 +746,7 @@ var lst, lab, hhh, mmm: textfile;
 
 // version
 
-{130} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','2',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{130} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','3',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
@@ -6553,12 +6555,18 @@ if k in [__cpbcpd..__jskip] then begin
   j:=load_lab(tmp, false);
   if (j>=0) and (war > 0) and (t_lab[j].lop > 0) then test:=true;	// przeciw 'infinite loop'
 
-//  if pass > 10 then test:=true;
-
 
   if pass = pass_end then
-   if test then warning(125, lokal_name+tmp) else
-   if (word(adres) shr 8 <> word(adres + war + 2) shr 8) then warning(126, lokal_name+tmp);
+   if test then begin
+
+    if BranchTest then warning(125, lokal_name+tmp);
+
+   end else
+    if (word(adres) shr 8 <> word(adres + war + 2) shr 8) then begin
+
+     if BranchTest then warning(126, lokal_name+tmp);
+
+    end;
 
 
   if not(test) then begin
@@ -6571,7 +6579,7 @@ if k in [__cpbcpd..__jskip] then begin
 
    if (pass = pass_end) and (t_lab[j].lop = 1) then begin
      t_lab[j].lop := 2;
-     warning(125, lokal_name+tmp)
+     if BranchTest then warning(125, lokal_name+tmp)
    end;
 
    inc(adres,2);
@@ -6621,8 +6629,12 @@ if k in [__cpbcpd..__jskip] then begin
      if (war<0) and (abs(war)-128>0) then war:=abs(war)-128;
      if (war>0) and (war-127>0) then dec(war, 127); //war:=war-127;
 
-     if (pass = pass_end) and (word(adres) shr 8 <> word(adres + war + 2) shr 8) then
-        warning(126, lokal_name+tmp);
+     if (pass = pass_end) and (word(adres) shr 8 <> word(adres + war + 2) shr 8) then begin
+
+       if BranchTest then warning(126, lokal_name+tmp);
+
+     end;
+
 
      mnemo[1]:='B';              // zamieniamy pseudo rozkaz na mnemonik
      k:=fASC(mnemo);             // wyliczamy kod dla mnemonika
@@ -15472,7 +15484,14 @@ begin
     'V': if UpCase(t[_i+1])='U' then begin inc(_i,2); VerifyProc := true end;
 
 
-    'B': if t[_i+1]<>':' then
+    'B': if UpCase(t[_i+1]) = 'C' then begin
+
+          if length(t) <> 3 then Syntax;
+
+	  BranchTest := true;
+
+         end else
+         if t[_i+1]<>':' then
           Syntax
          else begin
           inc(_i,2);
