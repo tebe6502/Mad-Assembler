@@ -15489,6 +15489,7 @@ begin
           if length(t) <> 3 then Syntax;
 
 	  BranchTest := true;
+	  _i:=3;
 
          end else
          if t[_i+1]<>':' then
