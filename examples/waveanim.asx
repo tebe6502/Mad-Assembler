@@ -1,0 +1,60 @@
+
+	opt o+ h+ ?+ c-
+
+font = $2000
+
+PUTBT = $0B
+
+LMARGN = $52
+
+LOGMAP = $2B2
+CRSINH = $2F0
+CHBAS = $2F4
+
+ICCMD = $342
+ICBUFA = $344
+ICBUFL = $348
+
+JCIOMAIN = $E456
+
+
+	org font
+:[8+6]	.byte %00000000
+.rept 7
+:2	.byte %11111111
+:5	.byte %00000000
+.endr
+	.byte %00000000
+
+wave:
+:6	.byte $21+#
+	.byte $27
+:6	.byte $26-#
+?len = *-wave
+
+progr:
+	lda #>font
+	sta CHBAS
+	sta ICBUFA+1
+	asl	;lda #<wave
+	sta ICBUFA
+	lda #PUTBT
+	sta ICCMD
+	lda #wave.?len
+	sta ICBUFL
+
+?loop	ldx #%11111111
+	stx LOGMAP
+	stx CRSINH
+	inx
+	stx ICBUFL+1
+	stx LMARGN
+	jsr JCIOMAIN
+	bpl ?loop
+
+
+	run progr
+
+
+	end
+
