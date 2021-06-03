@@ -1,11 +1,11 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.1.2 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.3 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*                                                                            *)
 (*  support 6502, 65816, Sparta DOS X, virtual banks                          *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2021-03-14                                                  *)
+(*  last changes: 2021-06-04                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -12121,7 +12121,7 @@ JUMP:
 (*----------------------------------------------------------------------------*)
    __elseif:
       if ety<>'' then blad(zm,38) else
-       if if_stos[ifelse]._okelse=ifelse then begin     // !!! konieczny warunek
+       if if_stos[ifelse]._okelse=ifelse then begin	// !!! konieczny warunek
 
               if if_stos[ifelse]._else then blad(zm,1);
               if ifelse=0 then blad(zm,37);
@@ -12132,12 +12132,12 @@ JUMP:
 
                 save_lst(' ');
 
-                branch:=true;            // tutaj nie ma mowy o relokowalnosci
+                branch:=true;				// tutaj nie ma mowy o relokowalnosci
                 war:=oblicz_wartosc_noSPC(zm,zm,i,#0,'F');
 
                 if_test     := (war<>0);
 
-                if_stos[ifelse]._if_test := if_test;    // !!! koniecznie zapisz IF_TEST
+                if_stos[ifelse]._if_test := if_test;	// !!! koniecznie zapisz IF_TEST
               end;
 
        end;
@@ -12148,8 +12148,13 @@ JUMP:
    __local:
         if macro_rept_if_test then begin
 
+	  yes:=false;
+
           if ety='' then begin
            omin_spacje(i,zm);
+
+	   if zm[i] = '+' then begin yes:=true; inc(i) end;
+
            ety:=get_lab(i,zm, false);
           end;
 
@@ -12159,13 +12164,36 @@ JUMP:
            inc(lc_nr);
           end;
 
+
+	  if yes then begin
+
+          idx:=load_lab(ety, true);
+
+	  if idx<0 then blad_und(zm,ety,5);
+
+	  t_loc[lokal_nr].idx := idx;
+          t_loc[lokal_nr].adr := adres;
+
+          save_lst('a');
+
+	  save_end(__endl);
+	  zapisz_lokal;
+
+          lokal_name:=ety+'.';
+
+          t_end[end_idx-1].adr:=0;
+          t_end[end_idx-1].old:=0;
+
+	  end else begin
+
+
           if pass=0 then if ety[1]='?' then warning(8);
 
 
           t_loc[lokal_nr].ofs := org_ofset;
 
 
-          get_address(i,zm);         // nowy adres asemblacji dla .LOCAL
+          get_address(i,zm);				// nowy adres asemblacji dla .LOCAL
 
 
           if not(test_char(i,zm)) then blad(zm,4);
@@ -12177,8 +12205,7 @@ JUMP:
 
           t_loc[lokal_nr].adr := adres;
 
-
-          idx:=load_lab(ety, true);  // !!! TRUE
+          idx:=load_lab(ety, true);			// !!! TRUE
           t_loc[lokal_nr].idx := idx;
 
 
@@ -12186,6 +12213,8 @@ JUMP:
 
           zapisz_lokal;
           lokal_name:=lokal_name+ety+'.';
+
+	  end;
 
           ety:='';
          end;
@@ -15471,7 +15500,7 @@ begin
   end else begin
 
    _i:=2;
-   while _i<=length(t) do begin
+   while _i <= length(t) do begin
 
    case UpCase(t[_i]) of
 

@@ -1,3 +1,7 @@
+2021-06-04
+- dodana możliwość łączenia obszarów lokalnych poprzez znak '+' poprzedzający etykietę, np.:
+ .local +label
+
 2021-04-19
 - nowy przełącznik -bc 'Branch condition test', powoduje wygenerowanie  komunikatów ostrzeżenia w przypadku kiedy skok jest poza zakres lub przekracza stronę pamięci
 
