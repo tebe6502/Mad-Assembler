@@ -1,11 +1,11 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.1.3 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.4 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*                                                                            *)
 (*  support 6502, 65816, Sparta DOS X, virtual banks                          *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2021-06-04                                                  *)
+(*  last changes: 2021-10-22                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -746,7 +746,7 @@ var lst, lab, hhh, mmm: textfile;
 
 // version
 
-{130} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','3',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{130} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','4',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
@@ -4165,12 +4165,32 @@ LOOP:
             value:=true;
            end;
 
-     _def: begin                                    // .DEF label
+     _def: begin					// .DEF label
           // odczytujemy nazwe etykiety
             txt:=get_labEx(i,a, old);
             arg:=load_label_ofset(txt, old, false);
 
-            war:=ord(arg>=0);      // !!! nie dziala prawidlowo dla .IFNDEF z Exomizera !!!
+            war := ord(arg >= 0);	// !!! nie dziala prawidlowo dla .IFNDEF z Exomizera !!!
+
+	    if exclude_proc and (arg >= 0) and (t_lab[arg].bnk = __id_proc) then
+	     war := ord(t_lab[arg].use)
+	    else
+	    if pos('.', txt) > 0 then begin		// sprawdz czy etykieta nie nalezy do procedury
+
+	     while pos('.',txt)>0 do begin
+
+              obetnij_kropke(txt);
+
+              k:=length(txt);				// usun ostatni znak kropki
+              SetLength(txt,k-1);
+	     end;
+
+             arg:=load_label_ofset(txt, old, false);
+
+	     if exclude_proc and (arg >=0) and (t_lab[arg].bnk = __id_proc) then war := ord(t_lab[arg].use);
+
+	    end;
+
 {
             if arg>=0 then           // !!! koniecznie ta wersja !!!
              war := ord( t_lab[arg].pas>0 )

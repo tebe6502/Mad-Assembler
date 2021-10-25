@@ -1,3 +1,6 @@
+2021-10-22
+- dla .IFDEF dodany test 'exclude procedure', odpowiednio reaguje na etykiety które należały do wykluczonych procedur
+
 2021-06-04
 - dodana możliwość łączenia obszarów lokalnych poprzez znak '+' poprzedzający etykietę, np.:
  .local +label
