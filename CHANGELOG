@@ -1,3 +1,6 @@
+2021-11-01
+- poprawione działanie .UNDEF, dodatkowy test czy usuwamy makro
+
 2021-10-22
 - dla .IFDEF dodany test 'exclude procedure', odpowiednio reaguje na etykiety które należały do wykluczonych procedur
 

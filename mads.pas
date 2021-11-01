@@ -11807,19 +11807,19 @@ JUMP:
 
  	  if ety='' then ety:=get_lab(i,zm, true);
 
-	  if if_test then begin                  // .UNDEF mozna zmieniac w tym samym przebiegu
+	  if if_test then begin			// .UNDEF mozna zmieniac w tym samym przebiegu
 
             k := load_lab(ety,true);
 
-            if k >= 0 then begin
+            if (k >= 0) and (t_lab[k].bnk = __id_define) then begin
 
              idx := t_lab[k].adr;
 
 	     if t_mac[idx][1] <> '~' then
- 	      t_mac[idx] := '~' + t_mac[idx];    // zaznaczamy jako wylaczone
+ 	      t_mac[idx] := '~' + t_mac[idx];	// zaznaczamy jako wylaczone
 
             end else
-	     blad_und(zm,ety,5);
+	     blad_und(zm,ety,35);
 
 	  end;
 
