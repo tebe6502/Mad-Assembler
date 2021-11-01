@@ -9654,7 +9654,7 @@ function dirENDR(var zm,a,old_str:string; cnt: integer): integer;
 (*----------------------------------------------------------------------------*)
 (*  .ENDR  -  wykonanie petli .REPT                                           *)
 (*----------------------------------------------------------------------------*)
-var lntmp, i, j, k, max, rile: integer;
+var lntmp, ii, i, j, k, max, rile, rpt: integer;
     tmp, ety: string;
     old_if_test: Boolean;
     tmpPar: _strArray;
@@ -9676,17 +9676,18 @@ begin
 
          tmpPar      := reptPar;
 
+         line_add    := t_rep[cnt].lin;
 
-{         writeln(pass,',','-------------------');
+         old_if_test := if_test;
+
+
+{
+	 writeln(pass,',','-------------------');
          for i := t_rep[cnt].fln to t_rep[cnt].lln do writeln(t_mac[i]);
          for i := 0 to High(t_rep)-1 do  writeln(t_rep[i].fln,',',t_rep[i].lln,',',t_rep[i].lin,' - ',t_rep[i].lln-t_rep[i].fln);
 
          halt;
 }
-
-         line_add    := t_rep[cnt].lin;
-
-         old_if_test := if_test;
 
 
          if not(run_macro) then begin
@@ -9720,7 +9721,7 @@ begin
 
          ___rept_ile := 0;          // !!! koniecznie w tym miejscu po odczycie linii .REPT
 
-
+	 rpt:=0;
 
          for  j:=0 to max-1 do begin
 
@@ -9728,15 +9729,19 @@ begin
 
           while i <= t_rep[cnt].lln do begin
 
-            tmp:=t_mac[i];
+            tmp := t_mac[i];
 
             k:=1;
             omin_spacje(k, tmp);
             ety:=get_directive(k, tmp);
 
-            if fCRC16(ety)=__rept then
-             inc(i, dirENDR(zm,a,old_str, cnt+1))
-            else
+            if fCRC16(ety) = __rept then begin
+
+	     inc(rpt);
+
+             inc(i, dirENDR(zm,a,old_str, cnt + rpt));
+
+            end else
              analizuj_mem(i,i+1, zm,a,old_str, j,j+1, true);
 
             inc(i);
@@ -9761,7 +9766,6 @@ begin
          Result := t_rep[cnt].lln - t_rep[cnt].fln;
 
        end;
-
 end;
 
 
@@ -9793,7 +9797,7 @@ begin
  SetLength(t_rep, k+2);
 
 
- save_mac('.REPT '+copy(zm,j,length(zm)));
+ save_mac('.REPT ' + copy(zm,j,length(zm)));
 
 // save_end(__endr);
 
