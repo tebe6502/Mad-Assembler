@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2021-10-22                                                  *)
+(*  last changes: 2021-11-08                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -9721,9 +9721,10 @@ begin
 
          ___rept_ile := 0;          // !!! koniecznie w tym miejscu po odczycie linii .REPT
 
-	 rpt:=0;
 
          for  j:=0 to max-1 do begin
+
+	  rpt:=0;
 
           i := t_rep[cnt].fln+1;                          // first line
 
