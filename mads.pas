@@ -9108,6 +9108,8 @@ begin
      txt:=par[0];     // mozliwa wartosc, ktora bedziemy dodawac do reszty ciagu
                       // pod warunkiem ze ciag liczy wiecej niz 1 element
 
+     if txt = '' then blad(zm, 58);
+
      if txt[1] in ['+','-'] then begin
       j:=1; war:=byte( oblicz_wartosc_noSPC(txt,zm,j,#0,'B') );
       inc(_odd);

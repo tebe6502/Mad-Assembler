@@ -1,3 +1,6 @@
+2021-11-08
+- poprawiona procedura 'get_maeData', dodany komunikat błędu w przypadku braku parametru +xx
+
 2021-11-01
 - poprawione działanie .UNDEF, dodatkowy test czy usuwamy makro
 - poprawione wykonywanie zagnieżdzonych pętli .REPT (dodany licznik RPT w funkcji dirENDR)
