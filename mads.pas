@@ -2116,7 +2116,8 @@ begin
   inc(i);
  end;
 
- if pass>0 then
+// if pass>0 then
+
  if (symbol<>'?') or mae_labels then		// jesli to styl etykiet MAE to musimy je sprawdzic
   if t_lab[x].nam=tmp then			// normalnie sprawdzamy tylko etykiety z pierwszym znakiem <>'?'
    if (t_lab[x].bnk<__id_param) and not(t_lab[x].lid) then begin
@@ -9098,7 +9099,7 @@ begin
 
    _doo:=High(par);
 
-   if _doo>0 then begin
+   if _doo > 0 then begin
 
     _odd:=0;
     war:=0;
@@ -9179,7 +9180,8 @@ begin
 
     end;
 
-   end;
+   end else
+    blad(zm,58);		// np. '.by .len(temp)'
 
 end;
 
@@ -12053,7 +12055,6 @@ JUMP:
          begin
 
            save_lab(ety,adres,bank,zm);
-
 
            txt:=zm;              // TXT = ZM, w celu pozniejszej modyfikacji TXT
 
