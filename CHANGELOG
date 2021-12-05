@@ -1,3 +1,6 @@
+2021-12-04
+- poprawiony zapis pliku RAW (opt h-f+)
+
 2021-11-08
 - poprawiona procedura 'get_maeData', dodany komunikat błędu w przypadku braku parametru +xx
 

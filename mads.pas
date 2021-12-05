@@ -13531,19 +13531,24 @@ JUMP:
 
 
                 if not(first_org) then           // koniecznie IF NOT(FIRST_ORG) inaczej nic nie zapisze
-                 if (adres<>idx) and raw.use then begin
+                 if (adres <> idx) and raw.use then begin
 
-                  if raw.old<0 then
+                  if raw.old < 0 then
                    k:=0
                   else
-                   if hea_ofs.adr>=0 then
+                   if hea_ofs.adr >= 0 then
                     k:=hea_ofs.adr-raw.old
                    else
                     k:=idx-raw.old;
 
-                  if k<0 then blad(zm,108, hex(idx,4));
 
-                  if not(hea) then inc(fill,k);  // IF NOT(HEA) czeka az zacznie zapisywac cos do pliku
+                  if k < 0 then begin
+
+		    if pass > 0 then blad(zm,108, hex(idx,4));
+
+		  end else
+                   if not(hea) then inc(fill,k);  // IF NOT(HEA) czeka az zacznie zapisywac cos do pliku
+
 
                   adres:=idx;
 
