@@ -1,13 +1,5 @@
 2021-12-04
 - poprawiony zapis pliku RAW (opt h-f+)
-- w 'procedure s_lab' zaremowane 'if pass>0 then' aby wychwycić błąd dla konstrukcji
-
-    .ifndef MYSAFE
-MYSAFE = $12
-    .endif
-
-MYSAFE = $89
-
 
 2021-11-08
 - poprawiona procedura 'get_maeData', dodany komunikat błędu w przypadku braku parametru +xx

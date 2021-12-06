@@ -2116,8 +2116,7 @@ begin
   inc(i);
  end;
 
-// if pass>0 then
-
+ if pass>0 then
  if (symbol<>'?') or mae_labels then		// jesli to styl etykiet MAE to musimy je sprawdzic
   if t_lab[x].nam=tmp then			// normalnie sprawdzamy tylko etykiety z pierwszym znakiem <>'?'
    if (t_lab[x].bnk<__id_param) and not(t_lab[x].lid) then begin
@@ -9658,7 +9657,7 @@ function dirENDR(var zm,a,old_str:string; cnt: integer): integer;
 (*----------------------------------------------------------------------------*)
 (*  .ENDR  -  wykonanie petli .REPT                                           *)
 (*----------------------------------------------------------------------------*)
-var lntmp, ii, i, j, k, max, rile, rpt: integer;
+var lntmp, i, j, k, max, rile, rpt: integer;
     tmp, ety: string;
     old_if_test: Boolean;
     tmpPar: _strArray;
@@ -9849,8 +9848,10 @@ begin
 
   //  if not(komentarz) then
 
-    if if_test and not(Result in [__rept, __endr, __dend]) then save_mac(zm);
-    zapisz_lst(zm);
+    if if_test and not(Result in [__rept, __endr, __dend]) then begin
+      save_mac(zm);
+      zapisz_lst(zm);
+    end;
 
    if str[i]='\' then
     inc(i)
