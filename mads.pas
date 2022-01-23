@@ -20,7 +20,11 @@ program MADS;
 
 {$I-}
 
-//uses SysUtils;
+uses
+{$IFDEF WINDOWS}
+	windows,
+{$ENDIF}
+	crt;
 
 type
 
@@ -127,6 +131,7 @@ type
 
    mesTab   = record
                pas: byte;         // numer przebiegu
+	       col: byte;	  // kolor
                mes: string;       // tresc komunikatu bledu
               end;
 
@@ -1025,6 +1030,42 @@ begin
 end;
 
 
+function Tab2Space(a: string; spc: byte = 8): string;
+var i: integer;
+    ch: char;
+begin
+
+ Result := '';
+ i:=0;
+
+ for ch in a do begin
+
+  if ch in [CR, LF] then begin
+
+   Result := Result + ch;
+
+   i:=0;
+
+  end else
+
+  if ch = #9 then begin
+
+   if (i mod spc) = 0 then begin
+    Result := Result + Space(spc);
+    inc(i, spc);
+   end else
+    while (i mod spc) <> 0 do begin Result := Result + ' '; inc(i) end;
+
+  end else begin
+   Result := Result + ch;
+   inc(i);
+  end;
+
+ end;
+
+end;
+
+
 procedure __inc(var i:integer; var a:string);
 (*----------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------*)
@@ -1103,8 +1144,8 @@ procedure flush_dst;
 (*  oproznienie bufora zapisu                                                 *)
 (*----------------------------------------------------------------------------*)
 begin
- if buf_i>0 then blockwrite(dst,t_buf,buf_i);
- buf_i:=0;
+ if buf_i > 0 then blockwrite(dst,t_buf,buf_i);
+ buf_i := 0;
 end;
 
 
@@ -1115,13 +1156,13 @@ procedure put_dst(const a: byte);
 var v: byte;
 begin
 
-  if fill>0 then begin
+  if fill > 0 then begin
 
    flush_dst;
 
    v := fvalue;
 
-   while fill>0 do begin
+   while fill > 0 do begin
     blockwrite(dst, v, 1);
     dec(fill);
    end;
@@ -1172,6 +1213,7 @@ begin
 
  SetLength(Result, i);
  move(mes[imes[b-1]], Result[1], i);
+
 end;
 
 
@@ -1275,8 +1317,13 @@ begin
   warning_mes:=show_full_name(nam,full_name,false)+' ('+IntToStr(lin)+') WARNING: '+txt;
 
   if warning_mes<>warning_old then begin
+
+   TextColor(LIGHTCYAN);
+
    writeln(warning_mes);
    warning_old:=warning_mes;
+
+   NormVideo;
   end;
 
  end;
@@ -1311,13 +1358,15 @@ begin
 end;
 
 
-procedure new_message(var a: string);
+procedure new_message(var a: string; cl: byte = 0);
 (*----------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------*)
 var i: integer;
 begin
 
  if a='' then exit;
+
+ a:=Tab2Space(a);
 
  for i := High(messages)-1 downto 0 do
   if messages[i].mes=a then begin a:=''; Exit end;
@@ -1326,6 +1375,7 @@ begin
 
  messages[i].pas:=pass;
  messages[i].mes:=a;
+ messages[i].col:=cl;
 
  SetLength(messages,i+2);
 
@@ -1364,7 +1414,7 @@ begin
    CloseFile(lst);
 
    txt:=load_mes(105+1);                // Writing listing file...
-   if not(silent) then new_message(txt);
+   if not(silent) then new_message(txt, DARKGRAY);
   end;
 
 
@@ -1372,7 +1422,7 @@ begin
    Erase(dst)                           // usuwamy plik OBX (plik DST wczesniej musi zostac zamkniety)
   else begin
    txt:=load_mes(106+ord(raw.use)+1);
-   if not(silent) then new_message(txt);
+   if not(silent) then new_message(txt, DARKGRAY);
   end;
 
 
@@ -1386,11 +1436,11 @@ begin
      txt:=IntToStr(line_all)+load_mes(48+1)+' in '+IntToStr(pass_end)+' pass';
      if pass>pass_max then txt:=txt+' (infinite loop)';
 
-     new_message(txt);
+     new_message(txt, BROWN);
 
      if a>0 then begin
       txt:=IntToStr(a)+load_mes(49+1);
-      new_message(txt);
+      new_message(txt, BROWN);
      end;
 
    end;
@@ -1434,10 +1484,14 @@ begin
  for a:=0 to High(messages)-1 do
   {if messages[a].pas < pass_max then} begin
 
+   if messages[a].col <> 0 then TextColor(messages[a].col);
+
    if a>0 then
     write(#13#10,messages[a].mes)
    else
     write(messages[a].mes);
+
+   NormVideo;
 
    for b:=High(messages)-1 downto 0 do    // usuwamy powtarzajace sie komunikaty
 //    if messages[b].pas=messages[a].pas then
@@ -1512,13 +1566,13 @@ var x, y, ex, ey: integer;
     znk: char;
 begin
 
- if (pass=pass_end) and (opt and opt_O>0) then begin
+ if (pass=pass_end) and (opt and opt_O > 0) then begin
 
   if org then begin
 
    SetLength(t,7);
 
-   if hea and (opt and opt_H>0) and not(dreloc.sdx) then t:=t+'FFFF> ';
+   if hea and (opt and opt_H>0) and not(dreloc.sdx) then t := t + 'FFFF> ';
 
    x:=adres;
    y:=t_hea[hea_i];
@@ -1528,7 +1582,7 @@ begin
     dec(y,rel_ofs);
    end;
 
-   if hea_ofs.adr>=0 then begin
+   if hea_ofs.adr >= 0 then begin
     y:=hea_ofs.adr+(y-x); x:=hea_ofs.adr;
    end;
 
@@ -1544,17 +1598,17 @@ begin
    end else
     znk:='-';
 
-   if adres>=0 then begin
+   if adres >= 0 then begin
     if ex>ey then bank_adres(t_hea[hea_i-1]+1) else bank_adres(x);
     if (ex<=ey) and (opt and opt_H>0) then t:=t+znk+Hex(y,4)+'>';
    end;
 
   // wyjatek kiedy nowy blok ma adres $FFFF - zapisujemy dodatkowo dwa bajty naglowka FF FF
-   if (hea and (opt and opt_H>0) and not(dreloc.sdx)) or ({hea and} (opt and opt_H>0) and not(dreloc.sdx) and (adres=$FFFF)) then begin
+   if (hea and (opt and opt_H>0) and not(dreloc.sdx)) or ({hea and} (opt and opt_H>0) and not(dreloc.sdx) and (adres = $FFFF)) then begin
     put_dst($FF); put_dst($FF);
    end;
 
-   if (opt and opt_H>0) then begin
+   if (opt and opt_H > 0) then begin
     put_dst( byte(x) ); put_dst( byte(x shr 8) );
     put_dst( byte(y) ); put_dst( byte(y shr 8) );
    end;
@@ -1712,7 +1766,7 @@ begin
 
  status := 2;
 
- new_message(con);
+ new_message(con, LIGHTRED);
 
 // pewne bledy wymagaja natychmiastowego zakonczenia asemblacji
 // jesli wystapi za duzo bledow (>512) to te¿ konczymy asemblacje
@@ -2243,7 +2297,7 @@ procedure save_hea;
 (*----------------------------------------------------------------------------*)
 (*----------------------------------------------------------------------------*)
 begin
- t_hea[hea_i]:=adres-1 - fill;
+ t_hea[hea_i]:=adres - 1 - fill;
 
  fill:=0;
 
@@ -13356,7 +13410,7 @@ JUMP:
          if (org_ofset>0) and ((lokal_name<>'') or proc) then blad(zm,71);
 
 
-         if hea_ofs.adr>=0 then
+         if hea_ofs.adr >= 0 then
           raw.old := hea_ofs.adr+(adres-hea_ofs.old)
          else
           raw.old := adres;
@@ -13513,21 +13567,15 @@ JUMP:
                 end else
                  idx:=integer( oblicz_wartosc_noSPC(zm,zm,i,',',typ) );
 
-
                 omin_spacje(i,zm);
                 if (i<=length(zm)) and (zm[i]=',') then begin
                  __inc(i,zm);
 
-                 {org_ofs:=idx;}
                  hea_ofs.adr := integer( oblicz_wartosc_noSPC(zm,zm,i,#0,typ) );
-                 if hea_ofs.adr<0 then blad(zm,10);
+                 if hea_ofs.adr < 0 then blad(zm,10);
 
                  hea_ofs.old := idx;
-
-                { if adres<0 then
-                  org_ofset := hea_ofs.adr
-                 else   }
-                  org_ofset := idx - hea_ofs.adr;
+                 org_ofset := idx - hea_ofs.adr;
 
                 end;
 
@@ -15357,8 +15405,13 @@ procedure Syntax;
 (*  wyswietlamy informacje na temat przelacznikow, konfiguracji MADS'a        *)
 (*----------------------------------------------------------------------------*)
 begin
- Writeln(load_mes(mads_version));
- Writeln(load_mes(mads_version-2));
+ TextColor(WHITE);
+ Writeln(Tab2Space(load_mes(mads_version)));
+
+ TextColor(DARKGRAY);
+ Writeln(Tab2Space(load_mes(mads_version-2)));
+ NormVideo;
+
  halt(3);
 end;
 
@@ -15738,22 +15791,16 @@ begin
 end;
 
 
-{
-procedure tttt(a: string);
-begin
- case length(a) of
-  1,2: writeln(hex(ord(a[1]) shl 8+ord(a[2]),8));
-  3: writeln(hex(ord(a[1]) shl 16+ord(a[2]) shl 8+ord(a[3]),8));
-  4: writeln(hex(ord(a[1]) shl 24+ord(a[2]) shl 16+ord(a[3]) shl 8+ord(a[4]),8));
- end;
-end;
-}
-
-
 (*----------------------------------------------------------------------------*)
 (*                         M A I N   P R O G R A M                            *)
 (*----------------------------------------------------------------------------*)
 begin
+
+{$IFDEF WINDOWS}
+ if GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) = 3 then begin
+  Assign(Output, ''); Rewrite(Output);
+ end;
+{$ENDIF}
 
  SetLength(t_lin,1);
  SetLength(t_lab,1);
@@ -15832,4 +15879,3 @@ begin
  koniec(status);
 
 end.
-
