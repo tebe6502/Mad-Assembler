@@ -1,5 +1,5 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.1.4 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.5 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*                                                                            *)
 (*  support 6502, 65816, Sparta DOS X, virtual banks                          *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
@@ -751,7 +751,7 @@ var lst, lab, hhh, mmm: textfile;
 
 // version
 
-{130} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','4',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{130} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','5',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
@@ -1031,37 +1031,32 @@ end;
 
 
 function Tab2Space(a: string; spc: byte = 8): string;
-var i: integer;
+var column, nextTabStop: integer;
     ch: char;
 begin
 
  Result := '';
- i:=0;
+ column:=0;
 
- for ch in a do begin
+ for ch in a do
+  case ch of
 
-  if ch in [CR, LF] then begin
+   #9:
+	begin
+		nextTabStop := (column + spc) div spc * spc;
+		while column <> nextTabStop do begin Result := Result + ' '; inc(column) end;
+	end;
 
-   Result := Result + ch;
+   CR, LF:
+	begin
+		Result := Result + ch;
+		column:=0;
+        end;
 
-   i:=0;
-
-  end else
-
-  if ch = #9 then begin
-
-   if (i mod spc) = 0 then begin
-    Result := Result + Space(spc);
-    inc(i, spc);
-   end else
-    while (i mod spc) <> 0 do begin Result := Result + ' '; inc(i) end;
-
-  end else begin
-   Result := Result + ch;
-   inc(i);
+  else
+		Result := Result + ch;
+		inc(column);
   end;
-
- end;
 
 end;
 
@@ -6934,6 +6929,23 @@ end;
 // omin spacje i przejdz do argumentu
  omin_spacje(i,a);
 
+
+ if _lab_first(a[i]) then begin					// sprawdz czy etykieta konczy sie znakiem ':'
+
+  j:=i;
+
+  tmp:=get_lab(i,a,false);
+
+  if (tmp <> '') and (a[i] = ':') then begin
+   save_lab(tmp, adres+1, bank, zm);				// etykieta do automodyfikacji kodu
+
+   inc(i);
+  end else
+   i:=j;
+
+ end;
+
+
 // if (a[i]='#') and (a[i] in ['<','>']) then inc(i);  // !!! to nie jest kompatybilne !!!
 
 // jesli wystepuja operatory #<, #> to omin pierwszy znak i pozostaw <,>
@@ -6971,10 +6983,11 @@ end;
    222: test_siz(a,siz,'Z',pomin);		// SEP #Z
   end;
 
+
   zm:=get_dat_noSPC(i,a,old,';');
 
  if zm<>'' then
- if (zm[2]=':') and (UpCase(zm[1]) in ['A','Z']) then begin            // wymuszenie trybu A-BSOLUTE, Z-ERO PAGE w stylu XASM
+ if (zm[2]=':') and (UpCase(zm[1]) in ['A','Z']) then begin		// wymuszenie trybu A-BSOLUTE, Z-ERO PAGE w stylu XASM
   case UpCase(zm[1]) of
    'A': siz:='Q';
    'Z': siz:='Z';
@@ -15404,6 +15417,7 @@ procedure Syntax;
 (*----------------------------------------------------------------------------*)
 (*  wyswietlamy informacje na temat przelacznikow, konfiguracji MADS'a        *)
 (*----------------------------------------------------------------------------*)
+var s: string;
 begin
  TextColor(WHITE);
  Writeln(Tab2Space(load_mes(mads_version)));
