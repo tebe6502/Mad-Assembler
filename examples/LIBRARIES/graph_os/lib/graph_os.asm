@@ -146,5 +146,5 @@ DRAWTO	.proc (.word ax .byte y) .reg
 	.endp
 
 
-scrchn	brk		; numer otwartego kana≥u dla obrazu w trybie graficznym
+scrchn	brk		; numer otwartego kana≈Çu dla obrazu w trybie graficznym
 colscr	brk		; kolor pisaka

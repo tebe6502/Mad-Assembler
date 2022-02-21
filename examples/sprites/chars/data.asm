@@ -1,7 +1,7 @@
 
 * ---	TABLICE
 ;
-; najlepiej zeby zaczyna³y siê od pocz¹tku strony, czy te¿ mieœci³y siê w jej granicach
+; najlepiej zeby zaczynaÅ‚y siÄ™ od poczÄ…tku strony, czy teÅ¼ mieÅ›ciÅ‚y siÄ™ w jej granicach
 ;
 
 *---
@@ -14,14 +14,14 @@
 ; cfix
 ; xxxx  4x4 = 16 + 1
 
-	?b = 16*8		; liczba znaków przypadaj¹ca na 1 klatkê animacji (duch12x24)
-	?c = 16			; ?C=16 aby wyrównaæ do strony pamiêci
+	?b = 16*8		; liczba znakÃ³w przypadajÄ…ca na 1 klatkÄ™ animacji (duch12x24)
+	?c = 16			; ?C=16 aby wyrÃ³wnaÄ‡ do strony pamiÄ™ci
 
-mskAdr12	:?c	_ADRH #	$6000,$6800,$7000,$7800		; ?c*8 = 128 bajtów
+mskAdr12	:?c	_ADRH #	$6000,$6800,$7000,$7800		; ?c*8 = 128 bajtÃ³w
 
-shpAdr12	:?c	_ADR # 	$4000,$4800,$5000,$5800		; ?c*8 = 128 bajtów
+shpAdr12	:?c	_ADR # 	$4000,$4800,$5000,$5800		; ?c*8 = 128 bajtÃ³w
 
-	ert .lo(mskAdr12)<>0	; mskAdr12 koniecznie od pocz¹tku strony pamiêci
+	ert .lo(mskAdr12)<>0	; mskAdr12 koniecznie od poczÄ…tku strony pamiÄ™ci
 
 
 ; adx
@@ -29,14 +29,14 @@ shpAdr12	:?c	_ADR # 	$4000,$4800,$5000,$5800		; ?c*8 = 128 bajtów
 ; cfx
 ; xxx  3x4 = 12 + 1
 
-	?b = 12*8		; liczba znaków przypadaj¹ca na 1 klatkê animacji (duch8x24)
-	?c = 32			; ?C=32 aby wyrównaæ do strony pamiêci
+	?b = 12*8		; liczba znakÃ³w przypadajÄ…ca na 1 klatkÄ™ animacji (duch8x24)
+	?c = 32			; ?C=32 aby wyrÃ³wnaÄ‡ do strony pamiÄ™ci
 
-shpAdr8		:?c	_ADR # 	$4000,$4800,$5000,$5800		; ?c*8 = 256 bajtów
+shpAdr8		:?c	_ADR # 	$4000,$4800,$5000,$5800		; ?c*8 = 256 bajtÃ³w
 
-mskAdr8		:?c	_ADRH #	$6000,$6800,$7000,$7800		; ?c*8 = 256 bajtów
+mskAdr8		:?c	_ADRH #	$6000,$6800,$7000,$7800		; ?c*8 = 256 bajtÃ³w
 
-	ert .lo(mskAdr8)<>0	; mskAdr8 koniecznie od pocz¹tku strony pamiêci
+	ert .lo(mskAdr8)<>0	; mskAdr8 koniecznie od poczÄ…tku strony pamiÄ™ci
 
 
 _ADR	.macro
@@ -55,18 +55,18 @@ _ADRH	.macro
 
 
 * ---	STRUKTURY DANYCH
-; rozmiar struktury @SPRITE limituje maksymaln¹ liczbê duchów (256/@SPRITE)
-; rozmiar struktury @SHAPE limituje maksymaln¹ liczbê banków pamiêci z kszta³tami duchów (256/@SHAPE)
+; rozmiar struktury @SPRITE limituje maksymalnÄ… liczbÄ™ duchÃ³w (256/@SPRITE)
+; rozmiar struktury @SHAPE limituje maksymalnÄ… liczbÄ™ bankÃ³w pamiÄ™ci z ksztaÅ‚tami duchÃ³w (256/@SHAPE)
 
 sts_visible	= $80	; bit7
 sts_newsprt	= $40	; bit6
 
 
 @SPRITE	.struct
-	prg	.word	; adres programu obs³ugi ducha
+	prg	.word	; adres programu obsÅ‚ugi ducha
 	frm	.word	; adres tablicy z kolejnymi numerami klatek animacji
 
-	shp	.byte	; bezpoœredni indeks do tablicy SHAPES, pozwala odczytaæ parametry dotycz¹ce tego kszta³tu ducha
+	shp	.byte	; bezpoÅ›redni indeks do tablicy SHAPES, pozwala odczytaÄ‡ parametry dotyczÄ…ce tego ksztaÅ‚tu ducha
 	psx	.byte	; pozycja pozioma X
 	psy	.byte	; pozycja pionowa Y
 	old_psx	.byte	; poprzednia pozycja pozioma X
@@ -77,17 +77,17 @@ sts_newsprt	= $40	; bit6
 			;			0 - widoczny
 			;			1 - nie widoczny
 			; bit6 = sts_newsprt:
-			;			0 - obs³uguj w aktualnej kolejce zadañ
-			;			1 - obs³uguj w nastêpnej kolejce zadañ
+			;			0 - obsÅ‚uguj w aktualnej kolejce zadaÅ„
+			;			1 - obsÅ‚uguj w nastÄ™pnej kolejce zadaÅ„
 	.ends
 
 
 @SHAPE	.struct
-	bnk	.byte	; bank z klatkami animacji ducha (wartoœæ dla rejestru PORTB)
-	typ	.byte	; =0 duch 12x24, <>0 duch 8x24 (!!! tylko jeden typ ducha w banku pamiêci !!!)
-	hig	.byte	; wysokoœæ dla tego kszta³tu, wartoœæ pomocna przy detekcji kolizji
-			; duchy zawsze maj¹ wysokoœæ 24 linii ale nie zawsze wszystkie linie s¹ wykorzystane
-			; minimalna wartoœæ HIG = 5 (!!! nie wolno wstawiæ mniejszej wartoœci !!!)
+	bnk	.byte	; bank z klatkami animacji ducha (wartoÅ›Ä‡ dla rejestru PORTB)
+	typ	.byte	; =0 duch 12x24, <>0 duch 8x24 (!!! tylko jeden typ ducha w banku pamiÄ™ci !!!)
+	hig	.byte	; wysokoÅ›Ä‡ dla tego ksztaÅ‚tu, wartoÅ›Ä‡ pomocna przy detekcji kolizji
+			; duchy zawsze majÄ… wysokoÅ›Ä‡ 24 linii ale nie zawsze wszystkie linie sÄ… wykorzystane
+			; minimalna wartoÅ›Ä‡ HIG = 5 (!!! nie wolno wstawiÄ‡ mniejszej wartoÅ›ci !!!)
 	.ends
 
 

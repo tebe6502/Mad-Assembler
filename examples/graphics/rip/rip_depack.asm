@@ -665,7 +665,7 @@ exc	lda (x),y
 	rts
 
 
-dl	dta d'ppğ',b($4f)
+dl	dta d'ppÄ‘',b($4f)
 adr	dta a(ad1)
 	dta d'////////////////'
 	dta d'////////////////'

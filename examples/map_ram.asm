@@ -35,7 +35,7 @@ _p0	jsr setb
 	sta ext_b
 
 	lda #$ff
-	sta portb	;eliminacja pamiêci podstawowej
+	sta portb	;eliminacja pamiÄ™ci podstawowej
 	sta ext_b
 
 _p2	jsr setb

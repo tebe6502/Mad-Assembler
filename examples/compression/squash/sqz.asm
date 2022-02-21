@@ -47,7 +47,7 @@ sqz
 * ----------------------------------
 
 sort	ldx	#0
-	ldy	#16		; od INPUT[16] zaczynajπ siÍ nibble z d≥ugoúciami kodÛw
+	ldy	#16		; od INPUT[16] zaczynajƒÖ siƒô nibble z d≈Çugo≈õciami kod√≥w
 nibble	lda	(input),y
 	pha			; starszy nibbl
 	lsr @
@@ -57,7 +57,7 @@ nibble	lda	(input),y
 	sta	tre02,x
 	inx
 	pla
-	and	#$0f		; m≥odszy nibbl
+	and	#$0f		; m≈Çodszy nibbl
 	sta	tre02,x
 	iny
 	inx
@@ -100,11 +100,11 @@ s1	inx
 	cpx	#16
 	bne	l_
 
-* generowanie kodÛw Shannon-Fano
+* generowanie kod√≥w Shannon-Fano
 *----------------------------------
 
 * TRE01 - stare pozycje
-* TRE02 - d≥ugoúci kodÛw
+* TRE02 - d≈Çugo≈õci kod√≥w
 
 fano	ldy	#0
 	tya
@@ -187,13 +187,13 @@ skp	iny
 	bne	lp
 
 
-* dekompresja, g≥Ûwna pÍtla 
+* dekompresja, g≈Ç√≥wna pƒôtla 
 *----------------------------------
 
 main	adw	input #16+128 data+1	; DATA+1	adres spakowanych danych
 
 	ldy	#4			; INPUT[4..5]	rozmiar danych do dekompresji
-					; LLEN, HLEN	adres koÒca skompresowanych danych
+					; LLEN, HLEN	adres ko≈Ñca skompresowanych danych
 	lda	output
 	tax
 	add	(input),y

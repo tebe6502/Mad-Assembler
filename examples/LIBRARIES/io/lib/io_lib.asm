@@ -107,7 +107,7 @@ pciov	.proc
         bmi	err
         rts
 
-err	cpy	#136		; na b³¹d 136 nie reagujemy
+err	cpy	#136		; na bÅ‚Ä…d 136 nie reagujemy
 	beq	quit
 
 	printf

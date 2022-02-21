@@ -1,6 +1,6 @@
 
 * ---	LOOP
-; g³ówna pêtla steruj¹ca wykonywana non-stop
+; gÅ‚Ã³wna pÄ™tla sterujÄ…ca wykonywana non-stop
 
 LOOP
 
@@ -12,7 +12,7 @@ LOOP
 
 	INITBUF	B2
 
-	mva cloc speed			; w komórce SPEED liczba ramek reprezentuj¹ca szybkoœæ silnika
+	mva cloc speed			; w komÃ³rce SPEED liczba ramek reprezentujÄ…ca szybkoÅ›Ä‡ silnika
 
 
 * ---	modyfikujemy BUFOR3, wyswietlamy BUFOR2
@@ -23,30 +23,30 @@ LOOP
 
 	INITBUF	B3
 
-	mva cloc speed			; w komórce SPEED liczba ramek reprezentuj¹ca szybkoœæ silnika
+	mva cloc speed			; w komÃ³rce SPEED liczba ramek reprezentujÄ…ca szybkoÅ›Ä‡ silnika
 
 	jmp loop
 
 
 
 * ---	B2SHAPE
-; stawianie duchów w BUFOR #2
+; stawianie duchÃ³w w BUFOR #2
 ;
-; B2CALC inicjuje adresy SRC, DST na podstawie znaków odczytanych z pamiêci obrazu BUFOR #2
-; dodatkowo ustawia nowe znaki w miejsce wczeœniej odczytanych które bêd¹ reprezentowaæ ducha
+; B2CALC inicjuje adresy SRC, DST na podstawie znakÃ³w odczytanych z pamiÄ™ci obrazu BUFOR #2
+; dodatkowo ustawia nowe znaki w miejsce wczeÅ›niej odczytanych ktÃ³re bÄ™dÄ… reprezentowaÄ‡ ducha
 
 B2SHAPE	.proc
 
-	SPRTEST			; krótki test, czy aktualny duch bêdzie przetwarzany w tej kolejce
+	SPRTEST			; krÃ³tki test, czy aktualny duch bÄ™dzie przetwarzany w tej kolejce
 
-	jsr	GETPARAM	; w GETPARAM m.in. rejestr X zostaje zapamiêtany w OLDX
-				; oraz parametry ducha zostaj¹ przepisane do zmiennych POSX, POSY, BANK, TYPE, HEIGHT
+	jsr	GETPARAM	; w GETPARAM m.in. rejestr X zostaje zapamiÄ™tany w OLDX
+				; oraz parametry ducha zostajÄ… przepisane do zmiennych POSX, POSY, BANK, TYPE, HEIGHT
 *---
-	CALC	B2		; w³aœciwy fragment kodu modyfikuj¹cy znaki z BUFOR #3	
-*---				; na koñcu skaczemy do programu obs³ugi ducha
+	CALC	B2		; wÅ‚aÅ›ciwy fragment kodu modyfikujÄ…cy znaki z BUFOR #3	
+*---				; na koÅ„cu skaczemy do programu obsÅ‚ugi ducha
 
 	ift COLLISION_DETECTION
-	jmp	DETECT_UPD	; koñczymy skokiem do procedury aktualizacji tablic detekcji COLISx, COLISy
+	jmp	DETECT_UPD	; koÅ„czymy skokiem do procedury aktualizacji tablic detekcji COLISx, COLISy
 	els
 	rts
 	eif
@@ -55,23 +55,23 @@ B2SHAPE	.proc
 
 
 * ---	B3SHAPE
-; stawianie duchów w BUFOR #3
+; stawianie duchÃ³w w BUFOR #3
 ;
-; B3CALC inicjuje adresy SRC, DST na podstawie znaków odczytanych z pamiêci obrazu BUFOR #3
-; dodatkowo ustawia nowe znaki w miejsce wczeœniej odczytanych które bêd¹ reprezentowaæ ducha
+; B3CALC inicjuje adresy SRC, DST na podstawie znakÃ³w odczytanych z pamiÄ™ci obrazu BUFOR #3
+; dodatkowo ustawia nowe znaki w miejsce wczeÅ›niej odczytanych ktÃ³re bÄ™dÄ… reprezentowaÄ‡ ducha
 
 B3SHAPE	.proc
 
-	SPRTEST			; krótki test, czy aktualny duch bêdzie przetwarzany w tej kolejce
+	SPRTEST			; krÃ³tki test, czy aktualny duch bÄ™dzie przetwarzany w tej kolejce
 
-	jsr	GETPARAM	; w GETPARAM m.in. rejestr X zostaje zapamiêtany w OLDX
-				; oraz parametry ducha zostaj¹ przepisane do zmiennych POSX, POSY, BANK, TYPE, HEIGHT
+	jsr	GETPARAM	; w GETPARAM m.in. rejestr X zostaje zapamiÄ™tany w OLDX
+				; oraz parametry ducha zostajÄ… przepisane do zmiennych POSX, POSY, BANK, TYPE, HEIGHT
 *---
-	CALC	B3		; w³aœciwy fragment kodu modyfikuj¹cy znaki z BUFOR #3		
-*---				; na koñcu skaczemy do programu obs³ugi ducha
+	CALC	B3		; wÅ‚aÅ›ciwy fragment kodu modyfikujÄ…cy znaki z BUFOR #3		
+*---				; na koÅ„cu skaczemy do programu obsÅ‚ugi ducha
 
 	ift COLLISION_DETECTION
-	jmp	DETECT_UPD	; koñczymy skokiem do procedury aktualizacji tablic detekcji COLISx, COLISy
+	jmp	DETECT_UPD	; koÅ„czymy skokiem do procedury aktualizacji tablic detekcji COLISx, COLISy
 	els
 	rts
 	eif
@@ -81,17 +81,17 @@ B3SHAPE	.proc
 
 
 * ---	GETPARAM
-; wspólna dla B2SHAPE i B3SHAPE procedura odczytuj¹ca i uaktualniaj¹ca parametry ducha
-; zwiêkszany jest licznik klatek animacji @SPRITE.CNT, maksymalna liczba klatek animacji
+; wspÃ³lna dla B2SHAPE i B3SHAPE procedura odczytujÄ…ca i uaktualniajÄ…ca parametry ducha
+; zwiÄ™kszany jest licznik klatek animacji @SPRITE.CNT, maksymalna liczba klatek animacji
 ; podana jest w tablicy SHAPES -> SHAPES.MAX
 
 GETPARAM
 	stx	oldX
 
-	ldy	sprites[0].shp,x	; odczytujemy numer kszta³tu ducha
+	ldy	sprites[0].shp,x	; odczytujemy numer ksztaÅ‚tu ducha
 
-	mwa	sprites[0].frm,x	zp[0].src	; adres tablicy z zapisan¹ kolejnoœci¹ klatek animacji (numer*8)
-							; korzystamy z zp[0].src bo póŸniej i tak zostanie tam zapisany adres
+	mwa	sprites[0].frm,x	zp[0].src	; adres tablicy z zapisanÄ… kolejnoÅ›ciÄ… klatek animacji (numer*8)
+							; korzystamy z zp[0].src bo pÃ³Åºniej i tak zostanie tam zapisany adres
 	mva	shapes[0].bnk,y		bank
 	mva	shapes[0].typ,y		type
 	mva	shapes[0].hig,y		height
@@ -103,7 +103,7 @@ GETPARAM
 	scc
 	rts
 
-	and	#7			; obliczamy ofset przesuniêcia w pionie dla SHP i MSK
+	and	#7			; obliczamy ofset przesuniÄ™cia w pionie dla SHP i MSK
 	eor	#7
 	sta	zp[1].src		; (posy&7)^7+1
 		 			; korzystamy z zp[1].src bo i tak zostanie tam zapisany adres
@@ -111,17 +111,17 @@ GETPARAM
 	ldy	#0
 
 	lda	sprites[0].cnt,x
-	add	#1			; zwiêkszamy licznik klatek animacji
-	cmp	(zp[0].src),y		; porównujemy z dopuszczaln¹ maksymaln¹ wartoœci¹ (SHAPES.FRM),0
+	add	#1			; zwiÄ™kszamy licznik klatek animacji
+	cmp	(zp[0].src),y		; porÃ³wnujemy z dopuszczalnÄ… maksymalnÄ… wartoÅ›ciÄ… (SHAPES.FRM),0
 	scc				; (rejestr Y zawiera indeks do tablicy SHAPES)
 	tya				; zerujemy licznik klatek (Y=0)
 
 	sta	sprites[0].cnt,x
 
-	tay			; w rejestrze Y znajduje sie aktualny numer klatki do wyœwietlenia
+	tay			; w rejestrze Y znajduje sie aktualny numer klatki do wyÅ›wietlenia
 
-	iny			; Y++ poniewa¿ omijamy pierwszy bajt tablicy, pierwszy bajt tablicy
-				; okreœla maksymaln¹ wartoœæ licznika klatek animacji, sprawdzaliœmy go 'CMP (ZP[0].SRC),Y'
+	iny			; Y++ poniewaÅ¼ omijamy pierwszy bajt tablicy, pierwszy bajt tablicy
+				; okreÅ›la maksymalnÄ… wartoÅ›Ä‡ licznika klatek animacji, sprawdzaliÅ›my go 'CMP (ZP[0].SRC),Y'
 	lda	posx
 	and	#3
 	asl	@		; a=(posx&3)*2
@@ -133,22 +133,22 @@ GETPARAM
 *---
 ; inicjalizacja adresow SHP i MSK
 ;
-; odbywa siê przez zaincjowanie rejestrów A, X, Y odpowiedni¹ wartoœci¹ z tablic
+; odbywa siÄ™ przez zaincjowanie rejestrÃ³w A, X, Y odpowiedniÄ… wartoÅ›ciÄ… z tablic
 ; shpAdr12, mskAdr12	dla ducha 12x24
 ; shpAdr8, mskAdr8	dla ducha 8x24
 ;
-; potem zwiêkszamy SHP i MSK co 8 bajtów
+; potem zwiÄ™kszamy SHP i MSK co 8 bajtÃ³w
 ;
-; MSK wzglêdem SHP przesuniête jest zawsze o $2000 bajtów, wykorzystujemy t¹ w³aœciwoœæ przy optymalizacji kodu
+; MSK wzglÄ™dem SHP przesuniÄ™te jest zawsze o $2000 bajtÃ³w, wykorzystujemy tÄ… wÅ‚aÅ›ciwoÅ›Ä‡ przy optymalizacji kodu
 
-	lda	type		; rodzaj ducha, wartoœæ =0 to duch 12x24, wartoœæ <>0 to duch 8x24
+	lda	type		; rodzaj ducha, wartoÅ›Ä‡ =0 to duch 12x24, wartoÅ›Ä‡ <>0 to duch 8x24
 	beq	_12x24
 
 _8x24	.local
 	sty	tmpY+1
 	lda	shpAdr8,y	; duch 8x24
 	ldx	shpAdr8+1,y
-tmpY	ldy	mskAdr8		; mskAdr8 zaczyna siê od pocz¹tku strony pamiêci wiêc mo¿emy zrobiæ taki trick
+tmpY	ldy	mskAdr8		; mskAdr8 zaczyna siÄ™ od poczÄ…tku strony pamiÄ™ci wiÄ™c moÅ¼emy zrobiÄ‡ taki trick
 
 	jmp	_skp
 	.endl
@@ -158,7 +158,7 @@ _12x24	.local
 	sty	tmpY+1
 	lda	shpAdr12,y	; duch 12x24
 	ldx	shpAdr12+1,y
-tmpY	ldy	mskAdr12	; mskAdr12 zaczyna siê od pocz¹tku strony pamiêci wiêc mo¿emy zrobiæ taki trick
+tmpY	ldy	mskAdr12	; mskAdr12 zaczyna siÄ™ od poczÄ…tku strony pamiÄ™ci wiÄ™c moÅ¼emy zrobiÄ‡ taki trick
 	.endl
 
 _skp
@@ -234,12 +234,12 @@ B2
 
 
 * ---	WAIT
-; kod odpowiedzialny za synchronizacjê obrazu i prze³¹czanie obrazów
+; kod odpowiedzialny za synchronizacjÄ™ obrazu i przeÅ‚Ä…czanie obrazÃ³w
 
 WAIT	.macro
 
-B2no	= CLR_UPDATE.B3		; jeœli wyœwietlamy B2 to modyfikujemy B3
-B3no	= CLR_UPDATE.B2		; jeœli wyœwietlamy B3 to modyfikujemy B2
+B2no	= CLR_UPDATE.B3		; jeÅ›li wyÅ›wietlamy B2 to modyfikujemy B3
+B3no	= CLR_UPDATE.B2		; jeÅ›li wyÅ›wietlamy B3 to modyfikujemy B2
 
 _wait	lda:cmp:req cloc
 
@@ -268,14 +268,14 @@ _wait	lda:cmp:req cloc
 
 
 * ---	CALC
-; na podstawie pozycji poziomej oceniamy czy mo¿emy optymalizowaæ ducha 12x24 poprzez wywo³anie ducha 8x24
+; na podstawie pozycji poziomej oceniamy czy moÅ¼emy optymalizowaÄ‡ ducha 12x24 poprzez wywoÅ‚anie ducha 8x24
 ;
-; inicjalizujemy adresy wywo³uj¹c B2CALC,B3CALC ze zmienn¹ isSiz3<>0 dla ducha 8x24
-; inicjalizujemy adresy wywo³uj¹c B2CALC,B3CALC ze zmienn¹ isSiz3=0 dla ducha 12x24
+; inicjalizujemy adresy wywoÅ‚ujÄ…c B2CALC,B3CALC ze zmiennÄ… isSiz3<>0 dla ducha 8x24
+; inicjalizujemy adresy wywoÅ‚ujÄ…c B2CALC,B3CALC ze zmiennÄ… isSiz3=0 dla ducha 12x24
 ;
-; koñczymy modyfikacje wywo³uj¹c procedurê na stronie zerowej SHAPEZP
+; koÅ„czymy modyfikacje wywoÅ‚ujÄ…c procedurÄ™ na stronie zerowej SHAPEZP
 ;
-; ostatni¹ czynnoœci¹ jest skok do programu obs³ugi ducha _JMP
+; ostatniÄ… czynnoÅ›ciÄ… jest skok do programu obsÅ‚ugi ducha _JMP
 ;
 
 CALC	.macro
@@ -290,39 +290,39 @@ CALC	.macro
 	lda	type
 	bne	_8x24
 
-	lda	posx		; optymalizacja dla ducha 12x24 i klatki SHR0 (przepisujemy tylko 12 znaków zamiast 16)
+	lda	posx		; optymalizacja dla ducha 12x24 i klatki SHR0 (przepisujemy tylko 12 znakÃ³w zamiast 16)
 	and	#3
 	bne	_12x24
 
 _8x24
-	mva	#$ff	isSiz3		; ten duch ma szerokoœæ 1 znaku (isSiz3 <> 0)
+	mva	#$ff	isSiz3		; ten duch ma szerokoÅ›Ä‡ 1 znaku (isSiz3 <> 0)
 					; ze zmiennej isSiz3 korzysta B2CALC i B3CALC
 
-	jsr	:1calc			; wywo³ujemy B2CALC lub B3CALC
+	jsr	:1calc			; wywoÅ‚ujemy B2CALC lub B3CALC
 
-	mva	bank	$d301		; w³¹czamy bank z bitmap¹ i mask¹ ducha
+	mva	bank	$d301		; wÅ‚Ä…czamy bank z bitmapÄ… i maskÄ… ducha
 
 
-; modyfikujemy kod programu na stronie zerowej aby modyfikowa³ 12 znaków a nie 16
+; modyfikujemy kod programu na stronie zerowej aby modyfikowaÅ‚ 12 znakÃ³w a nie 16
 
 	mva	<zp[4]	shpJMP+1
 
 	ldy	#7
 	jsr	zp[4]
 
-; przywracamy modyfikacjê 16 znaków
+; przywracamy modyfikacjÄ™ 16 znakÃ³w
 
 	mva	<zp[0]	shpJMP+1
 
 	jmp	_cont
 
 _12x24
-	mva	#0	isSiz3		; ten duch nie ma szerokoœci 3 znaków (isSiz3 = 0)
+	mva	#0	isSiz3		; ten duch nie ma szerokoÅ›ci 3 znakÃ³w (isSiz3 = 0)
 					; ze zmiennej isSiz3 korzysta B2CALC i B3CALC
 
-	jsr	:1calc			; wywo³ujemy B2CALC lub B3CALC
+	jsr	:1calc			; wywoÅ‚ujemy B2CALC lub B3CALC
 
-	mva	bank	$d301		; w³¹czamy bank z bitmap¹ i mask¹ ducha
+	mva	bank	$d301		; wÅ‚Ä…czamy bank z bitmapÄ… i maskÄ… ducha
 
 	ldy	#7
 	jsr	SHAPEZP
@@ -335,22 +335,22 @@ _cont
 	mva sprites[0].psx,x	sprites[0].old_psx,x
 	mva sprites[0].psy,x	sprites[0].old_psy,x
 
-_jsr	jsr $ffff		; skok do programu obs³ugi ducha
+_jsr	jsr $ffff		; skok do programu obsÅ‚ugi ducha
 
 	.endm
 
 
 * ---	SPRTEST
 ; sprawdzamy bit STS_NEWSPRT spod adresu SPRITES[].STS
-; wartoœæ <>0 oznacza ¿e duch zosta³ dopisany w tej kolejce i dlatego zostanie obs³u¿ony dopiero w nastêpnej
+; wartoÅ›Ä‡ <>0 oznacza Å¼e duch zostaÅ‚ dopisany w tej kolejce i dlatego zostanie obsÅ‚uÅ¼ony dopiero w nastÄ™pnej
 
 SPRTEST	.macro
 
-	lda	sprites[0].sts,x	; czy w tej kolejce ten duch mo¿e zostaæ obs³u¿ony
+	lda	sprites[0].sts,x	; czy w tej kolejce ten duch moÅ¼e zostaÄ‡ obsÅ‚uÅ¼ony
 	cmp	#sts_newsprt|sts_visible
 	bne	_ok
 
-;	lda	sprites[0].sts,x	; ale w nastêpnej i tak zostanie obs³u¿ony
+;	lda	sprites[0].sts,x	; ale w nastÄ™pnej i tak zostanie obsÅ‚uÅ¼ony
 	and	#sts_newsprt^$ff
 	sta	sprites[0].sts,x
 	rts
@@ -360,11 +360,11 @@ _ok
 
 
 * ---	INITBUF
-; zainicjowanie odpowiedniego bufora (B2BUF lub B3BUF) poprzez przepisanie t³a z g³ównego bufora BUFOR #1
-; nastêpnie sprawdzamy MAX_SPRITES razy czy duch jest aktywny i czy mamy go obs³u¿yæ
+; zainicjowanie odpowiedniego bufora (B2BUF lub B3BUF) poprzez przepisanie tÅ‚a z gÅ‚Ã³wnego bufora BUFOR #1
+; nastÄ™pnie sprawdzamy MAX_SPRITES razy czy duch jest aktywny i czy mamy go obsÅ‚uÅ¼yÄ‡
 ;
-; dodatkowo oprócz przepisania t³a kasowana jest zawartoœæ buforów kolizji COLISx, COLISy poprzez
-; wype³nienie ich wartoœci¹ $FF
+; dodatkowo oprÃ³cz przepisania tÅ‚a kasowana jest zawartoÅ›Ä‡ buforÃ³w kolizji COLISx, COLISy poprzez
+; wypeÅ‚nienie ich wartoÅ›ciÄ… $FF
 ;
 
 INITBUF	.macro
@@ -377,7 +377,7 @@ INITBUF	.macro
 	sta	$d301
 	jsr	:1init
 
-	.rept	max_sprites			; maksymalna liczba duchów do wyœwietlenia
+	.rept	max_sprites			; maksymalna liczba duchÃ³w do wyÅ›wietlenia
 
 	ldx	#.sizeof(@sprite)*#			; x=x+@SPRITES
 	lda	sprites[0].sts,x
@@ -389,7 +389,7 @@ INITBUF	.macro
 	seq
 	eif
 
-	jsr	:1SHAPE				; skok do procedury obs³ugi (tworzenia) ducha B2SHAPE lub B3SHAPE
+	jsr	:1SHAPE				; skok do procedury obsÅ‚ugi (tworzenia) ducha B2SHAPE lub B3SHAPE
 
 	.endr
 

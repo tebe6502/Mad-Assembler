@@ -66,7 +66,7 @@ tx	.by 'Visage 2.8 by TeBe/Madteam',$9b
 
 start	jmp buf			; start po wyjsciu do DOS-a
 
-dl	dta d' ',b($4f)
+dl	dta d'Â ',b($4f)
 ad	dta a(o1)
 m1	:101 brk
 	dta b($4f)

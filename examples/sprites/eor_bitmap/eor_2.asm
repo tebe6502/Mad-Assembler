@@ -1,38 +1,38 @@
 
 /*
- v3.0 - naj najszybsza, kosztem pamiêci (obs³uga 1 ducha zajmuje prawie $300 bajtów pamiêci),
- 	do obs³ugi ducha potrzebna osobna procedura (np. 8 duchów = 8 procedur)
+ v3.0 - naj najszybsza, kosztem pamiÄ™ci (obsÅ‚uga 1 ducha zajmuje prawie $300 bajtÃ³w pamiÄ™ci),
+ 	do obsÅ‚ugi ducha potrzebna osobna procedura (np. 8 duchÃ³w = 8 procedur)
 
- Silnik ten dzia³a na zasadzie EOR-owania obrazu, wykorzystuje tylko 1 bufor obrazu, potrzebuje $300 bajtów pamiêci
- na obs³ugê 1 ducha, nie ma potrzeby zapamiêtywania ani odœwie¿ania zawartoœci ekranu po wyœwietleniu ducha.
+ Silnik ten dziaÅ‚a na zasadzie EOR-owania obrazu, wykorzystuje tylko 1 bufor obrazu, potrzebuje $300 bajtÃ³w pamiÄ™ci
+ na obsÅ‚ugÄ™ 1 ducha, nie ma potrzeby zapamiÄ™tywania ani odÅ›wieÅ¼ania zawartoÅ›ci ekranu po wyÅ›wietleniu ducha.
 
- Przesuniêcia bitów zosta³y stablicowane ShiftRight2H:ShiftRight2L, ShiftRight4H:ShiftRight4L, ShiftRight6H:ShiftRight6L
+ PrzesuniÄ™cia bitÃ³w zostaÅ‚y stablicowane ShiftRight2H:ShiftRight2L, ShiftRight4H:ShiftRight4L, ShiftRight6H:ShiftRight6L
 
- *** !!! Dokonywane jest przesuniêcie JEDNEJ bitmapy ducha z aktualnej pozycji, bitmapa z poprzedniej pozycji jest w buforze !!! ***
+ *** !!! Dokonywane jest przesuniÄ™cie JEDNEJ bitmapy ducha z aktualnej pozycji, bitmapa z poprzedniej pozycji jest w buforze !!! ***
 
- !!! Maksymalna wysokoœæ przetwarzanych duchów wynosi 128/ShapeWidth !!!
+ !!! Maksymalna wysokoÅ›Ä‡ przetwarzanych duchÃ³w wynosi 128/ShapeWidth !!!
 
- !!! Minimalna szerokoœæ duchów ShapeWidth = 2..5 !!!
+ !!! Minimalna szerokoÅ›Ä‡ duchÃ³w ShapeWidth = 2..5 !!!
 
- Ca³y silnik sk³ada siê z jednej procedury PutShape
+ CaÅ‚y silnik skÅ‚ada siÄ™ z jednej procedury PutShape
 
- PutShape	procedura realizuj¹ca kopiowanie bitmapy ducha do bufora, przesuwanie bitów bitmapy ducha,
- 		umieszczanie nowo przeliczonej bitmapy w odpowiednim obszarze pamiêci (obszarze pamiêci obrazu)
+ PutShape	procedura realizujÄ…ca kopiowanie bitmapy ducha do bufora, przesuwanie bitÃ³w bitmapy ducha,
+ 		umieszczanie nowo przeliczonej bitmapy w odpowiednim obszarze pamiÄ™ci (obszarze pamiÄ™ci obrazu)
 
 
- SCHEMAT DZIA£ANIA:
+ SCHEMAT DZIAÅANIA:
 
  0. X = $80
     wyzeruj obszar ShapeBuffer[0..127]
  
- 1. przepisz_bitmape_dla_ducha_i_przesuñ_jej_pixle w obszarze ShapeBuffer[X..X+127]
+ 1. przepisz_bitmape_dla_ducha_i_przesuÅ„_jej_pixle w obszarze ShapeBuffer[X..X+127]
 
  2. if X<>0
-	duch0 EOR dane_obrazu_o_wspó³rzêdnych_dla_ducha0
-    	duch1 EOR dane_obrazu_o_wspó³rzêdnych_dla_ducha1
+	duch0 EOR dane_obrazu_o_wspÃ³Å‚rzÄ™dnych_dla_ducha0
+    	duch1 EOR dane_obrazu_o_wspÃ³Å‚rzÄ™dnych_dla_ducha1
     else
-	duch1 EOR dane_obrazu_o_wspó³rzêdnych_dla_ducha0
-    	duch0 EOR dane_obrazu_o_wspó³rzêdnych_dla_ducha1
+	duch1 EOR dane_obrazu_o_wspÃ³Å‚rzÄ™dnych_dla_ducha0
+    	duch0 EOR dane_obrazu_o_wspÃ³Å‚rzÄ™dnych_dla_ducha1
     endif
 
  4. X = X eor $80
@@ -42,17 +42,17 @@
 */
 
 
-; $26 linii skaningowych (maksymalna prêdkoœæ silnika dla ducha o rozmiarze 32x16 pixli Hires)
-; $1e linii skaningowych (maksymalna prêdkoœæ silnika dla ducha o rozmiarze 24x16 pixli Hires)
-; $16 linii skaningowych (maksymalna prêdkoœæ silnika dla ducha o rozmiarze 16x16 pixli Hires)
-; $0e linii skaningowych (maksymalna prêdkoœæ silnika dla ducha o rozmiarze 8x16 pixli Hires)
+; $26 linii skaningowych (maksymalna prÄ™dkoÅ›Ä‡ silnika dla ducha o rozmiarze 32x16 pixli Hires)
+; $1e linii skaningowych (maksymalna prÄ™dkoÅ›Ä‡ silnika dla ducha o rozmiarze 24x16 pixli Hires)
+; $16 linii skaningowych (maksymalna prÄ™dkoÅ›Ä‡ silnika dla ducha o rozmiarze 16x16 pixli Hires)
+; $0e linii skaningowych (maksymalna prÄ™dkoÅ›Ä‡ silnika dla ducha o rozmiarze 8x16 pixli Hires)
 
 
-Screen		= $a010		; adres pamiêci obrazu
+Screen		= $a010		; adres pamiÄ™ci obrazu
 
-ScreenWidth	= 40		; szerokoœæ obrazu
+ScreenWidth	= 40		; szerokoÅ›Ä‡ obrazu
 
-ShapeWidth	= 4		; width+1, szerokoœæ przetwarzanych duchów w bajtach (+1 dodatkowy bajt)
+ShapeWidth	= 4		; width+1, szerokoÅ›Ä‡ przetwarzanych duchÃ³w w bajtach (+1 dodatkowy bajt)
 
 	ert ShapeWidth<2||ShapeWidth>5
 
@@ -98,10 +98,10 @@ tabShiftH	dta h(0, ShiftRight2H, ShiftRight4H, ShiftRight6H)
 	org $2100
 
 ShapeBuffer	.ds 256
-ShapeBuffer0	= ShapeBuffer		; bufor pomocniczy dla ducha #0 (koniecznie w obszarze strony pamiêci)
-ShapeBuffer1	= ShapeBuffer+128	; bufor pomocniczy dla ducha #1 (koniecznie w obszarze strony pamiêci)
+ShapeBuffer0	= ShapeBuffer		; bufor pomocniczy dla ducha #0 (koniecznie w obszarze strony pamiÄ™ci)
+ShapeBuffer1	= ShapeBuffer+128	; bufor pomocniczy dla ducha #1 (koniecznie w obszarze strony pamiÄ™ci)
 
-lAdrLine	:256 dta l(Screen+#*ScreenWidth)	; m³odsze bajty adresu linii obrazu
+lAdrLine	:256 dta l(Screen+#*ScreenWidth)	; mÅ‚odsze bajty adresu linii obrazu
 hAdrLine	:256 dta h(Screen+#*ScreenWidth)	; starsze bajty adresu linii obrazu
 
 ShiftRight2H	:256 dta h([#<<8]>>2)
@@ -113,8 +113,8 @@ ShiftRight4L	:256 dta l([#<<8]>>4)
 ShiftRight6H	:256 dta h([#<<8]>>6)
 ShiftRight6L	:256 dta l([#<<8]>>6)
 
-mulTab0		:128/ShapeWidth dta #*ShapeWidth	; pomocnicza tablica mno¿enia (oszczêdzamy dziêki niej pare cykli)
-mulTab1		:128/ShapeWidth dta #*ShapeWidth+$80	; pomocnicza tablica mno¿enia (oszczêdzamy dziêki niej pare cykli)
+mulTab0		:128/ShapeWidth dta #*ShapeWidth	; pomocnicza tablica mnoÅ¼enia (oszczÄ™dzamy dziÄ™ki niej pare cykli)
+mulTab1		:128/ShapeWidth dta #*ShapeWidth+$80	; pomocnicza tablica mnoÅ¼enia (oszczÄ™dzamy dziÄ™ki niej pare cykli)
 
 
 main	lda:cmp:req 20
@@ -167,16 +167,16 @@ loop
 	lda $d40b
 	cmp $100
 	scc
-	sta $100	; tutaj zapisujemy aktualn¹ szybkoœæ wyœwietlenia ducha
+	sta $100	; tutaj zapisujemy aktualnÄ… szybkoÅ›Ä‡ wyÅ›wietlenia ducha
 
 	jmp loop
 
 
 * -------------------------------------------------------------------
-* ---	WYŒWIETLENIE DUCHÓW PROGRAMOWYCH W POLU GRY
-* ---	PRZETWARZANE S¥ DWA DUCHY, ShapeBuffer0 (#0) i ShapeBuffer1 (#1)
+* ---	WYÅšWIETLENIE DUCHÃ“W PROGRAMOWYCH W POLU GRY
+* ---	PRZETWARZANE SÄ„ DWA DUCHY, ShapeBuffer0 (#0) i ShapeBuffer1 (#1)
 * ---	DUCH NA POZYCJI POPRZEDNIEJ ORAZ DUCH NA POZYCJI AKTUALNEJ
-* ---	NIE MA POTRZEBY ODŒWIE¯ANIA POLA GRY STAR¥ ZAWARTOŒÆI¥
+* ---	NIE MA POTRZEBY ODÅšWIEÅ»ANIA POLA GRY STARÄ„ ZAWARTOÅšÄ†IÄ„
 * -------------------------------------------------------------------
 .proc	PutShape
 
@@ -190,11 +190,11 @@ E_9591	ldx	<ShapeBuffer1		; !!! koniecznie zaczynamy od <ShapeBuffer1 !!!
 	mva	lAdrShape,y	ScreenAdr1
 	mva	hAdrShape,y	ScreenAdr1+1
 
-	ldy height			; wysokoœæ ducha
+	ldy height			; wysokoÅ›Ä‡ ducha
 
 	txa
 	add mulTab0,y
-	sta max				; wysokoœæ ducha*ShapeWidth+<ShapeBuffer
+	sta max				; wysokoÅ›Ä‡ ducha*ShapeWidth+<ShapeBuffer
 
 	ldy #0
 
@@ -265,7 +265,7 @@ E_95d4	lda positionX			; pozycja pozioma ducha #1
 	stx tShfL3+2
 	eif
 
-E_95dc	ldy height			; wysokoœæ ducha
+E_95dc	ldy height			; wysokoÅ›Ä‡ ducha
 	dey
 
 E_95df	ldx mulTab1,y			; !!! koniecznie zaczynamy od mulTab1 !!!
@@ -315,11 +315,11 @@ loopShf	bmi shift
 E_9602	ldy height
 
 	ldx mulTab0,y
-	dex				; wysokoœæ ducha*ShapeWidth-1 = d³ugoœæ danych ducha (!!! regX !!!)
+	dex				; wysokoÅ›Ä‡ ducha*ShapeWidth-1 = dÅ‚ugoÅ›Ä‡ danych ducha (!!! regX !!!)
 
 	lda positionY_old		; pozycja pionowa ducha #0
 	clc
-	adc height			; wysokoœæ ducha
+	adc height			; wysokoÅ›Ä‡ ducha
 	tay
 
 	lda positionX_old		; pozycja pozioma ducha #0
@@ -334,7 +334,7 @@ E_9602	ldy height
 
 	lda positionY			; pozycja pionowa ducha #1
 	clc
-	adc height			; wysokoœæ ducha 
+	adc height			; wysokoÅ›Ä‡ ducha 
 	tay
 
 	lda positionX			; pozycja pozioma ducha #1
@@ -351,14 +351,14 @@ E_9602	ldy height
 
 b10	.local
 
-	ldy #ShapeWidth-1		; przenosimy duchy od do³u do góry (pewnie w celu zminimalizowania mrugania)
+	ldy #ShapeWidth-1		; przenosimy duchy od doÅ‚u do gÃ³ry (pewnie w celu zminimalizowania mrugania)
 
 	.rept ShapeWidth
 	lda ShapeBuffer1-#,x
 	eor (ScreenAdr0),y
 	sta (ScreenAdr0),y
 
-	lda (ScreenAdr1),y		; jeœli bajt t³a to nie ma kolizji
+	lda (ScreenAdr1),y		; jeÅ›li bajt tÅ‚a to nie ma kolizji
 
 	seq				; !!!!!!!!!!!!!!!! DETEKCJA KOLIZJI !!!!!!!!!!!!!!!!!
 	sta collision			; !!!!!!!!!!! BANALNA W SWEJ PROSTOCIE !!!!!!!!!!!!!!
@@ -399,14 +399,14 @@ _skp1
 
 b01	.local
 
-	ldy #ShapeWidth-1		; przenosimy duchy od do³u do góry (pewnie w celu zminimalizowania mrugania)
+	ldy #ShapeWidth-1		; przenosimy duchy od doÅ‚u do gÃ³ry (pewnie w celu zminimalizowania mrugania)
 
 	.rept ShapeWidth
 	lda ShapeBuffer0-#,x
 	eor (ScreenAdr0),y
 	sta (ScreenAdr0),y
 
-	lda (ScreenAdr1),y		; jeœli bajt t³a to nie ma kolizji
+	lda (ScreenAdr1),y		; jeÅ›li bajt tÅ‚a to nie ma kolizji
 
 	seq				; !!!!!!!!!!!!!!!! DETEKCJA KOLIZJI !!!!!!!!!!!!!!!!!
 	sta collision			; !!!!!!!!!!! BANALNA W SWEJ PROSTOCIE !!!!!!!!!!!!!!
@@ -448,7 +448,7 @@ quit
 	mva	positionY	positionY_old
 	mva	collision	collision_old
 
-	lda E_95df+1			; prze³¹czenie buforów
+	lda E_95df+1			; przeÅ‚Ä…czenie buforÃ³w
 	eor #[<mulTab0]^[<mulTab1]
 	sta E_95df+1
 

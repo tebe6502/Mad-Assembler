@@ -168,7 +168,7 @@ __chrCode		EQU *
 				cpx #32		; 31-32 -> C clear, 32-32 -> C set..
 				bcc __chrCodeJ1		; 1..31, we got the right byte from the table
 
-; Ranks 32..64 (11111°xxxxx), get byte..
+; Ranks 32..64 (11111Â°xxxxx), get byte..
 				txa		; get back the value (5 valid bits)
 				ldx #3
 				jsr getbits	; get 3 more bits to get a full byte, X = 0

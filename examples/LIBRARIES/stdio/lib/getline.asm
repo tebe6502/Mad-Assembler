@@ -2,12 +2,12 @@
 /*
   GETLINE
 
-  Program czeka, az uzytkownik wpisze ciag znaków z klawiatury i nacisnie klawisz RETURN.
+  Program czeka, az uzytkownik wpisze ciag znakÃ³w z klawiatury i nacisnie klawisz RETURN.
   Znaki podczas wpisywania sa wyswietlane na ekranie, dzialaja tez normalne znaki kontrolne
   (odczyt jest robiony z edytora ekranowego). 
 
   Wywolanie funkcji polega na zaladowaniu adresu, pod jaki maja byc wpisane znaki,
-  do rejestrów A/Y (mlodszy/starszy) i wykonaniu rozkazu JSR GETLINE. 
+  do rejestrÃ³w A/Y (mlodszy/starszy) i wykonaniu rozkazu JSR GETLINE. 
 */
 
 iccmd		= $0342

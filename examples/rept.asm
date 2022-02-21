@@ -2,10 +2,10 @@
    Przyklad uzycia dyrektywy .REPT (repeat), .R (repeat_counter), .ENDR (end_repeat)
    oraz odpowiednika dyrektywy .R czyli znaku hash #
 
-   po wartoœci okreœlaj¹cej liczbê powtórzeñ pêtli mo¿liwe jest podanie dodatkowych parametrów które zostan¹
-   najpierw obliczone a ich wynik podstawiony w sposób podobny jak w makrach, czyli
+   po wartoÅ›ci okreÅ›lajÄ…cej liczbÄ™ powtÃ³rzeÅ„ pÄ™tli moÅ¼liwe jest podanie dodatkowych parametrÃ³w ktÃ³re zostanÄ…
+   najpierw obliczone a ich wynik podstawiony w sposÃ³b podobny jak w makrach, czyli
    :1 (parametr pierwszy), :2 (parametr drugi) itd.
-   w ten sposoób mo¿liwe jest jak w n/w przyk³adzie zdefiniowanie etykiet, np.: label0, label1, label2 ... label127
+   w ten sposoÃ³b moÅ¼liwe jest jak w n/w przykÅ‚adzie zdefiniowanie etykiet, np.: label0, label1, label2 ... label127
 */
 
 	org $2000

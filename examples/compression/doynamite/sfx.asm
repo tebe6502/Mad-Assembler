@@ -51,7 +51,7 @@ lz_scratch     !byte $00
 go
 		;******** Start the next match/literal run ********
 lz_decrunch
-		;XXX TODO lz_bist auch gleich passend füllen bei sfx, nicht in stream schreiben?
+		;XXX TODO lz_bist auch gleich passend fĂĽllen bei sfx, nicht in stream schreiben?
 		sec			;This is the main entry point. Forcibly
 _lz_type_refill	jsr _lz_refill_bits	;fill up the the bit buffer on entry
 		bne _lz_type_cont	;(BRA)

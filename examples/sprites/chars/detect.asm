@@ -175,9 +175,9 @@ _jmp	jmp	f_end
 	.pages
 
 f23	sta	COLISy+25,y	; rozpisana w/w petla wypelniajaca, mlodszy bajt adresu wejscia do petli jest w OFSY
-f22	sta	COLISy+24,y	; caly ten fragment musi mieœciœ siê w granicy strony pamiêci, czuwaj¹
+f22	sta	COLISy+24,y	; caly ten fragment musi mieÅ›ciÅ› siÄ™ w granicy strony pamiÄ™ci, czuwajÄ…
 f21	sta	COLISy+23,y	; nad tym dyrektywy .PAGES i .ENDPG
-f20	sta	COLISy+22,y	; makro ALIGN natychmiastowo wyrówna do pocz¹tku strony (u¿yjemy go jeœli .PAGES wyka¿e b³¹d)
+f20	sta	COLISy+22,y	; makro ALIGN natychmiastowo wyrÃ³wna do poczÄ…tku strony (uÅ¼yjemy go jeÅ›li .PAGES wykaÅ¼e bÅ‚Ä…d)
 f19	sta	COLISy+21,y
 f18	sta	COLISy+20,y
 f17	sta	COLISy+19,y

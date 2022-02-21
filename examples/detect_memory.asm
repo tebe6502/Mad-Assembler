@@ -1,7 +1,7 @@
 
 // 27.07.2009
 
-@TAB_MEM_BANKS  EQU $0400	; pod tym adresem znajd¹ siê odnalezione banki dodatkowej pamiêci
+@TAB_MEM_BANKS  EQU $0400	; pod tym adresem znajdÄ… siÄ™ odnalezione banki dodatkowej pamiÄ™ci
 
 
         ORG $2000

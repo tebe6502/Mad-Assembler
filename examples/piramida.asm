@@ -14,7 +14,7 @@ main
 ;     {
 ;       cout << setw(KOLUMNA - i) << '*';
 
-	sbb kolumna i 82	; [KOLUMNA - i]  ->  82 (w komÛrce 82 lewy margines)
+	sbb kolumna i 82	; [KOLUMNA - i]  ->  82 (w kom√≥rce 82 lewy margines)
 
 	putchar	#$9b	; cout << setw(KOLUMNA - i)
 

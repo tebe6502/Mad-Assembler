@@ -9,7 +9,7 @@ tmp	ldx #0			; etykieta w obszarze globalnym
 
 temp	.local			; deklaracja obszaru lokalnego
 
-	lda tmp			; odwo³anie w obszarze lokalnym
+	lda tmp			; odwoÅ‚anie w obszarze lokalnym
 
 	lda :tmp		; odwolanie do obszaru globalnego
 
@@ -29,4 +29,4 @@ temp	.local			; obszary mozna dodawac (addytywnosc)
 	.endl
 
 
-	.print .len temp	; d³ugoœæ ostatniego obszaru TEMP
+	.print .len temp	; dÅ‚ugoÅ›Ä‡ ostatniego obszaru TEMP

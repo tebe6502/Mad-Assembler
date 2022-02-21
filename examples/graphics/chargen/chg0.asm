@@ -58,7 +58,7 @@ STAND2	EQU 204		; ZESTAWOW
 DEFINED	EQU $88		; ZNAKOW (TYLKO MSB)
 
 ADRPROGRAM	EQU $9000	; ADRESY
-ADRZZ		EQU $87FA	; CZÊŒCI PROGRAMU!!!
+ADRZZ		EQU $87FA	; CZÄ˜ÅšCI PROGRAMU!!!
 GRPM		EQU $80		;
 
 LENZZ  EQU $0406
@@ -181,7 +181,7 @@ CONT2 JSR POZNAK
      LDY POZSY
      JSR ARROW
 
-* Pêtla g³ówna
+* PÄ™tla gÅ‚Ã³wna
 LOOP LDA #0
      STA ZNACZ
      JSR ARR
@@ -197,7 +197,7 @@ LOOP LDA #0
      JSR POZNAK
 LOOPUJ JMP LOOP
 
-* Procedura wybieraj¹ca opcje
+* Procedura wybierajÄ…ca opcje
 DALEJ LDA POZSY
      SEC		; WSP. STRZALKI
      SBC #MINSY		; (W PIXELACH)
@@ -293,7 +293,7 @@ DOBOP  EQU TABOPC+ILOP+ILOP+ILOP
        *   ADRESY WSP.BRZEGOW OKIEN
 
 
-* Procedura obs³ugi MENU
+* Procedura obsÅ‚ugi MENU
 MENU LDA PZNSY
      CMP #6
      BCS ME_2
@@ -679,7 +679,7 @@ J_23 LDX #27
      JSR NEGUJ
      JMP LOOP
 
-* Upewnij siê !!!
+* Upewnij siÄ™ !!!
 SURE LDX <SUR_M
      JSR DSP_MSG
      LDA #255		; (NIC)
@@ -694,7 +694,7 @@ L_8  LDA KEY
      LDX <YES_M
      JMP DSP_MSG
 
-* Wróæ do pêtli g³ównej
+* WrÃ³Ä‡ do pÄ™tli gÅ‚Ã³wnej
 WRLOOP PLA		; (KLAWISZ N)
      PLA
      LDX <NEG_M
@@ -702,7 +702,7 @@ WRLOOP PLA		; (KLAWISZ N)
      JSR USCHG
      JMP LOOP
 
-* W³¹cz ekra CHG
+* WÅ‚Ä…cz ekra CHG
 USCHG  LDX <DLIST
      LDY >DLIST
      STX DLADR
@@ -744,7 +744,7 @@ MOUT TXA
      STA IO_COM,X
      JMP CIOV
 
-* Pobierz nazwê pliku
+* Pobierz nazwÄ™ pliku
 FILENAME LDX <NUL_M
      JSR DSP_MSG
      LDX #255
@@ -766,7 +766,7 @@ GET_TE JSR DSP_MSG
      STA IO_LEN+1,X
      JMP CIOV
 
-* CIOV z sprawdzeniem koñca pliku
+* CIOV z sprawdzeniem koÅ„ca pliku
 MCIO JSR CIOV
      BPL IOOK
      CPY #EOF
@@ -793,7 +793,7 @@ L_9  CPY KEY
 IOOK LDY #1
      RTS
 
-* Zamknij kana³
+* Zamknij kanaÅ‚
 CLOSE LDX #CHN1
      LDA #12
      STA IO_COM,X
@@ -804,7 +804,7 @@ CLOSE LDX #CHN1
      BMI ERROR
      RTS
 
-* Otwórz kana³
+* OtwÃ³rz kanaÅ‚
 OPEN LDX #CHN1
      STA IO_MOD,X
      LDA #3

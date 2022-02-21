@@ -137,7 +137,7 @@ init_decruncher:
 _init_nextone:
 	tya
 	and #$0f
-	beq _init_shortcut		; starta på ny sekvens
+	beq _init_shortcut		; starta pÄº ny sekvens
 
 	txa			; this clears reg a
 	sec			; and sets the carry flag

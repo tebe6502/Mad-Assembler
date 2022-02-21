@@ -1,8 +1,8 @@
 /*
 
-  Przyklad wykorzystania makr do przekazywania parametr體
+  Przyklad wykorzystania makr do przekazywania parametr贸w
 
-  Kazda procedura umieszczana jest w osobnym banku, kazda ma osobny stos, kt髍y
+  Kazda procedura umieszczana jest w osobnym banku, kazda ma osobny stos, kt贸ry
   modyfikuje makro PROC
   
   Makro PROC po modyfikacji stosu wywoluje procedure przez JSR
@@ -12,7 +12,7 @@
  org $2000
  
  proc PutChar,'a'-64    ; wywolanie makra PROC, jako parametr
- proc PutChar,'a'-64    ; nazwa procedury kt髍a bedzie wywolana przez JSR
+ proc PutChar,'a'-64    ; nazwa procedury kt贸ra bedzie wywolana przez JSR
  proc PutChar,'r'-64    ; oraz jeden argument (kod znaku INTERNAL)
  proc PutChar,'e'-64
  proc PutChar,'a'-64
@@ -40,7 +40,7 @@ push .macro             ; deklaracja makra PUSH
 
   lmb #:1               ; ustawia bank pamieci
 
- .if :2<=$FFFF          ; jesli przekazany argument jest mniejszy r體ny $FFFF to
+ .if :2<=$FFFF          ; jesli przekazany argument jest mniejszy r贸wny $FFFF to
   lda <:2               ; odloz go na stosie
   sta stack
   lda >:2

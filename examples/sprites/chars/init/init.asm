@@ -6,7 +6,7 @@
 	.extrn b2clr b3clr b2clridx b3clridx .word
 
 
-;charsBAK	= 56	; liczba znaków przeznaczonych na t³o pola gry <0..charsBAK-1>
+;charsBAK	= 56	; liczba znakÃ³w przeznaczonych na tÅ‚o pola gry <0..charsBAK-1>
 			; <charsBAK..127> znaki przeznaczone na duchy
 
 	.public	charsBAK
@@ -75,15 +75,15 @@ adr	.word fnt,	B2fnt0
 	.word fnt,	B3fnt2
 	.word fnt+$400,	B3fnt1
 	.word fnt+$400,	B3fnt3
-	.word scr,	B1scr		; najwa¿niejszy bufor sk¹d przepisywane s¹ dane do pozosta³ych buforów
+	.word scr,	B1scr		; najwaÅ¼niejszy bufor skÄ…d przepisywane sÄ… dane do pozostaÅ‚ych buforÃ³w
 
 	ile	= [*-adr]/4		; ile operacji przeniesienia danych
 
-fnt	ins 'ride.fnt'		; przyk³adowy zestaw znaków
+fnt	ins 'ride.fnt'		; przykÅ‚adowy zestaw znakÃ³w
 
 ; akceptujemy znaki z zakresu <0..charsBAK-1>, dodatkowo dodajemy invers co drugi bajt
 
-	.get 'ride.scr',0,8*32	; przykladowe t³o
+	.get 'ride.scr',0,8*32	; przykladowe tÅ‚o
 
 	.rept 8*32
 
@@ -101,7 +101,7 @@ scr	:4 .sav 8*32
 
 
 ; procka do przenoszenia danych SRC -> DST
-; rejestry X,Y musimy zachowaæ
+; rejestry X,Y musimy zachowaÄ‡
 
 move	.proc
 

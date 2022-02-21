@@ -70,7 +70,7 @@ type
                 pas: byte;        // numer przebiegu dla danej etykiety
                 typ: char;        // typ etykiety (V-ARIABLE, P-ROCEDURE, C-ONSTANT)
 		lop: byte;
-                use: Boolean;     // czy etykieta jest u¿ywana
+                use: Boolean;     // czy etykieta jest uÅ¼ywana
                 atr: t_attrib;    // atrybut __R, __W, __RW
               end;
 
@@ -409,7 +409,7 @@ var lst, lab, hhh, mmm: textfile;
     ReadEnum    : Boolean = false;      // dla odczytu etykiet @dma(narrow|dma)
     VerifyProc  : Boolean = false;
     exProcTest  : Boolean = false;      // wymagany w celu wyeliminowania 'Unreferenced procedures'
-    NoAllocVar  : Boolean = false;      // wstrzymaj siê z alokacj¹ zmiennych .VAR
+    NoAllocVar  : Boolean = false;      // wstrzymaj siÄ™ z alokacjÄ… zmiennych .VAR
     code6502    : Boolean = false;
     unused_label: Boolean = false;
     regAXY_opty : Boolean = false;      // OPT R+- registry optymisation MW?,MV?
@@ -477,7 +477,7 @@ var lst, lab, hhh, mmm: textfile;
     tCRC32:    t256c;     // tablica dla kodow CRC 32           (proc INITIALIZE)
 
 
-    reptPar: _strArray;   // globalna tablica dla parametrów przekazywanych do .REPT
+    reptPar: _strArray;   // globalna tablica dla parametrÃ³w przekazywanych do .REPT
 
 
     // zmienna przechowujaca 2 adresy wstecz
@@ -501,7 +501,7 @@ var lst, lab, hhh, mmm: textfile;
     // bufor pamieci dla zapisu
     t_buf: m4kb;
 
-    // 256 znaczników dla zmiennych odkladanych na stronie zerowej
+    // 256 znacznikÃ³w dla zmiennych odkladanych na stronie zerowej
     t_zpv: t256b;
 
     // T_HEA zapamieta dlugosc bloku
@@ -823,7 +823,7 @@ const
   __inwdew = $9C;
   __addsub = $9D;
   __movaxy = $9E;
-  __jskip  = $9F;       // koniec kodów makro rozkazów
+  __jskip  = $9F;       // koniec kodÃ³w makro rozkazÃ³w
 
   __macro  = $A0;       // kody dyrektyw, kolejnosc wg tablicy 'MAC' + $A0
   __if     = $A1;
@@ -922,7 +922,7 @@ const
   __addSet = $F2;
   __xasm   = $F3;
 
-// !!! of $F4 zaczyna siê __id_
+// !!! of $F4 zaczyna siÄ™ __id_
 // !!! to koniec !!!
 
   __rel    = $0000;	// wartosc dla etykiet relokowalnych
@@ -1764,7 +1764,7 @@ begin
  new_message(con, LIGHTRED);
 
 // pewne bledy wymagaja natychmiastowego zakonczenia asemblacji
-// jesli wystapi za duzo bledow (>512) to te¿ konczymy asemblacje
+// jesli wystapi za duzo bledow (>512) to teÅ¼ konczymy asemblacje
  if (b in AssemblyAbort) or (High(messages)>512) then begin over:=true; koniec(2) end;
 end;
 
@@ -1842,7 +1842,7 @@ end;
 function GetFile(a: string; var zm: string): string;
 (*----------------------------------------------------------------------------*)
 (*  szukamy pliku w zadeklarowanych sciezkach poszukiwan                      *)
-(*  PATH          sciezka z której uruchomiony jest glowny asemblowany plik   *)
+(*  PATH          sciezka z ktÃ³rej uruchomiony jest glowny asemblowany plik   *)
 (*  GLOBAL_NAME   ostatnio uzywana sciezka do operacji ICL, INS itp.          *)
 (*----------------------------------------------------------------------------*)
 var c, p: string;
@@ -1894,7 +1894,7 @@ begin
  x:=$ffffffff;
 
  i:=1;
- while i<=len do begin                           // WHILE jest krótsze od FOR
+ while i<=len do begin                           // WHILE jest krÃ³tsze od FOR
   x:=tCRC32[byte(x) xor byte(a[i])] xor (x shr 8);
   inc(i);
  end;
@@ -2160,7 +2160,7 @@ begin
  tmp:=$ffffffff;		// CRC32
 
  i:=1;
- while i<=len do begin		// WHILE jest krótsze od FOR
+ while i<=len do begin		// WHILE jest krÃ³tsze od FOR
   tmp:=tCRC32[byte(tmp) xor byte(a[i])] xor (tmp shr 8);
   inc(i);
  end;
@@ -2618,7 +2618,7 @@ begin
  x:=$ffff;
 
  i:=1;
- while i<=length(a) do begin                     // WHILE jest krótsze od FOR
+ while i<=length(a) do begin                     // WHILE jest krÃ³tsze od FOR
   x:=tCRC16[byte(x shr 8) xor byte(a[i])] xor (x shl 8);
   inc(i);
  end;
@@ -3000,7 +3000,7 @@ begin
    ' ',#9:
         if sep=' ' then exit else __inc(i,a);
 
-   '.','$'{,'%'}:  // blad jesli po znakach '.', '$' jest "bia³y znak"
+   '.','$'{,'%'}:  // blad jesli po znakach '.', '$' jest "biaÅ‚y znak"
         if a[i+1] in AllowWhiteSpaces then
          exit
         else begin
@@ -4384,7 +4384,7 @@ LOOP:
        end;
 
    end else
-      if pass=0 then begin              // teraz nie znamy wszystkich struktur, musimy koñczyc
+      if pass=0 then begin              // teraz nie znamy wszystkich struktur, musimy koÅ„czyc
 
         if a[i]<>'[' then warning(102); // 'Constant expression expected', brakuje indeksu [idx]
 
@@ -4845,7 +4845,7 @@ LOOP:
 
 
 // jesli przetwarzamy wartosc numeryczna to zapisz na stosie
-// t¹ wartosc i operator
+// tÄ… wartosc i operator
   if value then begin
 
    op[op_idx]:='+';
@@ -4921,7 +4921,7 @@ LOOP:
     iarg := stos[i+1].wart;
 
  // obliczaj wg kolejnosci operatorow z 'prior'
- // operatory '/','*','%' maja ten sam piorytet, stanowi¹ wyj¹tek
+ // operatory '/','*','%' maja ten sam piorytet, stanowiÄ… wyjÄ…tek
 
      if (oper=cash[len]) or ((oper in ['/','*','%']) and (len in [5..7])) then begin
         case oper of
@@ -6552,7 +6552,7 @@ if k in [__cpbcpd..__jskip] then begin
     if not(opty) then
     if op='#' then
      tmp[1]:='>'
-    else                                     // wyj¹tek MWA (ZP),Y ADR
+    else                                     // wyjÄ…tek MWA (ZP),Y ADR
      if Result.h[0]<>$B1 then begin          // $B1 = LDA(ZP),Y
 
       if Result.tmp=$91 then begin
@@ -7300,7 +7300,7 @@ end;
 // writeln(mnemo,',',k,',',op_,',',j,',',hex(adres,4),' / ',hex(war,4));
 
 
-// zmienna K bezpieczna, nie zosta³a zmodyfikowana do tego miejsca
+// zmienna K bezpieczna, nie zostaÅ‚a zmodyfikowana do tego miejsca
 
  if opt and opt_C>0 then begin
   ile:=0;
@@ -7516,7 +7516,7 @@ end;
 procedure create_struct_variable(var zm,ety: string; var mne: int5; const head: Boolean; var adres: integer);
 (*----------------------------------------------------------------------------*)
 (*  wykonaj .STRUCT (np. deklaracja pola struktury za pomoca innej struktury) *)
-(*  mo¿liwe jest przypisanie pol zdefiniowanych przez strukture nowej zmiennej*)
+(*  moÅ¼liwe jest przypisanie pol zdefiniowanych przez strukture nowej zmiennej*)
 (*----------------------------------------------------------------------------*)
 var indeks, _doo, j, k, idx, hlp: integer;
     txt, str: string;
@@ -7647,7 +7647,7 @@ begin
 
             end else begin
 
-         // w TMP tworzymy nazwe uwzgledniaj¹c¹ lokalnosc 'TMP:= ??? + ETY'
+         // w TMP tworzymy nazwe uwzgledniajÄ…cÄ… lokalnosc 'TMP:= ??? + ETY'
              if run_macro then tmp:=macro_nr+{lokal_name+}ety else
               if proc then tmp:=proc_name+lokal_name+ety else
                tmp:=lokal_name+ety;
@@ -7662,7 +7662,7 @@ begin
 
            end;
 
-           save_lab(ety,cardinal(_odd),integer(_doo),zm);     // zapisujemy etykiete normalnie poza struktur¹
+           save_lab(ety,cardinal(_odd),integer(_doo),zm);     // zapisujemy etykiete normalnie poza strukturÄ…
 end;
 
 
@@ -8182,7 +8182,7 @@ begin
 
  if dreloc.sdx then exit;
 
- //if not(dreloc.use) then blad(zm,53);   <- mo¿liwosc wygenerowania bloku BLK UPDATE EXTRN
+ //if not(dreloc.use) then blad(zm,53);   <- moÅ¼liwosc wygenerowania bloku BLK UPDATE EXTRN
  //                                       <- dla plikow innych niz relokowalne
 
  if extn_idx>0 then begin
@@ -8349,7 +8349,7 @@ begin
 
           // okreslamy typ etykiety PUBLIC, czy jest relokowalna
 
-             branch:=false;       // umo¿liwiamy relokowalnosc
+             branch:=false;       // umoÅ¼liwiamy relokowalnosc
 
              old_rel_idx      := rel_idx;
              old_siz_idx      := siz_idx;
@@ -8879,7 +8879,7 @@ begin
 
 
            // odczytujemy nazwe parametru lub !!! wyrazenie !!! (np. label+1)
-           // parametry mo¿emy rozdzielac znakiem przecinka
+           // parametry moÅ¼emy rozdzielac znakiem przecinka
            // spacja sluzy do okreslenia nowego typu parametru
 
              omin_spacje(j,txt);
@@ -9274,7 +9274,7 @@ begin
   txt:='CPD';
  end;
 
- TestWhileOpt:=not(op in [0,4]);    // krótszy kod jesli operator '=', '<>'
+ TestWhileOpt:=not(op in [0,4]);    // krÃ³tszy kod jesli operator '=', '<>'
 
  txt:=txt+#32+lar+#32+rar;
  Result:=asm_mnemo(txt, old);
@@ -9364,7 +9364,7 @@ begin
    k:=1;
 
    right:='';
-   left:='';        // czytamy do LEFT dopóki nie napotkamy operatorów '=', '<', '>', '!'
+   left:='';        // czytamy do LEFT dopÃ³ki nie napotkamy operatorÃ³w '=', '<', '>', '!'
 
    if str<>'' then
     while not(_ope(str[k])) and not(test_char(k,str)) do begin
@@ -9399,9 +9399,9 @@ begin
 (*  2 <=      6 >                                                             *)
 (*----------------------------------------------------------------------------*)
 
-   case str[k] of            // szukamy znanej kombinacji operatorów
+   case str[k] of            // szukamy znanej kombinacji operatorÃ³w
 
-      #0: v:=$80;             // koniec ci¹gu
+      #0: v:=$80;             // koniec ciÄ…gu
 
      '=': case str[k+1] of
            '=': begin
@@ -9464,7 +9464,7 @@ begin
    end;
 
 
- // jesli wystêpuj¹ operatory .OR, .AND to generujemy specjalny kod
+ // jesli wystÄ™pujÄ… operatory .OR, .AND to generujemy specjalny kod
 
   omin_spacje(k,str);
 
@@ -9664,7 +9664,7 @@ end;
 function dirMACRO(var zm:string): byte;
 (*----------------------------------------------------------------------------*)
 (*  odczyt makra zdefiniowanego przez dyrektywy .MACRO, .ENDM [.MEND]         *)
-(*  !!! wyjatkowo dyrektywa .END nie mo¿e koñczyc definicji makra !!!         *)
+(*  !!! wyjatkowo dyrektywa .END nie moÅ¼e koÅ„czyc definicji makra !!!         *)
 (*----------------------------------------------------------------------------*)
 var k: integer;
 begin
@@ -9786,7 +9786,7 @@ begin
           max := oblicz_wartosc(reptPar[0],zm);           // liczba powtorzen petli
           if max<0 then blad(zm, 0);                      // !!! mozliwa wartosc powyzej $ffff !!!
 
-          reptPar[0]:=IntToStr(Int64(High(reptPar))-1);   // liczba parametrów przekazana do .REPT
+          reptPar[0]:=IntToStr(Int64(High(reptPar))-1);   // liczba parametrÃ³w przekazana do .REPT
          end;
 
 
@@ -10325,7 +10325,7 @@ LOOP:
 
 
 (*----------------------------------------------------------------------------*)
-(* odczyt wiekszej liczby pól struktury .STRUCT                               *)
+(* odczyt wiekszej liczby pÃ³l struktury .STRUCT                               *)
 (* jesli wiersz zaczyna sie od np.: .BYTE odczyt realizuje __dta ...          *)
 (*----------------------------------------------------------------------------*)
   if struct.use and (ety<>'') then begin
@@ -10912,7 +10912,7 @@ JUMP:
 
    if struct.use or aray or enum.use then blad(zm,58);
 
- // po zmianie adresu asemblacji bloku .PROC, .LOCAL nie ma mo¿liwosci u¿ywania dyrektywy .DS
+ // po zmianie adresu asemblacji bloku .PROC, .LOCAL nie ma moÅ¼liwosci uÅ¼ywania dyrektywy .DS
 
    if (org_ofset>0) then blad(zm,71);
 
@@ -11305,7 +11305,7 @@ JUMP:
      line_add:=line-1;
 
      _odd:=High(t_mac);                      // procedura z parametrami
-     t_mac[_odd]:=txt;                       // wymuszamy wykonanie wiêkszej liczby linii
+     t_mac[_odd]:=txt;                       // wymuszamy wykonanie wiÄ™kszej liczby linii
      _doo:=_odd+1;
      analizuj_mem(_odd,_doo, zm,a,old_str, 0,1, false);
 
@@ -11510,7 +11510,7 @@ JUMP:
 
 (*----------------------------------------------------------------------------*)
 (*  wykonaj .STRUCT (np. deklaracja pola struktury za pomoca innej struktury) *)
-(*  mo¿liwe jest przypisanie pol zdefiniowanych przez strukture nowej zmiennej*)
+(*  moÅ¼liwe jest przypisanie pol zdefiniowanych przez strukture nowej zmiennej*)
 (*----------------------------------------------------------------------------*)
   if mne.l in [__struct_run, __struct_run_noLabel, __enum_run] then
    if ety='' then blad(zm,15) else
@@ -12374,7 +12374,7 @@ JUMP:
 
         if not(rept) then blad(zm,51);
 
-//          writeln(pass,',','stop'); halt;       // !!! to nie powinno wystapiæ
+//          writeln(pass,',','stop'); halt;       // !!! to nie powinno wystapiÄ‡
 //          dirENDR(zm,a,old_str, 0);
 
           ety:='';
@@ -13302,7 +13302,7 @@ JUMP:
             _odd:=load_lab(ety, true); // !!! TRUE
 
 
-            if etyArray='' then                          // by³a deklaracja przez .ARRAY
+            if etyArray='' then                          // byÅ‚a deklaracja przez .ARRAY
 
              t_arr[array_idx-1].adr := war               // auaktualniamy adres .ARRAY
 
@@ -13658,7 +13658,7 @@ JUMP:
           first_org:=false
          else
           blad(zm,0,'('+IntToStr(idx)+' must be between 0 and 65535)');		// !!! koniecznie blad(zm,0) !!! w celu akceptacji
-										// ORG-ów < 0 w poczatkowych przebiegach asemblacji
+										// ORG-Ã³w < 0 w poczatkowych przebiegach asemblacji
 
          if raw.use and (r in [__run, __ini]) then first_org:=true;
 
@@ -13868,7 +13868,7 @@ JUMP:
 
        save_dstW( __relHea );              // dodatkowy naglowek bloku relokowalnego 'MR'
 
-       save_dst( byte(war) );              // kod bloku .RELOC u¿ytkownika
+       save_dst( byte(war) );              // kod bloku .RELOC uÅ¼ytkownika
        save_dst( byte(rel_ofs shr 8) );    // informacja o rodzaju bloku .BYTE (0) , .WORD (1)
 
      // zapisujemy wartosci etykiet dla stosu programowego
@@ -14623,7 +14623,7 @@ JUMP:
 //          if (GetFileName(txt)=GetFileName(a)) or (GetFileName(txt)=GetFileName(plik_asm)) then blad(txt,18);
           if (txt=a) or (txt=plik_asm) then blad(txt,18);
 
-        // sprawdzamy czy jest to plik tekstowy w pierwszych dwóch przebiegach asemblacji
+        // sprawdzamy czy jest to plik tekstowy w pierwszych dwÃ³ch przebiegach asemblacji
           if pass<2 then begin
            assignfile(f, txt); FileMode:=0; Reset(f);
            readln(f, tmp);
@@ -14714,7 +14714,7 @@ JUMP:
        t_seg[idx].atr:=t_Attrib(v);             // atrybut segmentu
 
        if _doo=5 then begin
-        tmp:=par[4];                            // bank segmentu, jeœli brak to 0
+        tmp:=par[4];                            // bank segmentu, jeÅ›li brak to 0
         war:=oblicz_wartosc(tmp, zm);           //
         t_seg[idx].bnk:=war;                    //
        end else
@@ -14768,7 +14768,7 @@ JUMP:
        line_add:=line-1;
 
        _odd:=High(t_mac);                       // procedura z parametrami
-       t_mac[_odd]:=txt;                        // wymuszamy wykonanie wiêkszej liczby linii
+       t_mac[_odd]:=txt;                        // wymuszamy wykonanie wiÄ™kszej liczby linii
        _doo:=_odd+1;
        analizuj_mem(_odd,_doo, zm,a,old_str, 0,1, false);
 
@@ -14810,7 +14810,7 @@ JUMP:
        line_add:=line-1;
 
        _odd:=High(t_mac);                       // procedura z parametrami
-       t_mac[_odd]:=txt;                        // wymuszamy wykonanie wiêkszej liczby linii
+       t_mac[_odd]:=txt;                        // wymuszamy wykonanie wiÄ™kszej liczby linii
        _doo:=_odd+1;
        analizuj_mem(_odd,_doo, zm,a,old_str, 0,1, false);
 
@@ -14929,7 +14929,7 @@ JUMP:
  end;
 
 
- if runini.use then begin   // RUN, INI zachowaj¹ aktualny adres asemblacji
+ if runini.use then begin   // RUN, INI zachowajÄ… aktualny adres asemblacji
   save_hea;
   adres:=runini.adr;
   runini.use:=false;
@@ -14967,7 +14967,7 @@ begin
 
 
     if not(komentarz) then
-    if not(macro) and not(rept) and (pos('\',zm)>0) then begin   // pobie¿ny test na obecnosc znaku '\'
+    if not(macro) and not(rept) and (pos('\',zm)>0) then begin   // pobieÅ¼ny test na obecnosc znaku '\'
      i:=1;
      str:=get_dat(i,zm,'\',false);                 // tutaj sprawdzamy dokladniej
 

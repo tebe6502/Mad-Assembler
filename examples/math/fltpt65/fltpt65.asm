@@ -36,30 +36,30 @@
 ;
 ;
 ;       byte:   0   1   2   3   4   5   6   7
-;               Â   Â   Â   Â   Â   Â   Â   Â
-;               ³   ³   ³   ³   ³   ³   ³   ³
-;               ³   ³   ÀÄÄÄÁÄÄÄÁÄÄÄÁÄÄÄÁÄÄÄÁÄÄÄÄÄ Mantissa (12 BCD DIGITS)
-;               ³   ³  D.D  DD  DD  DD  DD  DD
-;               ³   ³   ³
-;               ³   ³   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ (implied decimal point)
-;               ³   ³ 
-;               ³   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÂÄÄÄ Middle and low 
-;               ³                           ³ ³    exponent digits
-;     bits: 7654³3210                       ³ ³
-;           ÂÂXXÁÂÂÂÂ                     E E EÄÄÄ Exponent
-;           ³³³³ ³³³³                     ³
-;           ³³³³ ³³³³                     ³ 
-;           ³³³³ ÀÁÁÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄ- High exponent
-;           ³³³³                                   digit
-;           ³³ÀÁÄÄ Error reporting flags
-;           ³ÀÄÄÄÄ Exponent Sign
-;           ÀÄÄÄÄÄ Mantissa Sign
+;               Ã‚   Ã‚   Ã‚   Ã‚   Ã‚   Ã‚   Ã‚   Ã‚
+;               Å‚   Å‚   Å‚   Å‚   Å‚   Å‚   Å‚   Å‚
+;               Å‚   Å‚   Å”Ã„Ã„Ã„ÃÃ„Ã„Ã„ÃÃ„Ã„Ã„ÃÃ„Ã„Ã„ÃÃ„Ã„Ã„ÃÃ„Ã„Ã„Ã„Ã„ Mantissa (12 BCD DIGITS)
+;               Å‚   Å‚  D.D  DD  DD  DD  DD  DD
+;               Å‚   Å‚   Å‚
+;               Å‚   Å‚   Å”Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„ (implied decimal point)
+;               Å‚   Å‚ 
+;               Å‚   Å”Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã‚Ã„Ã‚Ã„Ã„Ã„ Middle and low 
+;               Å‚                           Å‚ Å‚    exponent digits
+;     bits: 7654Å‚3210                       Å‚ Å‚
+;           Ã‚Ã‚XXÃÃ‚Ã‚Ã‚Ã‚                     E E EÃ„Ã„Ã„ Exponent
+;           Å‚Å‚Å‚Å‚ Å‚Å‚Å‚Å‚                     Å‚
+;           Å‚Å‚Å‚Å‚ Å‚Å‚Å‚Å‚                     Å‚ 
+;           Å‚Å‚Å‚Å‚ Å”ÃÃÃÃ„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„ÃÃ„Ã„Ã„Ã„Ã„Ã„- High exponent
+;           Å‚Å‚Å‚Å‚                                   digit
+;           Å‚Å‚Å”ÃÃ„Ã„ Error reporting flags
+;           Å‚Å”Ã„Ã„Ã„Ã„ Exponent Sign
+;           Å”Ã„Ã„Ã„Ã„Ã„ Mantissa Sign
 ;
 ;
 ;   Any number represented in this format can also be represented in
 ;   the following display format:
 ;
-;           (ñSm)D.DDDDDDDDDDD(ñSe)EEE
+;           (Å„Sm)D.DDDDDDDDDDD(Å„Se)EEE
 ;
 ;   where the 'D's stand for a decimal mantissa digit and the 'E's
 ;   stand for decimal exponent digits. 'Sm' stands for a single bit
@@ -1895,7 +1895,7 @@ acos jsr asin
     rts
 ;                                  x
 ;   arcsine --  asin(x) = atan( ---------)
-;                               û 1 - x^2
+;                               Å± 1 - x^2
 asin lda w1+2
     bne @+
     jmp retzr
@@ -1951,7 +1951,7 @@ argpls
     ldy >w3
     ldx <w1
     jsr copy2w
-    jsr sqrt        ; form û 1 - arg^2
+    jsr sqrt        ; form Å± 1 - arg^2
     lda <reg1
     ldy >reg1
     ldx <w1
@@ -1960,7 +1960,7 @@ argpls
     ldy >w3
     ldx <w2
     jsr copy2w
-    jsr div         ; form arg / û 1 - arg^2 
+    jsr div         ; form arg / Å± 1 - arg^2 
     lda <w3
     ldy >w3
     ldx <w1

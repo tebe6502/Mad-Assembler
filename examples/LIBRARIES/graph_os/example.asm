@@ -1,13 +1,13 @@
 
 /*
-  Przyk³ad wykorzystania biblioteki procedur graficznych GRAPH_OS.OBX
+  PrzykÅ‚ad wykorzystania biblioteki procedur graficznych GRAPH_OS.OBX
 */
 
 	org $2000
 
 main
 
-	graphics #$60 #$f #%00010000	; kana³, tryb OS, typ_ekranu
+	graphics #$60 #$f #%00010000	; kanaÅ‚, tryb OS, typ_ekranu
 
 ; typ_ekranu:
 ;		bit 5 - bez kasowanie pamieci ekranu
@@ -16,7 +16,7 @@ main
 
 	color #3			; kolor pisaka
 	plot #0 #0			; punkt
-	drawto #159 #191		; linia ³¹cz¹ca ostatnio narysowany punkt
+	drawto #159 #191		; linia Å‚Ä…czÄ…ca ostatnio narysowany punkt
 
 	color #2
 	plot #12 #32
@@ -32,7 +32,7 @@ main
 	drawto #100 #40
 
 
-	printf				; wypisujemy tekst, koñczymy znakiem EOF ($88 = 136)
+	printf				; wypisujemy tekst, koÅ„czymy znakiem EOF ($88 = 136)
 	.by 'Hello %' $9b
 	.by 'World' $9b 0
 	dta a(20)

@@ -391,7 +391,7 @@ ptrt rts
 
 *--------------------------
 dlist2   equ *
- dta d'Ğppp',b($42),a(texts)
+ dta d'Äppp',b($42),a(texts)
  dta d'p"   " " " " " " " " "'
  dta b($41),a(dlist)
 
@@ -401,7 +401,7 @@ texts    equ *
  dta d'   Block adress:$9d00 Color:0   '
  dta d'  Use joystick#1 and keyboard:  '
  dta d'0'*,d'..',d'9'*,d',',d'Q'*,d'..',d'Y'*,d' - choose a color 0..F '
- dta d',Ÿ,,œ   - set block adress    '
+ dta d'Å¾,Åº,Å¥,Å›   - set block adress    '
  dta d'Control'*,d'+',d'F'*,d' - fill block          '
  dta d'Clear'*,d'     - block in bufor      '
  dta d'Insert'*,d'    - block from bufor    '
@@ -417,7 +417,7 @@ bufor    org *+128
 
 *--------------------------
 sm       equ *
- dta d'           $¤¤¤¤¤¤¤¤',$80
+ dta d'           $Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤',$80
  dta d'           (        ',$40
  dta d'           $        ',$80
  dta d'           (        ',$40
