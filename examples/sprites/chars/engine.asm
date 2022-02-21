@@ -2,78 +2,78 @@
 ;-------------------------------;
 ;- Software Sprite Engine v2.1 -;
 ;-------------------------------;
-;- 27.06.2009	zmiana sts_visible na $80, sts_newsprt na $40 w celu wykorzystania krótszego skoku SPL
-;- 28.06.2009	poprawki w LOOP.ASM (makro CALC), poprawiony plik generuj¹cy dane ..\SHAPE\SHAPE.ASM dla duchów 8x24
+;- 27.06.2009	zmiana sts_visible na $80, sts_newsprt na $40 w celu wykorzystania krÃ³tszego skoku SPL
+;- 28.06.2009	poprawki w LOOP.ASM (makro CALC), poprawiony plik generujÄ…cy dane ..\SHAPE\SHAPE.ASM dla duchÃ³w 8x24
 
 /*
 
- wersja zrównowa¿ona wzglêdem szybkosci i pamiêcio¿ernoœci
+ wersja zrÃ³wnowaÅ¼ona wzglÄ™dem szybkosci i pamiÄ™cioÅ¼ernoÅ›ci
 
- !!! w celu modyfikacji rozmiaru obrazu, w³¹czenia/wy³¹czenia detekcji kolizji nale¿y modyfikowaæ plik ..GLOBAL\GLOBAL.HEA !!!
+ !!! w celu modyfikacji rozmiaru obrazu, wÅ‚Ä…czenia/wyÅ‚Ä…czenia detekcji kolizji naleÅ¼y modyfikowaÄ‡ plik ..GLOBAL\GLOBAL.HEA !!!
 
- !!! tylko jedna procedura tworz¹ca ducha na stronie zerowej >> SHAPEZP <<, przepisanie 1 ducha trwa 2253 cykli !!!
- !!! programy obs³ugi duchów B2CALC, B3CALC w dwóch bankach pamiêci !!!
+ !!! tylko jedna procedura tworzÄ…ca ducha na stronie zerowej >> SHAPEZP <<, przepisanie 1 ducha trwa 2253 cykli !!!
+ !!! programy obsÅ‚ugi duchÃ³w B2CALC, B3CALC w dwÃ³ch bankach pamiÄ™ci !!!
 
- sprite: 12x24 pixli na znakach, programy obs³ugi B2CALC i B3CALC, zmienna isSiz3=0
-         maksymalnie 11 duchów w 2 ramkach (ekran 32x26 bez detekcji kolizji)
+ sprite: 12x24 pixli na znakach, programy obsÅ‚ugi B2CALC i B3CALC, zmienna isSiz3=0
+         maksymalnie 11 duchÃ³w w 2 ramkach (ekran 32x26 bez detekcji kolizji)
 
- sprite: 8x24 pixli na znakach, programy obs³ugi B2CALC i B3CALC, zmienna isSiz3<>0
- 	 maksymalnie 14 duchów w 2 ramkach (ekran 32x26 bez detekcji kolizji)
+ sprite: 8x24 pixli na znakach, programy obsÅ‚ugi B2CALC i B3CALC, zmienna isSiz3<>0
+ 	 maksymalnie 14 duchÃ³w w 2 ramkach (ekran 32x26 bez detekcji kolizji)
 
- strona zerowa zajêta jest od adresu ZPAGE przez procedurê SHAPEZP i zmienne do których przepisywane s¹ parametry duchów
- aby dodaæ nowe zmienne na stronie zerowej mo¿na zmodyfikowaæ plik ..GLOBAL\GLOBAL.HEA (dodaæ zmienne przez .DS)
+ strona zerowa zajÄ™ta jest od adresu ZPAGE przez procedurÄ™ SHAPEZP i zmienne do ktÃ³rych przepisywane sÄ… parametry duchÃ³w
+ aby dodaÄ‡ nowe zmienne na stronie zerowej moÅ¼na zmodyfikowaÄ‡ plik ..GLOBAL\GLOBAL.HEA (dodaÄ‡ zmienne przez .DS)
 
- albo dodaæ nowe zmienne od adresu freeZP bez potrzeby modyfikacji pliku ..GLOBAL\GLOBAL.HEA
+ albo dodaÄ‡ nowe zmienne od adresu freeZP bez potrzeby modyfikacji pliku ..GLOBAL\GLOBAL.HEA
 
- tablice przechowuj¹ce parametry duchów i kszta³tów definiuj¹ struktury @SPRITE i @SHAPE (plik DATA.ASM), rozmiar
- tych struktur decyduje o maksymalnej mo¿liwej liczbie duchów i maksymalnej mo¿liwej liczbie kszta³tów
+ tablice przechowujÄ…ce parametry duchÃ³w i ksztaÅ‚tÃ³w definiujÄ… struktury @SPRITE i @SHAPE (plik DATA.ASM), rozmiar
+ tych struktur decyduje o maksymalnej moÅ¼liwej liczbie duchÃ³w i maksymalnej moÅ¼liwej liczbie ksztaÅ‚tÃ³w
 
- MAX AVAILABLE SPRITES: maksymalna liczba duchów któr¹ mo¿e przetworzyæ silnik = 256/@SPRITE
-  MAX AVAILABLE SHAPES: maksymalna liczba kszta³tów które mo¿e przetworzyæ silnik = 256/@SHAPE
+ MAX AVAILABLE SPRITES: maksymalna liczba duchÃ³w ktÃ³rÄ… moÅ¼e przetworzyÄ‡ silnik = 256/@SPRITE
+  MAX AVAILABLE SHAPES: maksymalna liczba ksztaÅ‚tÃ³w ktÃ³re moÅ¼e przetworzyÄ‡ silnik = 256/@SHAPE
 
- dane klatek i masek animacji ducha umieszczone s¹ w bankach dodatkowej pamiêci co $0800 bajtów
- maksymalnie w 1 banku mo¿na przechowaæ 15 klatek animacji ducha 12x24 (klatki kszta³tu i maski)
+ dane klatek i masek animacji ducha umieszczone sÄ… w bankach dodatkowej pamiÄ™ci co $0800 bajtÃ³w
+ maksymalnie w 1 banku moÅ¼na przechowaÄ‡ 15 klatek animacji ducha 12x24 (klatki ksztaÅ‚tu i maski)
 
- $4000-$47FF SHP.SHR0		$6000-$67FF MSK.SHR0       klatki ducha z przesuniêciem o 0 pixli
- $4800-$4FFF SHP.SHR2		$6800-$6FFF MSK.SHR2       klatki ducha z przesuniêciem o 1 pixel
- $5000-$57FF SHP.SHR4		$7000-$77FF MSK.SHR4       klatki ducha z przesuniêciem o 2 pixle
- $5800-$5FFF SHP.SHR6		$7800-$7FFF MSK.SHR6       klatki ducha z przesuniêciem o 3 pixle
+ $4000-$47FF SHP.SHR0		$6000-$67FF MSK.SHR0       klatki ducha z przesuniÄ™ciem o 0 pixli
+ $4800-$4FFF SHP.SHR2		$6800-$6FFF MSK.SHR2       klatki ducha z przesuniÄ™ciem o 1 pixel
+ $5000-$57FF SHP.SHR4		$7000-$77FF MSK.SHR4       klatki ducha z przesuniÄ™ciem o 2 pixle
+ $5800-$5FFF SHP.SHR6		$7800-$7FFF MSK.SHR6       klatki ducha z przesuniÄ™ciem o 3 pixle
  
- !!! klatek z duchami 8x24 i 12x24 nie mo¿na umieszczaæ w tym samym banku pamiêci, to musz¹ byæ oddzielne banki !!!
+ !!! klatek z duchami 8x24 i 12x24 nie moÅ¼na umieszczaÄ‡ w tym samym banku pamiÄ™ci, to muszÄ… byÄ‡ oddzielne banki !!!
 
- SHP - bitmapa kszta³tu ducha, bitmapa kszta³tu potrzebna jest dla operacji ORA
- MSK - bitmapa maski ducha, maska wycina dziurê w obrazie, dziêki niej mo¿emy tak¿e dodaæ np. czarn¹ obwódkê
-       na krawêdzi ducha, bitmapa naski ducha potrzebna jest dla operacji AND
+ SHP - bitmapa ksztaÅ‚tu ducha, bitmapa ksztaÅ‚tu potrzebna jest dla operacji ORA
+ MSK - bitmapa maski ducha, maska wycina dziurÄ™ w obrazie, dziÄ™ki niej moÅ¼emy takÅ¼e dodaÄ‡ np. czarnÄ… obwÃ³dkÄ™
+       na krawÄ™dzi ducha, bitmapa naski ducha potrzebna jest dla operacji AND
 
- SHR0, SHR2, SHR4, SHR6	- przesuniête bitmapy o zadan¹ liczbê bitów (0,2,4,6)
+ SHR0, SHR2, SHR4, SHR6	- przesuniÄ™te bitmapy o zadanÄ… liczbÄ™ bitÃ³w (0,2,4,6)
 
- znaki wykorzystywane przez duchy przydzielane s¹ dynamicznie, pierwszym wolnym znakiem jest !!! charsBAK !!!
- charsBAK wyznacza liczbê znaków przeznaczonych na t³o <0..charsBAK-1>
- pozosta³e znaki <charsBAK..127> przeznaczone zostaj¹ na duchy
+ znaki wykorzystywane przez duchy przydzielane sÄ… dynamicznie, pierwszym wolnym znakiem jest !!! charsBAK !!!
+ charsBAK wyznacza liczbÄ™ znakÃ³w przeznaczonych na tÅ‚o <0..charsBAK-1>
+ pozostaÅ‚e znaki <charsBAK..127> przeznaczone zostajÄ… na duchy
 
 */
 
 
 	icl 'global\global.hea'
 
-speed	= $200			; aktualna liczba ramek, czyli szybkoœæ dzia³ania silnika pod adresem SPEED
+speed	= $200			; aktualna liczba ramek, czyli szybkoÅ›Ä‡ dziaÅ‚ania silnika pod adresem SPEED
 
 regA	= $f0
 
-@TAB_MEM_BANKS	= $0100		; tablica z kodami banków dla rejestru $d301 (PORTB)
+@TAB_MEM_BANKS	= $0100		; tablica z kodami bankÃ³w dla rejestru $d301 (PORTB)
 
-pmg0		= $0000		; adres pamiêci dla PMG #0
-pmg1		= $0800		; adres pamiêci dla PMG #1
+pmg0		= $0000		; adres pamiÄ™ci dla PMG #0
+pmg1		= $0800		; adres pamiÄ™ci dla PMG #1
 
-prg		= $2000		; adres programu, im ni¿szy tym wiêcej ci¹g³ego obszaru pamieci do wykorzystania
+prg		= $2000		; adres programu, im niÅ¼szy tym wiÄ™cej ciÄ…gÅ‚ego obszaru pamieci do wykorzystania
 
-max_shapes	= 256/.sizeof(@SHAPE)	; maksymalna dopuszczalna liczba kszta³tów duchów (@SHAPE to struktura danych)
+max_shapes	= 256/.sizeof(@SHAPE)	; maksymalna dopuszczalna liczba ksztaÅ‚tÃ³w duchÃ³w (@SHAPE to struktura danych)
 
-min_frames	= 2		; minimalna liczba klatek synchronizacji dla silnika poni¿ej której nie mo¿e zejœæ
-				; to na wypadek gdyby silnik przetwarza³ mniejsz¹ liczbê duchów, wówczas widoczne by³yby
-				; przyspieszenia i zwolnienia albo gdyby silnik by³ uruchamiany na szybszej Atarce :)
+min_frames	= 2		; minimalna liczba klatek synchronizacji dla silnika poniÅ¼ej ktÃ³rej nie moÅ¼e zejÅ›Ä‡
+				; to na wypadek gdyby silnik przetwarzaÅ‚ mniejszÄ… liczbÄ™ duchÃ³w, wÃ³wczas widoczne byÅ‚yby
+				; przyspieszenia i zwolnienia albo gdyby silnik byÅ‚ uruchamiany na szybszej Atarce :)
 
-max_sprites	= 12		; liczba duchów do wyœwietlenia
+max_sprites	= 12		; liczba duchÃ³w do wyÅ›wietlenia
 
 
 	ert max_sprites > 256/.sizeof(@SPRITE)
@@ -85,7 +85,7 @@ max_sprites	= 12		; liczba duchów do wyœwietlenia
 
 	org $0600
 	.ds 128
-@PROC_ADD_BANK			; adres procedury prze³¹czaj¹cej banki dla LMB, NMB
+@PROC_ADD_BANK			; adres procedury przeÅ‚Ä…czajÄ…cej banki dla LMB, NMB
 
 	org prg
 
@@ -96,18 +96,18 @@ max_sprites	= 12		; liczba duchów do wyœwietlenia
 *---
 	org prg
 	
-init	.link 'init\init.obx'	; inicjalizacja buforow, przepisanie fontów itd.
+init	.link 'init\init.obx'	; inicjalizacja buforow, przepisanie fontÃ³w itd.
 
 	ini init
 
 
-* ---	BANKI PAMIÊCI
+* ---	BANKI PAMIÄ˜CI
 	opt b+				; BANK SENSITIVE ON
 
-; w MADS etykiety zdefiniowane w banku >0 sa zasiêgu lokalnego
-; nieograniczony dostêp do takich etykiet mo¿liwy jest tylko z poziomu banku 0
+; w MADS etykiety zdefiniowane w banku >0 sa zasiÄ™gu lokalnego
+; nieograniczony dostÄ™p do takich etykiet moÅ¼liwy jest tylko z poziomu banku 0
 ;
-	LMB #0				; startujemy od banku #0 z pamiêci podstawowej RAM $4000..$7FFF
+	LMB #0				; startujemy od banku #0 z pamiÄ™ci podstawowej RAM $4000..$7FFF
 
 * ---	PROCEDURY OBSLUGI DUCHA 12x24 i 8x24, BUFOR #2
 
@@ -161,7 +161,7 @@ shape3	ins 'shape\shape3.dat'
 
 	rmb				; BANK = 0
 
-; od teraz mamy dostêp do wszystkich etykiet zdefiniowanych w obszarze dodatkowych banków
+; od teraz mamy dostÄ™p do wszystkich etykiet zdefiniowanych w obszarze dodatkowych bankÃ³w
 
 * ---	MAIN PROGRAM
 
@@ -192,10 +192,10 @@ B3ant	:(30-@sh)/2-1 dta $70
  	.align
 
 * ---	DLI PROGRAM
-; program przerwania DLI, koniecznie musi mieœciæ siê w granicy strony pamiêci
+; program przerwania DLI, koniecznie musi mieÅ›ciÄ‡ siÄ™ w granicy strony pamiÄ™ci
 ;
-; dyrektywa .PAGES wygeneruje ostrze¿enie jeœli kod zawarty pomiêdzy .PAGES i .ENDPG
-; znajdzie siê poza obszarem strony pamiêci
+; dyrektywa .PAGES wygeneruje ostrzeÅ¼enie jeÅ›li kod zawarty pomiÄ™dzy .PAGES i .ENDPG
+; znajdzie siÄ™ poza obszarem strony pamiÄ™ci
 
 	.pages
 
@@ -231,8 +231,8 @@ dli3	lda >B2fnt3
 
 
 * ---	MAIN PROGRAM
-; wy³¹czamy ROM, inicjalizujemy odpowiednie rejestry
-; zaczynamy skokiem do pêtli JMP LOOP
+; wyÅ‚Ä…czamy ROM, inicjalizujemy odpowiednie rejestry
+; zaczynamy skokiem do pÄ™tli JMP LOOP
  
 main
 	lda:cmp:req 20
@@ -246,23 +246,23 @@ main
 	mva #3 $d01d		; enable players and missiles
 
 
-; inicjalizacja duchów sprzêtowych
+; inicjalizacja duchÃ³w sprzÄ™towych
 
-	ldy #0			; wyczyszczenie pamiêci dla duchów sprzêtowych
+	ldy #0			; wyczyszczenie pamiÄ™ci dla duchÃ³w sprzÄ™towych
 	tya
 clrPMG	:5 sta	pmg0+$300+#*$100,y
 	:5 sta	pmg1+$300+#*$100,y
 	iny
 	bne	clrPMG
 
-	mva #0 sizem		; pociski i duchy normalnej szerokoœci (pojedyñczej)
+	mva #0 sizem		; pociski i duchy normalnej szerokoÅ›ci (pojedyÅ„czej)
 
 	sta sizep0
 	sta sizep1
 	sta sizep2
 	sta sizep3
 
-	lda #4			; piorytet =4, duchy i pociski zas³ania grafika bitmapy
+	lda #4			; piorytet =4, duchy i pociski zasÅ‚ania grafika bitmapy
 	sta gtictl
 
 	?b = 64
@@ -299,7 +299,7 @@ kk
  
 ;---	inicjalizacja silnika
 
-	ldx #$7f		; skasowanie bit0 w kodach banków pamiêci
+	ldx #$7f		; skasowanie bit0 w kodach bankÃ³w pamiÄ™ci
 _cl	lda @TAB_MEM_BANKS,x
 	and #$fe
 	sta @TAB_MEM_BANKS,x
@@ -307,39 +307,39 @@ _cl	lda @TAB_MEM_BANKS,x
 	bpl _cl
 
 
-	jsr shapeMOV			; przepisanie procedury SHAPEZP na stronê zerow¹
+	jsr shapeMOV			; przepisanie procedury SHAPEZP na stronÄ™ zerowÄ…
 
 
-	lda #0				; zerowanie statusu duchów, wszystkie wy³¹czone STS=0
+	lda #0				; zerowanie statusu duchÃ³w, wszystkie wyÅ‚Ä…czone STS=0
 	:max_sprites sta sprites[#].sts
 
 // --------------------------------------------
-// ZAINCJOWANIE DOSTÊPNYCH TYPÓW DLA DUCHÓW
+// ZAINCJOWANIE DOSTÄ˜PNYCH TYPÃ“W DLA DUCHÃ“W
 // --------------------------------------------
 
 ; 0
-	lda @TAB_MEM_BANKS+[=shape1]	; dopisanie kszta³tu SHAPE #1 do tablicy SHAPES
-	sta	shapes[0].bnk		; bank w którym znajduj¹ siê dane kszta³tu
-	mva #0	shapes[0].typ		; =0 kszta³t o rozmiarze 12x24
-	mva #21	shapes[0].hig		; wysokoœæ dla tego kszta³tu
+	lda @TAB_MEM_BANKS+[=shape1]	; dopisanie ksztaÅ‚tu SHAPE #1 do tablicy SHAPES
+	sta	shapes[0].bnk		; bank w ktÃ³rym znajdujÄ… siÄ™ dane ksztaÅ‚tu
+	mva #0	shapes[0].typ		; =0 ksztaÅ‚t o rozmiarze 12x24
+	mva #21	shapes[0].hig		; wysokoÅ›Ä‡ dla tego ksztaÅ‚tu
 
 ; 1
-	lda @TAB_MEM_BANKS+[=shape2]	; dopisanie kszta³tu SHAPE #2 do tablicy SHAPES
-	sta	shapes[1].bnk		; bank w którym znajduj¹ siê dane kszta³tu
-	mva #0	shapes[1].typ		; =0 kszta³t o rozmiarze 12x24
-	mva #21	shapes[1].hig		; wysokoœæ dla tego kszta³tu
+	lda @TAB_MEM_BANKS+[=shape2]	; dopisanie ksztaÅ‚tu SHAPE #2 do tablicy SHAPES
+	sta	shapes[1].bnk		; bank w ktÃ³rym znajdujÄ… siÄ™ dane ksztaÅ‚tu
+	mva #0	shapes[1].typ		; =0 ksztaÅ‚t o rozmiarze 12x24
+	mva #21	shapes[1].hig		; wysokoÅ›Ä‡ dla tego ksztaÅ‚tu
 
 
 ; 2
-	lda @TAB_MEM_BANKS+[=shape3]	; dopisanie kszta³tu SHAPE #3 do tablicy SHAPES
-	sta	shapes[2].bnk		; bank w ktorym znajduj¹ siê dane kszta³tu
-	mva #1	shapes[2].typ		; <>0 kszta³t o rozmiarze 8x24
-	mva #14	shapes[2].hig		; wysokoœæ dla tego kszta³tu
+	lda @TAB_MEM_BANKS+[=shape3]	; dopisanie ksztaÅ‚tu SHAPE #3 do tablicy SHAPES
+	sta	shapes[2].bnk		; bank w ktorym znajdujÄ… siÄ™ dane ksztaÅ‚tu
+	mva #1	shapes[2].typ		; <>0 ksztaÅ‚t o rozmiarze 8x24
+	mva #14	shapes[2].hig		; wysokoÅ›Ä‡ dla tego ksztaÅ‚tu
 
 
-; zaincjowanie tablicy SPRITES, na przemian duch kszta³tu SHAPE #0, #1, #2
-; 'sts_visible'			w³¹czenie ducha podczas pierwszego uruchomienia silnika
-; 'sts_visible|sts_newsprt'	w³¹czenie ducha podczas dzia³ania silnika
+; zaincjowanie tablicy SPRITES, na przemian duch ksztaÅ‚tu SHAPE #0, #1, #2
+; 'sts_visible'			wÅ‚Ä…czenie ducha podczas pierwszego uruchomienia silnika
+; 'sts_visible|sts_newsprt'	wÅ‚Ä…czenie ducha podczas dziaÅ‚ania silnika
 
 // --------------------------------------------
 // ZAINCJOWANIE TABLICY SPRITES DUCHAMI
@@ -350,33 +350,33 @@ _cl	lda @TAB_MEM_BANKS,x
 	.rept 16
 
 	ift ?b<max_sprites
-	mwa #sprite0		sprites[?b].prg	; program obs³ugi ducha
-	mva #0*.sizeof(@SHAPE)	sprites[?b].shp	; duch kszta³tu SHAPE #0
+	mwa #sprite0		sprites[?b].prg	; program obsÅ‚ugi ducha
+	mva #0*.sizeof(@SHAPE)	sprites[?b].shp	; duch ksztaÅ‚tu SHAPE #0
 	mva #sts_visible	sprites[?b].sts	; bit7=1 duch widoczny
-	mva #17+#*12		sprites[?b].psx	; pocz¹tkowa pozycja pozioma X
-	mva #8+#*8		sprites[?b].psy	; pocz¹tkowa pozycja pionowa Y
+	mva #17+#*12		sprites[?b].psx	; poczÄ…tkowa pozycja pozioma X
+	mva #8+#*8		sprites[?b].psy	; poczÄ…tkowa pozycja pionowa Y
 	mva #0			sprites[?b].cnt	; zerujemy licznik klatek animacji
 	mwa #shp1		sprites[?b].frm	; adres tablicy z kolejnymi numerami klatek animacji
 	eif
 	?b++
 
 	ift ?b<max_sprites
-	mwa #sprite0		sprites[?b].prg	; program obs³ugi ducha
-	mva #1*.sizeof(@SHAPE)	sprites[?b].shp	; duch kszta³tu SHAPE #1
+	mwa #sprite0		sprites[?b].prg	; program obsÅ‚ugi ducha
+	mva #1*.sizeof(@SHAPE)	sprites[?b].shp	; duch ksztaÅ‚tu SHAPE #1
 	mva #sts_visible	sprites[?b].sts	; bit7=1 duch widoczny
-	mva #16+#*12		sprites[?b].psx	; pocz¹tkowa pozycja pozioma X
-	mva #32+#*8		sprites[?b].psy	; pocz¹tkowa pozycja pionowa Y
+	mva #16+#*12		sprites[?b].psx	; poczÄ…tkowa pozycja pozioma X
+	mva #32+#*8		sprites[?b].psy	; poczÄ…tkowa pozycja pionowa Y
 	mva #0			sprites[?b].cnt	; zerujemy licznik klatek animacji
 	mwa #shp2		sprites[?b].frm	; adres tablicy z kolejnymi numerami klatek animacji
 	eif
 	?b++
 
 	ift ?b<max_sprites
-	mwa #sprite0		sprites[?b].prg	; program obs³ugi ducha
-	mva #2*.sizeof(@SHAPE)	sprites[?b].shp	; duch kszta³tu SHAPE #2
+	mwa #sprite0		sprites[?b].prg	; program obsÅ‚ugi ducha
+	mva #2*.sizeof(@SHAPE)	sprites[?b].shp	; duch ksztaÅ‚tu SHAPE #2
 	mva #sts_visible	sprites[?b].sts	; bit7=1 duch widoczny
-	mva #20+#*12		sprites[?b].psx	; pocz¹tkowa pozycja pozioma X
-	mva #56+#*8		sprites[?b].psy	; pocz¹tkowa pozycja pionowa Y
+	mva #20+#*12		sprites[?b].psx	; poczÄ…tkowa pozycja pozioma X
+	mva #56+#*8		sprites[?b].psy	; poczÄ…tkowa pozycja pionowa Y
 	mva #0			sprites[?b].cnt	; zerujemy licznik klatek animacji
 	mwa #shp3		sprites[?b].frm	; adres tablicy z kolejnymi numerami klatek animacji
 	eif
@@ -394,13 +394,13 @@ _cl	lda @TAB_MEM_BANKS,x
 
 ;---
 
-shp1	dta 10		; maksymalna wartoœæ licznika klatek animacji dla kszta³tu SHAPE #1
+shp1	dta 10		; maksymalna wartoÅ›Ä‡ licznika klatek animacji dla ksztaÅ‚tu SHAPE #1
 	:10 dta #*8	; kolejne numery klatek animacji *8
 
-shp2	dta 8		; maksymalna wartoœæ licznika klatek animacji dla kszta³tu SHAPE #2
+shp2	dta 8		; maksymalna wartoÅ›Ä‡ licznika klatek animacji dla ksztaÅ‚tu SHAPE #2
 	:8 dta #*8	; kolejne numery klatek animacji *8
 
-shp3	dta 13		; maksymalna wartoœæ licznika klatek animacji dla kszta³tu SHAPE #3
+shp3	dta 13		; maksymalna wartoÅ›Ä‡ licznika klatek animacji dla ksztaÅ‚tu SHAPE #3
 	:13 dta #*8	; kolejne numery klatek animacji *8
 
 ;---
@@ -413,13 +413,13 @@ shp3	dta 13		; maksymalna wartoœæ licznika klatek animacji dla kszta³tu SHAPE #3
 
 
 * ---	SPRITE0
-; uniwersalna procedura obs³ugi ducha
+; uniwersalna procedura obsÅ‚ugi ducha
 ;
-; do ka¿dej procedury obs³ugi przekazywany jest w rejesrze X indeks do tablicy SPRITES
+; do kaÅ¼dej procedury obsÅ‚ugi przekazywany jest w rejesrze X indeks do tablicy SPRITES
 ;
-; na podstawie rejestru X mo¿emy odczytaæ poszczególne parametry ducha
+; na podstawie rejestru X moÅ¼emy odczytaÄ‡ poszczegÃ³lne parametry ducha
 ;
-; po tablicy SPRITES poruszamy siê za pomoca indeksów zdefiniowanych w strukturze @SPRITE
+; po tablicy SPRITES poruszamy siÄ™ za pomoca indeksÃ³w zdefiniowanych w strukturze @SPRITE
 
 sprite0
 	inc sprites[0].psy,x
@@ -444,14 +444,14 @@ BRAK_KOLIZJI
 
 
 * ---	SHAPEZP
-; uniwersalna procedura modyfikujaca zestaw znaków (procedurê definiuje struktura @ZPVAR)
+; uniwersalna procedura modyfikujaca zestaw znakÃ³w (procedurÄ™ definiuje struktura @ZPVAR)
 ;
-; SRC -> adresy znaków które zostan¹ odczytane i poddane modyfikacji
-; MSK -> maska kszta³tu ducha dla operacji AND
-; SHP -> maska z kszta³tem ducha dla operacji OR (maska i ksza³t nie musz¹ byæ wzglêdem siebie "symetryczne")
-; DST -> adresy znaków docelowych, tutaj zostanie zapisany wynik operacji LDA:AND:ORA:STA DST
+; SRC -> adresy znakÃ³w ktÃ³re zostanÄ… odczytane i poddane modyfikacji
+; MSK -> maska ksztaÅ‚tu ducha dla operacji AND
+; SHP -> maska z ksztaÅ‚tem ducha dla operacji OR (maska i kszaÅ‚t nie muszÄ… byÄ‡ wzglÄ™dem siebie "symetryczne")
+; DST -> adresy znakÃ³w docelowych, tutaj zostanie zapisany wynik operacji LDA:AND:ORA:STA DST
 ;
-; shapeTMP zostanie przepisany na stronê zerow¹ od adresu shapeZP
+; shapeTMP zostanie przepisany na stronÄ™ zerowÄ… od adresu shapeZP
 
 shapeMOV
 	ldx	#0

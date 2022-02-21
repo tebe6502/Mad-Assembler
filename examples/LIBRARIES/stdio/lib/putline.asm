@@ -2,14 +2,14 @@
 /*
   PUT LINE
 
-  Procedura wyprowadza na ekran ciag znak體 (string) na pozycji X/Y kursora okreslonej przez
-  zmienne odpowiednio COLCRS ($55-$56) i ROWCRS ($54). Ciag znak體 musi byc zako馽zony znakiem
+  Procedura wyprowadza na ekran ciag znak贸w (string) na pozycji X/Y kursora okreslonej przez
+  zmienne odpowiednio COLCRS ($55-$56) i ROWCRS ($54). Ciag znak贸w musi byc zako艅czony znakiem
   RETURN ($9B). Zaklada sie, ze obowiazuja przy tym domyslne ustawienia OS-u, to jest ekran jest
   w trybie Graphics 0, a kanal IOCB 0 jest otwarty dla edytora ekranowego. 
 
-  Maksymalna dopuszczalna dlugosc ciagu to 255 znak體 lacznie ze znakiem konca EOL = $9B.
+  Maksymalna dopuszczalna dlugosc ciagu to 255 znak贸w lacznie ze znakiem konca EOL = $9B.
 
-  Wyprowadzenie tekstu uzyskuje sie przez zaladowanie jego adresu do rejestr體 A/Y
+  Wyprowadzenie tekstu uzyskuje sie przez zaladowanie jego adresu do rejestr贸w A/Y
   (mlodszy/starszy) i wykonaniu rozkazu JSR PUTLINE. 
 */
 

@@ -1,64 +1,64 @@
 
 /*
- v2.0 - najwolniejsza, najkrótsza, udostêpnia ShapeWidth = 5 (czyli 32 pixle trybu F ANTIC-a, 16 pixle trybu E ANTIC-a)
+ v2.0 - najwolniejsza, najkrÃ³tsza, udostÄ™pnia ShapeWidth = 5 (czyli 32 pixle trybu F ANTIC-a, 16 pixle trybu E ANTIC-a)
 
- Silnik dla duchów programowych zapo¿yczony z gry MARIO BROS. (disasemblacja i modyfikacje Tebe/Madteam, 11.09.2007)
+ Silnik dla duchÃ³w programowych zapoÅ¼yczony z gry MARIO BROS. (disasemblacja i modyfikacje Tebe/Madteam, 11.09.2007)
 
- Silnik ten dzia³a na zasadzie EOR-owania obrazu, wykorzystuje tylko 1 bufor obrazu, zajmuje bardzo ma³o pamiêci, nie
- ma potrzeby zapamiêtywania ani odœwie¿ania zawartoœci ekranu po wyœwietleniu ducha.
+ Silnik ten dziaÅ‚a na zasadzie EOR-owania obrazu, wykorzystuje tylko 1 bufor obrazu, zajmuje bardzo maÅ‚o pamiÄ™ci, nie
+ ma potrzeby zapamiÄ™tywania ani odÅ›wieÅ¼ania zawartoÅ›ci ekranu po wyÅ›wietleniu ducha.
 
- *** !!! Dokonywane jest przesuniêcie dwóch bitmap ducha (z pozycji poprzedniej i aktualnej) !!! ***
+ *** !!! Dokonywane jest przesuniÄ™cie dwÃ³ch bitmap ducha (z pozycji poprzedniej i aktualnej) !!! ***
 
- !!! Maksymalna wysokoœæ przetwarzanych duchów wynosi 128/ShapeWidth !!!
+ !!! Maksymalna wysokoÅ›Ä‡ przetwarzanych duchÃ³w wynosi 128/ShapeWidth !!!
 
- !!! Minimalna szerokoœæ duchów ShapeWidth = 2..5 !!!
+ !!! Minimalna szerokoÅ›Ä‡ duchÃ³w ShapeWidth = 2..5 !!!
 
- Ca³y silnik sk³ada siê z dwóch procedur PutShape i MoveShapeToBuffer.
+ CaÅ‚y silnik skÅ‚ada siÄ™ z dwÃ³ch procedur PutShape i MoveShapeToBuffer.
 
- PutShape		w³aœciwa procedura realizuj¹ca przesuwanie bitów bitmapy ducha i umieszczanie
- 			ich w odpowiednim obszarze pamiêci (obszarze pamiêci obrazu)
+ PutShape		wÅ‚aÅ›ciwa procedura realizujÄ…ca przesuwanie bitÃ³w bitmapy ducha i umieszczanie
+ 			ich w odpowiednim obszarze pamiÄ™ci (obszarze pamiÄ™ci obrazu)
 
- MoveShapeToBuffer	procedura kopiuj¹ca dane bitmapy ducha do jednego z dwóch buforów pomocniczych
+ MoveShapeToBuffer	procedura kopiujÄ…ca dane bitmapy ducha do jednego z dwÃ³ch buforÃ³w pomocniczych
  			ShapeBuffer0 i ShapeBuffer1
 
- SCHEMAT DZIA£ANIA:
+ SCHEMAT DZIAÅANIA:
 
- 0. duch0_enabled=false		; duch o wspó³rzêdnych poprzednich (gdy startujemy nie mamy danych o takim duchu)
-    duch1_enabled=true		; duch o wspó³rzêdnych aktualnych
+ 0. duch0_enabled=false		; duch o wspÃ³Å‚rzÄ™dnych poprzednich (gdy startujemy nie mamy danych o takim duchu)
+    duch1_enabled=true		; duch o wspÃ³Å‚rzÄ™dnych aktualnych
 
  1. IF duch0_enabled THEN
-	przepisz_bitmape_dla_ducha0_i_przesuñ_jej_pixle
+	przepisz_bitmape_dla_ducha0_i_przesuÅ„_jej_pixle
     ELSE
-	zapisz_zerow¹_bitmape_dla_ducha0_nie_przesuwaj_pixli
+	zapisz_zerowÄ…_bitmape_dla_ducha0_nie_przesuwaj_pixli
     ENDIF
  
  2. IF duch1_enabled THEN
-	przepisz_bitmape_dla_ducha1_i_przesuñ_jej_pixle
+	przepisz_bitmape_dla_ducha1_i_przesuÅ„_jej_pixle
     ELSE
-	zapisz_zerow¹_bitmape_dla_ducha1_nie_przesuwaj_pixli
+	zapisz_zerowÄ…_bitmape_dla_ducha1_nie_przesuwaj_pixli
     ENDIF
 
- 3. duch0 EOR dane_obrazu_o_wspó³rzêdnych_dla_ducha0
-    duch1 EOR dane_obrazu_o_wspó³rzêdnych_dla_ducha1
+ 3. duch0 EOR dane_obrazu_o_wspÃ³Å‚rzÄ™dnych_dla_ducha0
+    duch1 EOR dane_obrazu_o_wspÃ³Å‚rzÄ™dnych_dla_ducha1
 
- 4. przepisz dane opisuj¹ce ducha1 do ducha0
+ 4. przepisz dane opisujÄ…ce ducha1 do ducha0
 
  5. goto 1
 
 */
 
 
-; $55 linii skaningowych (maksymalna prêdkoœæ silnika dla ducha o rozmiarze 32x16 pixli Hires)
-; $45 linii skaningowych (maksymalna prêdkoœæ silnika dla ducha o rozmiarze 24x16 pixli Hires)
-; $34 linii skaningowych (maksymalna prêdkoœæ silnika dla ducha o rozmiarze 16x16 pixli Hires)
-; $24 linii skaningowych (maksymalna prêdkoœæ silnika dla ducha o rozmiarze 8x16 pixli Hires)
+; $55 linii skaningowych (maksymalna prÄ™dkoÅ›Ä‡ silnika dla ducha o rozmiarze 32x16 pixli Hires)
+; $45 linii skaningowych (maksymalna prÄ™dkoÅ›Ä‡ silnika dla ducha o rozmiarze 24x16 pixli Hires)
+; $34 linii skaningowych (maksymalna prÄ™dkoÅ›Ä‡ silnika dla ducha o rozmiarze 16x16 pixli Hires)
+; $24 linii skaningowych (maksymalna prÄ™dkoÅ›Ä‡ silnika dla ducha o rozmiarze 8x16 pixli Hires)
 
 
-Screen		= $a010		; adres pamiêci obrazu
+Screen		= $a010		; adres pamiÄ™ci obrazu
 
-ScreenWidth	= 40		; szerokoœæ obrazu
+ScreenWidth	= 40		; szerokoÅ›Ä‡ obrazu
 
-ShapeWidth	= 4		; width+1, szerokoœæ przetwarzanych duchów w bajtach (+1 dodatkowy bajt)
+ShapeWidth	= 4		; width+1, szerokoÅ›Ä‡ przetwarzanych duchÃ³w w bajtach (+1 dodatkowy bajt)
 
 	ert ShapeWidth<2||ShapeWidth>5
 
@@ -73,7 +73,7 @@ type		.ds 1
 enabled		.ds 1
 collision	.ds 1
 
-height_old	.ds 1		; kopia parametrów ducha
+height_old	.ds 1		; kopia parametrÃ³w ducha
 positionX_old	.ds 1
 positionY_old	.ds 1
 type_old	.ds 1
@@ -92,13 +92,13 @@ ScreenAdr1	.ds 2
 	org $2000
 
 ShapeBuffer	.ds 256
-ShapeBuffer0	= ShapeBuffer		; bufor pomocniczy dla ducha #0 (koniecznie w obszarze strony pamiêci)
-ShapeBuffer1	= ShapeBuffer+128	; bufor pomocniczy dla ducha #1 (koniecznie w obszarze strony pamiêci)
+ShapeBuffer0	= ShapeBuffer		; bufor pomocniczy dla ducha #0 (koniecznie w obszarze strony pamiÄ™ci)
+ShapeBuffer1	= ShapeBuffer+128	; bufor pomocniczy dla ducha #1 (koniecznie w obszarze strony pamiÄ™ci)
 
-lAdrLine	:256 dta l(Screen+#*ScreenWidth)	; m³odsze bajty adresu linii obrazu
+lAdrLine	:256 dta l(Screen+#*ScreenWidth)	; mÅ‚odsze bajty adresu linii obrazu
 hAdrLine	:256 dta h(Screen+#*ScreenWidth)	; starsze bajty adresu linii obrazu
 
-mulTab		:128/ShapeWidth dta #*ShapeWidth	; pomocnicza tablica mno¿enia (oszczêdzamy dziêki niej pare cykli)
+mulTab		:128/ShapeWidth dta #*ShapeWidth	; pomocnicza tablica mnoÅ¼enia (oszczÄ™dzamy dziÄ™ki niej pare cykli)
 
 
 dlist	dta d'ppp'		; program dla ANTIC-a
@@ -116,7 +116,7 @@ main	lda:cmp:req 20
 	lda #$ff		; zezwolenie na ducha #1
 	sta enabled
 
-	lda #0			; blokada ducha #0, silnik zaczyna dzia³anie od wyœwietlenie od ducha #1
+	lda #0			; blokada ducha #0, silnik zaczyna dziaÅ‚anie od wyÅ›wietlenie od ducha #1
 	sta enabled_old
 
 	lda #16
@@ -162,18 +162,18 @@ loop
 
 
 * -------------------------------------------------------------------
-* ---	WYŒWIETLENIE DUCHÓW PROGRAMOWYCH W POLU GRY
-* ---	PRZETWARZANE S¥ DWA DUCHY, ShapeBuffer0 (#0) i ShapeBuffer1 (#1)
+* ---	WYÅšWIETLENIE DUCHÃ“W PROGRAMOWYCH W POLU GRY
+* ---	PRZETWARZANE SÄ„ DWA DUCHY, ShapeBuffer0 (#0) i ShapeBuffer1 (#1)
 * ---	DUCH NA POZYCJI POPRZEDNIEJ ORAZ DUCH NA POZYCJI AKTUALNEJ
-* ---	NIE MA POTRZEBY ODŒWIE¯ANIA POLA GRY STAR¥ ZAWARTOŒÆI¥
+* ---	NIE MA POTRZEBY ODÅšWIEÅ»ANIA POLA GRY STARÄ„ ZAWARTOÅšÄ†IÄ„
 * -------------------------------------------------------------------
 .proc	PutShape
 	mva #0 collision		; !!! ZNACZNIK KOLIZJI !!!
 
-	lda enabled_old			; czy zerowaæ bufor ducha #0
+	lda enabled_old			; czy zerowaÄ‡ bufor ducha #0
 	bne E_9568
 
-	lda #$00			; zerowanie obszaru ducha #0 (84 bajty), duch ma wysokoœæ max 21 linii
+	lda #$00			; zerowanie obszaru ducha #0 (84 bajty), duch ma wysokoÅ›Ä‡ max 21 linii
 	ldx #$53
 	sta:rpl ShapeBuffer0,x-
 	bmi E_957f
@@ -183,10 +183,10 @@ E_9568	ldy type_old
 	ldx	<ShapeBuffer0
 	jsr	moveShapeToBuffer
 
-E_957f	lda enabled			; czy zerowaæ bufor ducha #1
+E_957f	lda enabled			; czy zerowaÄ‡ bufor ducha #1
 	bne E_958f
 
-	lda #$00			; zerowanie obszaru ducha #1 (84 bajty), duch ma wysokoœæ max 21 linii
+	lda #$00			; zerowanie obszaru ducha #1 (84 bajty), duch ma wysokoÅ›Ä‡ max 21 linii
 	ldx #$53
 	sta:rpl ShapeBuffer1,x-
 	bmi E_95a6
@@ -202,7 +202,7 @@ E_95a6	lda positionX_old		; pozycja pozioma ducha #0
 
 	sta temp
 
-E_95ae	ldy height_old			; wysokoœæ ducha
+E_95ae	ldy height_old			; wysokoÅ›Ä‡ ducha
 	dey
 E_95b1	ldx mulTab,y
 
@@ -238,7 +238,7 @@ E_95d4	lda positionX			; pozycja pozioma ducha #1
 
 	sta temp
 
-E_95dc	ldy height			; wysokoœæ ducha
+E_95dc	ldy height			; wysokoÅ›Ä‡ ducha
 	dey
 E_95df	ldx mulTab,y
 
@@ -271,11 +271,11 @@ E_95df	ldx mulTab,y
 E_9602	ldy height
 
 	ldx mulTab,y
-	dex				; wysokoœæ ducha*ShapeWidth-1 = d³ugoœæ danych ducha (!!! regX !!!)
+	dex				; wysokoÅ›Ä‡ ducha*ShapeWidth-1 = dÅ‚ugoÅ›Ä‡ danych ducha (!!! regX !!!)
 
 	lda positionY_old		; pozycja pionowa ducha #0
 	clc
-	adc height			; wysokoœæ ducha
+	adc height			; wysokoÅ›Ä‡ ducha
 	tay
 
 	lda positionX_old		; pozycja pozioma ducha #0
@@ -290,7 +290,7 @@ E_9602	ldy height
 
 	lda positionY			; pozycja pionowa ducha #1
 	clc
-	adc height			; wysokoœæ ducha 
+	adc height			; wysokoÅ›Ä‡ ducha 
 	tay
 
 	lda positionX			; pozycja pozioma ducha #1
@@ -303,14 +303,14 @@ E_9602	ldy height
 	sta ScreenAdr1+1		; adres pierwszego bajtu ekranu dla ducha #1
 
 
-E_9656	ldy #ShapeWidth-1		; przenosimy duchy od do³u do góry (pewnie w celu zminimalizowania mrugania)
+E_9656	ldy #ShapeWidth-1		; przenosimy duchy od doÅ‚u do gÃ³ry (pewnie w celu zminimalizowania mrugania)
 
 	.rept ShapeWidth
 	lda ShapeBuffer0-#,x
 	eor (ScreenAdr0),y
 	sta (ScreenAdr0),y
 
-	lda (ScreenAdr1),y		; jeœli bajt t³a to nie ma kolizji
+	lda (ScreenAdr1),y		; jeÅ›li bajt tÅ‚a to nie ma kolizji
 
 	seq				; !!!!!!!!!!!!!!!! DETEKCJA KOLIZJI !!!!!!!!!!!!!!!!!
 	sta collision			; !!!!!!!!!!! BANALNA W SWEJ PROSTOCIE !!!!!!!!!!!!!!
@@ -357,19 +357,19 @@ _skp1
 
 
 * -------------------------------------------------------------------
-* ---	KOPIOWANIE DUCHA DO BUFORA, DUCHY MAJ¥ SZEROKOŒÆ 3 BAJTÓW
-* ---	JEDNAK BUFOR WYPE£NIANY JEST 4 BAJTAMI, 4 BAJT JEST ZEROWANY
+* ---	KOPIOWANIE DUCHA DO BUFORA, DUCHY MAJÄ„ SZEROKOÅšÄ† 3 BAJTÃ“W
+* ---	JEDNAK BUFOR WYPEÅNIANY JEST 4 BAJTAMI, 4 BAJT JEST ZEROWANY
 * -------------------------------------------------------------------
 .proc	MoveShapeToBuffer
 
 	mva	lAdrShape,y	ScreenAdr1
 	mva	hAdrShape,y	ScreenAdr1+1
 
-	ldy height			; wysokoœæ ducha
+	ldy height			; wysokoÅ›Ä‡ ducha
 
 	txa
 	add mulTab,y
-	sta max				; wysokoœæ ducha*ShapeWidth+<ShapeBuffer
+	sta max				; wysokoÅ›Ä‡ ducha*ShapeWidth+<ShapeBuffer
 
 	ldy #0
 

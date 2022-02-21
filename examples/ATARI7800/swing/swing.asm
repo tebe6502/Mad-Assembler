@@ -227,10 +227,10 @@ maria_DLs
 DLBlank
 		.byte   $00,$00
 
-// DLLINE1 - DisplayList trybu rozszerzonego, indirect (bit5=1) dla znakÛw (starszy bajt adresu zestawu znakÛw CHBASE)
+// DLLINE1 - DisplayList trybu rozszerzonego, indirect (bit5=1) dla znak√≥w (starszy bajt adresu zestawu znak√≥w CHBASE)
 //  _______________________   _______________________   _______________________   _______________________   _______________________
 // |                       | |Wr|  |In|              | |                       | |        |              | |                       |
-// |  M£ODSZY BAJT ADRESU  | |it|1 |nd|0 |0 |0 |0 |0 | |  STARSZY BAJT ADRESU  | | PALETA |   SZEROKOå∆  | |   POZYCJA  POZIOMA    |
+// |  M≈ÅODSZY BAJT ADRESU  | |it|1 |nd|0 |0 |0 |0 |0 | |  STARSZY BAJT ADRESU  | | PALETA |   SZEROKO≈öƒÜ  | |   POZYCJA  POZIOMA    |
 // |__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|
 
 DLLine1		.byte   <line1,%01100000,>line1,[7<<5]|8,$20
@@ -238,13 +238,13 @@ DLLine1		.byte   <line1,%01100000,>line1,[7<<5]|8,$20
 
 
 ;logo 2 zones, each font has 32x32 pixel = 8x32 bytes
-// DL_LOGO_1 - DisplayList trybu bezpoúredniego, gdzie wskazujemy  bezpoúrednio na dane grafiki
+// DL_LOGO_1 - DisplayList trybu bezpo≈õredniego, gdzie wskazujemy  bezpo≈õrednio na dane grafiki
 //  _______________________   _______________________   _______________________   _______________________
 // |                       | |        |              | |                       | |                       |
-// |  M£ODSZY BAJT ADRESU  | | PALETA |   SZEROKOå∆  | |  STARSZY BAJT ADRESU  | |   POZYCJA  POZIOMA    |
+// |  M≈ÅODSZY BAJT ADRESU  | | PALETA |   SZEROKO≈öƒÜ  | |  STARSZY BAJT ADRESU  | |   POZYCJA  POZIOMA    |
 // |__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|
 
-// DL_LOGO_1 wyúwietli 16 linii logosa, 16*256 = 4096 bajtÛw danych
+// DL_LOGO_1 wy≈õwietli 16 linii logosa, 16*256 = 4096 bajt√≥w danych
 
 	?log = logo
 
@@ -260,13 +260,13 @@ dl_logo_1	.byte   <[?log+8*0],[0<<5]|24,>[?log+8*0],$00		;T		- raster #0
 		.byte   $00,$00
 
 ;2nd half
-// DL_LOGO_2 - DisplayList trybu bezpoúredniego, gdzie wskazujemy  bezpoúrednio na dane grafiki
+// DL_LOGO_2 - DisplayList trybu bezpo≈õredniego, gdzie wskazujemy  bezpo≈õrednio na dane grafiki
 //  _______________________   _______________________   _______________________   _______________________
 // |                       | |        |              | |                       | |                       |
-// |  M£ODSZY BAJT ADRESU  | | PALETA |  SZEROKOå∆   | |  STARSZY BAJT ADRESU  | |   POZYCJA  POZIOMA    |
+// |  M≈ÅODSZY BAJT ADRESU  | | PALETA |  SZEROKO≈öƒÜ   | |  STARSZY BAJT ADRESU  | |   POZYCJA  POZIOMA    |
 // |__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|,|__|__|__|__|__|__|__|__|
 
-// DL_LOGO_2 wyúwietli nastÍpnych 16 linii logosa, 16*256 = 4096 bajtÛw danych
+// DL_LOGO_2 wy≈õwietli nastƒôpnych 16 linii logosa, 16*256 = 4096 bajt√≥w danych
 
 	?log += $1000
 
@@ -284,12 +284,12 @@ dl_logo_2	.byte   <[?log+8*0],[0<<5]|24,>[?log+8*0],$00		;T		- raster #0
 
 ; The DLL starts here - $1870
 
-// DLList - g≥Ûwny program dla uk≥adu MARIA (lista Display List)
-// sk≥ada siÍ z odwo≥aÒ do innych programÛw tworzπcych obraz (Display List)
+// DLList - g≈Ç√≥wny program dla uk≈Çadu MARIA (lista Display List)
+// sk≈Çada siƒô z odwo≈Ça≈Ñ do innych program√≥w tworzƒÖcych obraz (Display List)
 
 //  _______________________________   _______________________________    _______________________________
 // |   |   |   |   |               | |                               | |                               |
-// |DLI|H16| H8| 0 |  O F F S E T  | |  S T A R S Z Y  B A J T  D L  | |  M £ O D S Z Y  B A J T  D L  |
+// |DLI|H16| H8| 0 |  O F F S E T  | |  S T A R S Z Y  B A J T  D L  | |  M ≈Å O D S Z Y  B A J T  D L  |
 // |___|___|___|___|___|___|___|___|,|___|___|___|___|___|___|___|___|,|___|___|___|___|___|___|___|___|
 
 		Align   32
@@ -307,13 +307,13 @@ DLList		.byte   $07,>DLBlank,<DLBlank		; 8 pustych linii
 
 ; LOGOS
 
-// wyúwietlane litery logosa majπ wysokoúÊ 32 linii, ale OFFSET jest tylko 4-bitowy, dlatego musimy tak duøπ grafikÍ 
-// podzieliÊ na czÍúci, czÍúci ktÛrych maksymalna dopuszczalna wysokoúÊ wynosi 16 linii
+// wy≈õwietlane litery logosa majƒÖ wysoko≈õƒá 32 linii, ale OFFSET jest tylko 4-bitowy, dlatego musimy tak du≈ºƒÖ grafikƒô 
+// podzieliƒá na czƒô≈õci, czƒô≈õci kt√≥rych maksymalna dopuszczalna wysoko≈õƒá wynosi 16 linii
 
-		// 16 gÛrnych linii wyúwietlanej grafiki
+		// 16 g√≥rnych linii wy≈õwietlanej grafiki
 		.byte   $0f,>dl_logo_2,<dl_logo_2	;upper part of the gfx
 
-		// 16 dolnych linii wyúwietlanej grafiki
+		// 16 dolnych linii wy≈õwietlanej grafiki
 		.byte   $0f,>dl_logo_1,<dl_logo_1	;lower part of the gfx
 
 

@@ -1,11 +1,11 @@
 
 * ---	DETECT 2
-; kolizje miêdzy prostok¹tami na p³aszczyŸnie
+; kolizje miÄ™dzy prostokÄ…tami na pÅ‚aszczyÅºnie
 
-; ten wariant detekcji jest najszybszy pod warunkiem ¿e kolizja sprawdzana
-; jest pomiêdzy duchem #0 a duchami #1..#MAX_SPRITES
+; ten wariant detekcji jest najszybszy pod warunkiem Å¼e kolizja sprawdzana
+; jest pomiÄ™dzy duchem #0 a duchami #1..#MAX_SPRITES
 
-; rozmiar sprawdzanych duchów jest sta³y, np. 12x21
+; rozmiar sprawdzanych duchÃ³w jest staÅ‚y, np. 12x21
 
 
 COLLISION_DETECTION_INIT
@@ -19,22 +19,22 @@ COLLISION_DETECTION_INIT
 	ldx	oldX
 	bne	test
 
-* ---	INICJALIZUJEMY TEST ZAPISUJ¥C PARAMETRY BOHATERA
+* ---	INICJALIZUJEMY TEST ZAPISUJÄ„C PARAMETRY BOHATERA
 * ---
 spr0	lda posx
 ;	add #1
 
 	sta left+1
 
-	adc #12	;-2	; szerokoœæ bohatera
+	adc #12	;-2	; szerokoÅ›Ä‡ bohatera
 	sta right+1
 
-	lda posy	; górna krawêdŸ bohatera
+	lda posy	; gÃ³rna krawÄ™dÅº bohatera
 ;	add #1
 
 	sta top+1
 
-	add #21	;-2	; wysokoœæ bohatera
+	add #21	;-2	; wysokoÅ›Ä‡ bohatera
 	sta bottom+1
 
 	rts

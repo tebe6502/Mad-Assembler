@@ -71,9 +71,9 @@ player			; <--- koniecznie od poczatku strony pamieci
 .proc	play	, $0000	; <--- PLAY asemblujemy od adresu $0000
 
  dta d'           '	; <--- troche danych aby przesunac calosc do granicy strony zerowej
-inf3 dta d'SPACE-play  ESC-exiô'
+inf3 dta d'SPACE-play  ESC-exiÃ´'
 s_pl dta d' samples-'
-memo dta d'No memorù'
+memo dta d'No memorÅ¯'
 
 pmain	equ *
 bank0	lda #$fe
@@ -462,9 +462,9 @@ _ret	jmp pmain
 r_qu	jmp mov
 
 
-inf2 dta d'-move cursor  RETURN-loaä'
-inf1 dta d'SPACE-directorù'
-erro dta d'Erroò'
+inf2 dta d'-move cursor  RETURN-loaÃ¤'
+inf1 dta d'SPACE-directorÅ¯'
+erro dta d'ErroÅˆ'
 
 	.endp		; <--- caly player miesci sie w granicy 3 pelnych stron !!! KONIECZNIE !!! co do bajta
 
@@ -1542,11 +1542,11 @@ loa lda up+1
  sta rt
  rts
 
-inf4 dta d'Loadinç'
+inf4 dta d'LoadinÃ§'
 patt dta d'patterns-'
 trck dta d'  tracks-'
-much dta d'Only 48 patternó'
-vali dta d'Valid MOD filå'
+much dta d'Only 48 patternÃ³'
+vali dta d'Valid MOD filÄº'
 tmod dta c'DO'
 title dta c'M.K.'
 
@@ -1555,19 +1555,19 @@ dl dta d'ppppppp',b($42),a(obr)
  dta b($42),a(ekran),d'"""""""""'
  dta b($42),a(obr+64),b($41),a(dl)
 
-obr dta d'‰••••••••••••••••••••••••••••••'
- dta d'INERTIA ver 3.7 by Madteam ',b(7),d'96™'
- dta d'‹Œ'
-ekran dta d'                              ™'
- dta d'                              ™'
- dta d'                              ™'
- dta d'                              ™'
- dta d'                              ™'
- dta d'                              ™'
- dta d'                              ™'
-nam dta d'Name:                         ™'
- dta d'                              ™'
-info dta d'                              ™'
+obr dta d'â€°â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢Å¹'
+ dta d'INERTIA ver 3.7 by Madteam ',b(7),d'96â„¢'
+ dta d'â€¹Åš'
+ekran dta d'                              â„¢'
+ dta d'                              â„¢'
+ dta d'                              â„¢'
+ dta d'                              â„¢'
+ dta d'                              â„¢'
+ dta d'                              â„¢'
+ dta d'                              â„¢'
+nam dta d'Name:                         â„¢'
+ dta d'                              â„¢'
+info dta d'                              â„¢'
 
 
 * ---	BUFOR
@@ -1769,8 +1769,8 @@ rel lda tidl,y
  jsr cle
  jmp quit
 
-cfg dta d'-change configuratioî'
-xms dta d'I need extra memorù'
+cfg dta d'-change configuratioÃ®'
+xms dta d'I need extra memorÅ¯'
 cov dta d'COVOX-8bit sample'
 pok dta d'POKEY-4bit sample'
 ban dta d'banks-'

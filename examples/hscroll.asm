@@ -6,20 +6,20 @@ hscrol	= $d404
 dlist	dta $70,$70,$70		; 24 puste linie ($70 = 8 pustych linii)
 	dta $42|$10		; rozkaz ANTIC-a LMS ($42) dla trybu $02 + $10 dla HSCROL
 adres	dta a(text)		; adres scrolla
-	dta $41,a(dlist)	; zakoñczenie programu ANTIC-a
+	dta $41,a(dlist)	; zakoÅ„czenie programu ANTIC-a
 
 main	mwa #dlist 560		; ustawiamy nowy adres programu ANTIC-a
 
 loop
-	lda tmp			; p³ynny scroll, przepisanie wartoœci TMP do rejestru HSCROL
-	sta hscrol		; koniecznie przed poni¿sz¹ pêtl¹ opóŸniaj¹c¹
+	lda tmp			; pÅ‚ynny scroll, przepisanie wartoÅ›ci TMP do rejestru HSCROL
+	sta hscrol		; koniecznie przed poniÅ¼szÄ… pÄ™tlÄ… opÃ³ÅºniajÄ…cÄ…
 
 	lda:cmp:req 20
 
-	dec tmp			; zmniejszenie komórki TMP [3,2,1,0]
-	bpl loop		; pêtla
+	dec tmp			; zmniejszenie komÃ³rki TMP [3,2,1,0]
+	bpl loop		; pÄ™tla
 
-	mva #3 tmp		; odnowienie wartoœci komórki TMP
+	mva #3 tmp		; odnowienie wartoÅ›ci komÃ³rki TMP
 
 	inc adres		; scroll zgrubny
 
@@ -39,7 +39,7 @@ ascrol	equ *-2
 
 	jmp loop
 
-tmp	dta 3			; pomocnicza komórka pamiêci TMP
+tmp	dta 3			; pomocnicza komÃ³rka pamiÄ™ci TMP
 
 scroll	dta d'to jest tekst przykladowy, scrolla z buforem ulegajacemu zapetleniu'
 end_scroll
@@ -47,4 +47,4 @@ end_scroll
 	org $a000
 text	:48 dta d' '
 
-	run main		; adres uruchomienia tego przyk³adu
+	run main		; adres uruchomienia tego przykÅ‚adu

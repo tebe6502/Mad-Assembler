@@ -118,7 +118,7 @@ exod_nextone:
 	inx
 	tya
 	and #$0f
-	beq exod_shortcut		; starta på ny sekvens
+	beq exod_shortcut		; starta pÄº ny sekvens
 
 	txa			; this clears reg a
 	lsr			; and sets the carry flag

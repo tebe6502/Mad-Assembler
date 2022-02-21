@@ -68,21 +68,21 @@ Charsets
 	:4 brk
 
 	.align
-tColor1 :PlayfieldHeight dta $00	; maksymalnie 256 wpisów
+tColor1 :PlayfieldHeight dta $00	; maksymalnie 256 wpisÃ³w
 
 	.align
-tColor2 :PlayfieldHeight dta $1a	; maksymalnie 256 wpisów
+tColor2 :PlayfieldHeight dta $1a	; maksymalnie 256 wpisÃ³w
 
 	.align
-tColor3 :PlayfieldHeight dta $f6	; maksymalnie 256 wpisów
+tColor3 :PlayfieldHeight dta $f6	; maksymalnie 256 wpisÃ³w
 
 
 cloc		.byte
 dlist		.word dlist0
 
-tColor1Addr	.word tColor1		; mo¿liwoœæ przemieszczania adresu w przypadku scrolla pionowego
-tColor2Addr	.word tColor2		; mo¿liwoœæ przemieszczania adresu w przypadku scrolla pionowego
-tColor3Addr	.word tColor3		; mo¿liwoœæ przemieszczania adresu w przypadku scrolla pionowego
+tColor1Addr	.word tColor1		; moÅ¼liwoÅ›Ä‡ przemieszczania adresu w przypadku scrolla pionowego
+tColor2Addr	.word tColor2		; moÅ¼liwoÅ›Ä‡ przemieszczania adresu w przypadku scrolla pionowego
+tColor3Addr	.word tColor3		; moÅ¼liwoÅ›Ä‡ przemieszczania adresu w przypadku scrolla pionowego
 
 //---------------------------------------------------------------------
 
@@ -317,7 +317,7 @@ b7	@@CutMIC 27 21 3 21
 
 
 	.align
-; !!! koniecznie od pocz¹tku strony pamiêci !!!
+; !!! koniecznie od poczÄ…tku strony pamiÄ™ci !!!
 
 EngineProgram
 	

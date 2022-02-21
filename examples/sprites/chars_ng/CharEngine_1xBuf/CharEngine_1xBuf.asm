@@ -3,24 +3,24 @@
 // SOFTWARE SPRITES ENGINE II (CHARS MODE) v2.0 (29.10.2008)
 //---------------------------------------------------------------------
 
-; ZA£O¯ENIA:
-; - mo¿liwoœæ zdefiniowana liczby zestawów znakowych od 4..N zmienianych co wiersz (tablica CHARSETS) na przerwaniu DLI
+; ZAÅOÅ»ENIA:
+; - moÅ¼liwoÅ›Ä‡ zdefiniowana liczby zestawÃ³w znakowych od 4..N zmienianych co wiersz (tablica CHARSETS) na przerwaniu DLI
 ; - kolory pola gry zmieniane co wiersz (przerwanie DLI) na podstawie tablic TCOLOR1, TCOLOR2, TCOLOR3
-; - mo¿liwoœæ zdefiniowania szerokoœci (PLAYFIELDWIDTH) i wysokoœci pola gry (PLAYFIELDHEIGHT)
-; - duch na pozycji X:Y = 0:0 jest poza polem gry, na pozycji 32:32 w lewym górnym naro¿niku pola gry
-; - sta³a maksymalna liczba duchów = 6
-; - sta³y maksymalny rozmiar duchów = 12x21 pixle
-; - tylko jeden bufor dla pamiêci obrazu, mo¿liwe jest w nim u¿ycie znaków 0..75
-; - tylko 1 bitmapa kszta³tu dla 1 klatki ducha (zajmuje 64 bajty), przesuwanie bitów realizowane poprzez tablicê
-; - bitmapa maski obliczana na podstawie aktualnej bitmapy kszta³tu poprzez tablicê (nie ma potrzeby jej przesuwaæ)
-; - sta³e wartoœci kodów znaków dla reprezentacji duchów rozpoczynaj¹ce siê od znaku 76
+; - moÅ¼liwoÅ›Ä‡ zdefiniowania szerokoÅ›ci (PLAYFIELDWIDTH) i wysokoÅ›ci pola gry (PLAYFIELDHEIGHT)
+; - duch na pozycji X:Y = 0:0 jest poza polem gry, na pozycji 32:32 w lewym gÃ³rnym naroÅ¼niku pola gry
+; - staÅ‚a maksymalna liczba duchÃ³w = 6
+; - staÅ‚y maksymalny rozmiar duchÃ³w = 12x21 pixle
+; - tylko jeden bufor dla pamiÄ™ci obrazu, moÅ¼liwe jest w nim uÅ¼ycie znakÃ³w 0..75
+; - tylko 1 bitmapa ksztaÅ‚tu dla 1 klatki ducha (zajmuje 64 bajty), przesuwanie bitÃ³w realizowane poprzez tablicÄ™
+; - bitmapa maski obliczana na podstawie aktualnej bitmapy ksztaÅ‚tu poprzez tablicÄ™ (nie ma potrzeby jej przesuwaÄ‡)
+; - staÅ‚e wartoÅ›ci kodÃ³w znakÃ³w dla reprezentacji duchÃ³w rozpoczynajÄ…ce siÄ™ od znaku 76
 
 ; ZALETY:
-; - brak potrzeby rozpisania klatek kszta³tu i maski ducha, oszczêdnoœæ pamiêci
-; - tylko 1 bufor obrazu, mo¿liwoœæ jego dowolnej modyfikacji poprzez procedurê PLAYFIELD_UPDATE
+; - brak potrzeby rozpisania klatek ksztaÅ‚tu i maski ducha, oszczÄ™dnoÅ›Ä‡ pamiÄ™ci
+; - tylko 1 bufor obrazu, moÅ¼liwoÅ›Ä‡ jego dowolnej modyfikacji poprzez procedurÄ™ PLAYFIELD_UPDATE
 
 ; WADY:
-; - tylko 6 duchów wyrabia siê w 2 ramkach na w¹skim ekranie (silnik z gry BombJack obs³u¿y w tym czasie 11 duchów)
+; - tylko 6 duchÃ³w wyrabia siÄ™ w 2 ramkach na wÄ…skim ekranie (silnik z gry BombJack obsÅ‚uÅ¼y w tym czasie 11 duchÃ³w)
 
 ; 	# BUFOR #0
 ;	# duch0 = znak 76, 77, 78, 79
@@ -38,8 +38,8 @@
 ;	# duch4 = znak 116, 117, 118, 119
 ;	# duch5 = znak 120, 121, 122, 123
 
-; znaki 124, 125, 126, 127 nie s¹ u¿ywane m.in. w celu ochrony obszaru $fff8..$ffff (dla zestawu $fc00..$ffff)
-; ka¿de 4 znaki musz¹ mieœciæ siê w granicy strony pamiêæi
+; znaki 124, 125, 126, 127 nie sÄ… uÅ¼ywane m.in. w celu ochrony obszaru $fff8..$ffff (dla zestawu $fc00..$ffff)
+; kaÅ¼de 4 znaki muszÄ… mieÅ›ciÄ‡ siÄ™ w granicy strony pamiÄ™Ä‡i
 
 first_char	= 76
 
@@ -102,7 +102,7 @@ B1		= 1
 
 	row	.byte
 
-	bitmaps	.word		; tablica z adresami bitmap (adres = $0000 koñczy tak¹ talicê)
+	bitmaps	.word		; tablica z adresami bitmap (adres = $0000 koÅ„czy takÄ… talicÄ™)
 
 	index	.byte		; indeks do tablicy BITMAPS
 	delay	.byte
@@ -225,7 +225,7 @@ tOraRight	dta %00000000
 .local	Engine
 
 //*********************************************************************
-//	G£ÓWNY BLOK AKTUALIZACJI BUFORA PLAYFIELD
+//	GÅÃ“WNY BLOK AKTUALIZACJI BUFORA PLAYFIELD
 //*********************************************************************
 
 buf	lda #0
@@ -250,30 +250,30 @@ rB0	@sprite_playfield_restore B0 5
 	@sprite_playfield_restore B0 1
 	@sprite_playfield_restore B0 0
 
-next0	lda buf+1			; modyfikacja bufora PLAYFIELD poprzez wstawienie znaków reprezentuj¹cych duchy
+next0	lda buf+1			; modyfikacja bufora PLAYFIELD poprzez wstawienie znakÃ³w reprezentujÄ…cych duchy
 	jne uB0
 
 	?ch = first_char
 
-uB1	@sprite_backup B1 0		; licz now¹ klatkê ducha na nowej pozycji X:Y
+uB1	@sprite_backup B1 0		; licz nowÄ… klatkÄ™ ducha na nowej pozycji X:Y
 	@sprite_backup B1 1
 	@sprite_backup B1 2
 	@sprite_backup B1 3
 	@sprite_backup B1 4
 	@sprite_backup B1 5
 
-	@sprite_restore B1 5		; skasuj klatkê ducha z nowej pozycji X:Y
+	@sprite_restore B1 5		; skasuj klatkÄ™ ducha z nowej pozycji X:Y
 	@sprite_restore B1 4
 	@sprite_restore B1 3
 	@sprite_restore B1 2
 	@sprite_restore B1 1
 	@sprite_restore B1 0
 
-	jsr Playfield_Update		; procedura u¿ytkownika aktualizauj¹ca pole gry
+	jsr Playfield_Update		; procedura uÅ¼ytkownika aktualizaujÄ…ca pole gry
 
 	?ch = first_char+6*4
 
-	@sprite_show B0 0		; poka¿ poprzedni¹ klatkê ducha na poprzedniej pozycji X:Y
+	@sprite_show B0 0		; pokaÅ¼ poprzedniÄ… klatkÄ™ ducha na poprzedniej pozycji X:Y
 	@sprite_show B0 1
 	@sprite_show B0 2
 	@sprite_show B0 3
@@ -298,7 +298,7 @@ uB0	@sprite_backup B0 0
 	@sprite_restore B0 1
 	@sprite_restore B0 0
 
-	jsr Playfield_Update		; procedura u¿ytkownika aktualizauj¹ca pole gry
+	jsr Playfield_Update		; procedura uÅ¼ytkownika aktualizaujÄ…ca pole gry
 
 	?ch = first_char
 
@@ -311,7 +311,7 @@ uB0	@sprite_backup B0 0
 
 //*********************************************************************
 
-next1	lda buf+1		; modyfikacja znaków reprezentuj¹cych duchy
+next1	lda buf+1		; modyfikacja znakÃ³w reprezentujÄ…cych duchy
 	jne B0
 
 	?ch = first_char
@@ -336,7 +336,7 @@ B0	@sprite_create B0 0
 
 //---------------------------------------------------------------------
 
-RESET	lda #0				; wszystkie duchy wy³¹czone
+RESET	lda #0				; wszystkie duchy wyÅ‚Ä…czone
 
 	.rept 6,#
 	sta Sprite:1.x
@@ -415,7 +415,7 @@ skp
 	ldy #?ch		// regY = znak
 	ldx Sprite:2.row	// regX = numer wiersza
 
-	ift :1=B0		// regA = bufor znaków
+	ift :1=B0		// regA = bufor znakÃ³w
 	lda #:2*16
 	els
 	lda #:2*16+128

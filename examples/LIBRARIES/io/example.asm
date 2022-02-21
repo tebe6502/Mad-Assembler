@@ -16,19 +16,19 @@
 
 	org $2000
 main
-	putchar #'>'		; znak zachêty '>'
+	putchar #'>'		; znak zachÄ™ty '>'
 
-	getline #fnam		; odczyt znaków, wprowadzana jest nazwa urz¹dzenia i maska
+	getline #fnam		; odczyt znakÃ³w, wprowadzana jest nazwa urzÄ…dzenia i maska
 
-	open #$10,#6,#fnam	; otwierany jest #1 kana³ do transmisji
+	open #$10,#6,#fnam	; otwierany jest #1 kanaÅ‚ do transmisji
 	bmi stop
-				; czytamy nazwy plików z katalogu
+				; czytamy nazwy plikÃ³w z katalogu
 loop	read #$10,#5,#buf,#128
-	bmi stop		; jeœli wyst¹pi b³¹d to koñczymy odczyt nazw plików
-	putline #buf		; wyœwietlamy na ekranie odczytan¹ nazwê pliku
+	bmi stop		; jeÅ›li wystÄ…pi bÅ‚Ä…d to koÅ„czymy odczyt nazw plikÃ³w
+	putline #buf		; wyÅ›wietlamy na ekranie odczytanÄ… nazwÄ™ pliku
 	jmp loop
 
-stop	close #$10		; zamykamy #1 kana³
+stop	close #$10		; zamykamy #1 kanaÅ‚
 
 	printf
 	.by $9b 'Press any key' $9b $00

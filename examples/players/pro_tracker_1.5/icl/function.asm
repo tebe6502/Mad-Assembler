@@ -168,7 +168,7 @@ _lp0
  jsr of
 
  ldy _n5+1
- lda #' '-32
+ lda #'Â '-32
  sta _e1+13,y
  jsr cl_k
 
@@ -206,7 +206,7 @@ _skp3
 
 _skp4
  sta _e1+13,y
- lda #' '-32
+ lda #'Â '-32
  sta _e1+14,y
  inc _n5+1
  jmp _n6
@@ -218,7 +218,7 @@ _del2 ldy _n5+1
  cpy #0
  beq _n6
  dec _n5+1
-_n7 lda #' '-32
+_n7 lda #'Â '-32
  sta _e1+12,y
  jmp _n6
 
@@ -252,7 +252,7 @@ _snam dta c'                       '
 .local _clpat
 
  ldy _5+1
- lda #' '-32
+ lda #'Â '-32
  sta _e1-22,y
  jsr cl_k
 
@@ -289,7 +289,7 @@ _10 sec
 
 _skp3
  sta _e1-22,y
- lda #' '-32
+ lda #'Â '-32
  sta _e1-21,y
  inc _5+1
  jmp _6
@@ -301,7 +301,7 @@ _del1 ldy _5+1
  cpy #0
  beq _6
  dec _5+1
-_7 lda #' '-32
+_7 lda #'Â '-32
  sta _e1-23,y
  jmp _6
 
@@ -340,7 +340,7 @@ _lp0
  cpx #15
  bne _lp0
 
- lda #' '-32
+ lda #'Â '-32
  sta _e4+61
 
 .endl
@@ -373,7 +373,7 @@ _skp
  sec
  sbc #32
  sta _e4+61,y
- lda #' '-32
+ lda #'Â '-32
  sta _e4+62,y
  inc _a2+1
  jmp _a1
@@ -390,7 +390,7 @@ _skp
  cpy #0
  beq _a1
  dec _a2+1
-_a4 lda #' '-32
+_a4 lda #'Â '-32
  sta _e4+60,y
  jmp _a1
 

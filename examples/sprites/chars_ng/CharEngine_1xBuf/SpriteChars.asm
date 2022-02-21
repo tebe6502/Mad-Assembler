@@ -96,31 +96,31 @@ row3	@Chars	12 13 14 15	hlp5
 .macro	@Chars
 
 	ldx CharsBackupB0+:1,y
-	mva lAdrCharset,x src:1+1	; adres znak體 z aktualnego bufora
+	mva lAdrCharset,x src:1+1	; adres znak贸w z aktualnego bufora
 	lda hAdrCharset,x
 	adc zp+@zp.:5
 	sta src:1+2
 
 	ldx CharsBackupB0+:2,y
-	mva lAdrCharset,x src:2+1	; adres znak體 z aktualnego bufora
+	mva lAdrCharset,x src:2+1	; adres znak贸w z aktualnego bufora
 	lda hAdrCharset,x
 	adc zp+@zp.:5
 	sta src:2+2
 
 	ldx CharsBackupB0+:3,y
-	mva lAdrCharset,x src:3+1	; adres znak體 z aktualnego bufora
+	mva lAdrCharset,x src:3+1	; adres znak贸w z aktualnego bufora
 	lda hAdrCharset,x
 	adc zp+@zp.:5
 	sta src:3+2
 
 	ldx CharsBackupB0+:4,y
-	mva lAdrCharset,x src:4+1	; adres znak體 z aktualnego bufora
+	mva lAdrCharset,x src:4+1	; adres znak贸w z aktualnego bufora
 	lda hAdrCharset,x
 	adc zp+@zp.:5
 	sta src:4+2
 
 
-	ldx zp+@zp.hlp0			; znak reprezentuj筩y ducha
+	ldx zp+@zp.hlp0			; znak reprezentuj膮cy ducha
 
 	mva lAdrCharset,x dst:1+1
 	adc #8

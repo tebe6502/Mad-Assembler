@@ -1,6 +1,6 @@
 
 /*
-  Przyklad programu umieszczonego w 2-óch bankach pamieci dodatkowej 16Kb ($4000..$7FFF)
+  Przyklad programu umieszczonego w 2-Ã³ch bankach pamieci dodatkowej 16Kb ($4000..$7FFF)
   (na koncu pierwszego od adresu $7FF7 i poczatku drugiego banku od adresu $4000)
 
   OPT B+ powoduje przelaczenie MADS'a w tryb BANKED, tzn:

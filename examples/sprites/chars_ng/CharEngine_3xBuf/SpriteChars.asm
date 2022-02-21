@@ -132,19 +132,19 @@ row3	ldy #PlayfieldWidth*3
 	lda (zp+@zp.hlp6),y
 	tax
 
-	mva lAdrCharset,x src:1+1	; adres znaków z aktualnego bufora
+	mva lAdrCharset,x src:1+1	; adres znakÃ³w z aktualnego bufora
 	lda hAdrCharset,x
 	add zp+@zp.:2
 	sta src:1+2
 
-	lda zp+@zp.:3			; znak reprezentuj¹cy ducha
+	lda zp+@zp.:3			; znak reprezentujÄ…cy ducha
 	cpx #0
 	spl
 	ora #$80
 	sta (zp+@zp.hlp6),y
 
 	tax
-	mva lAdrCharset,x dst:1+1	; adres docelowych znaków w aktualnym buforze
+	mva lAdrCharset,x dst:1+1	; adres docelowych znakÃ³w w aktualnym buforze
 	lda hAdrCharset,x
 	add zp+@zp.:2
 	sta dst:1+2

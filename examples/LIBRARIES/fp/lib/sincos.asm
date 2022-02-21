@@ -101,7 +101,7 @@ rep0
 
 	jsr	fadd
 	
-* ---	okreslamy w ktorej polówce PI jestesmy <0..3>
+* ---	okreslamy w ktorej polÃ³wce PI jestesmy <0..3>
 * ---	0 = <0..90), 1 = <90..180>, 2 = <180..270), 3 = <270..360)
 
 	ldx	<s2

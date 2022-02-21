@@ -7,7 +7,7 @@
 ; XL-PAINT 1.9
 ; by  Stanley!
 ; poprawka dla 16col by TeBe
-; kod okoîo:	$2000-$5c00  $6000
+; kod okoÃ®o:	$2000-$5c00  $6000
 
 *-----tabele-----
 

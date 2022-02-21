@@ -28,10 +28,10 @@
   - table with animation frames of sprite
   - program for using sprite (you can set there X,Y position of sprite, reaction on collisions, etc.)
 
-  ini_duch  : sprite init
-  restore   : restores old screen's look for sprites
-  put_duchy : puts sprite on screen
-  prg_duchy : call program for using sprites and checks out collisions
+  ini_duchÂ  : sprite init
+  restoreÂ Â  : restores old screen's look for sprites
+Â  put_duchy : puts sprite on screen
+Â  prg_duchy : call program for using sprites and checks out collisions
 
 *************************************************************************************************************************
 

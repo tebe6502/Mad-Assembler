@@ -26,21 +26,21 @@ lHex	.proc ( .byte a ) .reg
 // nazwy parametrow moga skladac sie tylko z liter A,X,Y i ich kombinacji
 // maksymalnie mozemy w ten sposob przekazac 3 bajty
 
-	pha		; zawartoœæ akumulatora zapamiêtamy na stosie
+	pha		; zawartoÅ›Ä‡ akumulatora zapamiÄ™tamy na stosie
 	:4 lsr @
 
 	jsr HEX2INT
 
-	tax		; wynik dzia³ania w regX
+	tax		; wynik dziaÅ‚ania w regX
 
-	pla		; zdejmujemy ze stosu zapamiêtan¹ wczeœniej zawartoœæ akumulatora
+	pla		; zdejmujemy ze stosu zapamiÄ™tanÄ… wczeÅ›niej zawartoÅ›Ä‡ akumulatora
 	and #$0f
 
 HEX2INT	SED
 	CMP #$0A
 	ADC #"0"
 	CLD
-			; wynik dzia³ania w regA
+			; wynik dziaÅ‚ania w regA
 	rts
 
 	.endp
@@ -49,12 +49,12 @@ HEX2INT	SED
 // procedurka reprezentujaca wartosc 2-bajtowa (WORD) w postaci HEXadecymalnej
 hex	.proc ( .word par1, out+1 ) .var
 
-// typ parametrów .VAR oznacza przekazywanie parametrów przez wczeœniej zdefiniowane zmienne
+// typ parametrÃ³w .VAR oznacza przekazywanie parametrÃ³w przez wczeÅ›niej zdefiniowane zmienne
 // MADS najpierw szuka nazw zmiennych zadeklarowanych jako parametry w aktualnie przetwarzanej procedurze .PROC,
-// a jeœli ich nie znajdzie szuka ich poza procedur¹ .PROC
+// a jeÅ›li ich nie znajdzie szuka ich poza procedurÄ… .PROC
 
 	.var	par1	.word	; deklaracja zmiennej PAR1 typu .WORD
-				; zmienna zostanie od³o¿ona na koñcu bloku .PROC
+				; zmienna zostanie odÅ‚oÅ¼ona na koÅ„cu bloku .PROC
 
 	lHex par1
 

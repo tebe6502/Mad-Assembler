@@ -35,7 +35,7 @@ lHex	.proc ( .byte low )
 
 	jsr HEX2INT
 
-	tax		; wynik dzia≥ania w regX
+	tax		; wynik dzia≈Çania w regX
 
 	lda low
 	and #$0f
@@ -44,7 +44,7 @@ HEX2INT	SED
 	CMP #$0A
 	ADC #"0"
 	CLD
-			; wynik dzia≥ania w regA
+			; wynik dzia≈Çania w regA
 	rts
 
 // konczymy procedure w sposob standardowy czyli przez RTS

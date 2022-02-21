@@ -3,15 +3,15 @@
    Przykladowa biblioteka wykorzystujaca pakiet matematyczny XE/XL
 
    _ATOFP (ascii,fp)	- zamienia ciag znakow ASCII na liczbe FP, pierwszy parametr to adres ciagu ASCII ktory bedzie
-			  zamieniany na FP, drugi parametr to adres pod kt髍ym odlozona zostanie liczba FP
+			  zamieniany na FP, drugi parametr to adres pod kt贸rym odlozona zostanie liczba FP
    			  zamieniany ciag ASCII musi byc zakonczony znakiem innym niz cyfra, np. EOL $9B
 
-   _FPTOA (fp,ascii)	- zamienia liczbe FP na ciag znakow ASCII, pierwszy parametr to adres pod kt髍ym znajduje
-			  sie liczba FP, drugi parametr to adres pod ktory odlozony zostanie ciag znak體 ASCII
+   _FPTOA (fp,ascii)	- zamienia liczbe FP na ciag znakow ASCII, pierwszy parametr to adres pod kt贸rym znajduje
+			  sie liczba FP, drugi parametr to adres pod ktory odlozony zostanie ciag znak贸w ASCII
 			  ciag ASCII bedzie zakonczony znakiem EOL $9b
 
    _ITOFP (int,fp)	- zamienia liczbe typu 'unsigned int' (word) na liczbe FP, pierwszym parametrem jest wartosc
-			  bez znaku z zakresu 0..$FFFF, drugim parametrem jest adres pod kt髍ym zostanie zapisana
+			  bez znaku z zakresu 0..$FFFF, drugim parametrem jest adres pod kt贸rym zostanie zapisana
 			  liczba FP
 
    _FPTOI (fp)		- zamienia liczbe FP na liczbe typu 'unsigned int' (word), parametrem jest adres pod
@@ -19,13 +19,13 @@
 			  X - mlodszy bajt liczby WORD
 			  Y - starszy bajt liczby WORD
 
-   _FPADD (fp0,fp1,fp2)	- FP2=FP0+FP1	suma dw骳h liczb
+   _FPADD (fp0,fp1,fp2)	- FP2=FP0+FP1	suma dw贸ch liczb
 
-   _FPSUB (fp0,fp1,fp2)	- FP2=FP0-FP1	r髗nica dw骳h liczb
+   _FPSUB (fp0,fp1,fp2)	- FP2=FP0-FP1	r贸znica dw贸ch liczb
 
-   _FPMUL (fp0,fp1,fp2)	- FP2=FP0*FP1	iloczyn dw骳h liczb
+   _FPMUL (fp0,fp1,fp2)	- FP2=FP0*FP1	iloczyn dw贸ch liczb
 
-   _FPDIV (fp0,fp1,fp2)	- FP2=FP0/FP1	iloraz dw骳h liczb
+   _FPDIV (fp0,fp1,fp2)	- FP2=FP0/FP1	iloraz dw贸ch liczb
 
    LOADFR0 (fp)		- przepisuje liczbe FP do rejestru pakietu zmiennoprzecinkowego FR0, parametrem
    			  jest adres pod ktorym znajduje sie liczba FP do przepisania

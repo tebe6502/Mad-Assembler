@@ -1,10 +1,10 @@
  
 ; BCALC (08.09.2008)
-; zadaniem procedury BCALC jest odczytanie 4*COLS znaków i obliczenie ich adresów
-; dodatkowo po odczytaniu znaków zastêpowane s¹ one nowymi znakami: FREE, FREE+1 ... FREE+COLS
+; zadaniem procedury BCALC jest odczytanie 4*COLS znakÃ³w i obliczenie ich adresÃ³w
+; dodatkowo po odczytaniu znakÃ³w zastÄ™powane sÄ… one nowymi znakami: FREE, FREE+1 ... FREE+COLS
 ;
-; zmienna BUFOR okreœla dla jakiego bufora odbêdzie siê asemblacja
-; zmienna COLS okreœla maksymaln¹ liczbê kolumn znaków przypadaj¹c¹ na ducha (liczba wierszy jest sta³a = 4)
+; zmienna BUFOR okreÅ›la dla jakiego bufora odbÄ™dzie siÄ™ asemblacja
+; zmienna COLS okreÅ›la maksymalnÄ… liczbÄ™ kolumn znakÃ³w przypadajÄ…cÄ… na ducha (liczba wierszy jest staÅ‚a = 4)
 ;
 ; upublicznianym adresem uruchomienia jest BCALC, BINIT
 ;
@@ -28,8 +28,8 @@ Idx = B3ClrIdx
 	eif
 
 
-fnt0	= Fnt			; FNT0, FNT1, FNT2, FNT3 nastêpuj¹ po sobie !!! koniecznie !!!
-fnt1	= fnt0+$0400		; wykorzystamy ten fakt do optymalizacji kodu u¿ywaj¹c rozkazów ADC# i SBC#
+fnt0	= Fnt			; FNT0, FNT1, FNT2, FNT3 nastÄ™pujÄ… po sobie !!! koniecznie !!!
+fnt1	= fnt0+$0400		; wykorzystamy ten fakt do optymalizacji kodu uÅ¼ywajÄ…c rozkazÃ³w ADC# i SBC#
 fnt2	= fnt1+$0400
 fnt3	= fnt2+$0400
 
@@ -76,7 +76,7 @@ r:1	ROW
 
 * ------------------------------------------------------
 * ------------------------------------------------------
-; obliczenie adresu skoku wg wspó³rzêdnych ducha
+; obliczenie adresu skoku wg wspÃ³Å‚rzÄ™dnych ducha
 * ------------------------------------------------------
 * ------------------------------------------------------
 
@@ -161,7 +161,7 @@ LINE	.macro
 ROW	.macro " "
 	.def ?cnt = 0
 	.def ?cnt2 = 0
-	.def ?sign = 0		; na pocz¹tku wystêpuje rozkaz CLC dlatego ?SIGN=0
+	.def ?sign = 0		; na poczÄ…tku wystÄ™puje rozkaz CLC dlatego ?SIGN=0
 
 	.rept 4
 	.def ?col = #

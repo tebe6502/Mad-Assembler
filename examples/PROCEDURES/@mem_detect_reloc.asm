@@ -1,15 +1,15 @@
 
 /*
-  Detekcja pamiêci dodatkowej
+  Detekcja pamiÄ™ci dodatkowej
 
-  Program na podstawie dopuszczalnych kodów banków dBANK sprawdza obecnoœæ rozszerzenia pamiêci
-  i zapisuje od adresu @TAB_MEM_BANKS+1 znalezione banki. Sposób testowania wyklucza mo¿liwoœæ zdublowania
-  któregokolwiek banku pamiêci dodatkowej.
+  Program na podstawie dopuszczalnych kodÃ³w bankÃ³w dBANK sprawdza obecnoÅ›Ä‡ rozszerzenia pamiÄ™ci
+  i zapisuje od adresu @TAB_MEM_BANKS+1 znalezione banki. SposÃ³b testowania wyklucza moÅ¼liwoÅ›Ä‡ zdublowania
+  ktÃ³regokolwiek banku pamiÄ™ci dodatkowej.
 
-  Pierwszym wpisem w tablicy @TAB_MEM_BANKS jest wartoœæ $FF, jest to kod banku numer 0 w pamiêci podstawowej.
-  Maksymalnie tablica z odnalezionymi bankami pamiêci mo¿e zawieraæ 65 wpisów !!! (dla 1MB dodatkowej pamiêci).
+  Pierwszym wpisem w tablicy @TAB_MEM_BANKS jest wartoÅ›Ä‡ $FF, jest to kod banku numer 0 w pamiÄ™ci podstawowej.
+  Maksymalnie tablica z odnalezionymi bankami pamiÄ™ci moÅ¼e zawieraÄ‡ 65 wpisÃ³w !!! (dla 1MB dodatkowej pamiÄ™ci).
 
-  Liczba odnalezionych banków zwracana jest w rejestrze akumulatora A.
+  Liczba odnalezionych bankÃ³w zwracana jest w rejestrze akumulatora A.
 
   ostatnie zmiany: 12.08.2008
 */
@@ -21,16 +21,16 @@
 	.reloc
 
 
-MAX_BANKS = 64		; maksymalna liczba banków pamiêci
+MAX_BANKS = 64		; maksymalna liczba bankÃ³w pamiÄ™ci
 
 PORTB	  = $D301
 
 
-* zapamiêtamy bajty spod adresu $7FFF w tablicy dSAFE
+* zapamiÄ™tamy bajty spod adresu $7FFF w tablicy dSAFE
 
 @mem_detect
 
-	LDA $7FFF	; bajt z pamiêci podstawowej
+	LDA $7FFF	; bajt z pamiÄ™ci podstawowej
 	STA TEMP+1
 
 
@@ -45,7 +45,7 @@ _s1     LDA dBANK,X
         DEX
         BPL _s1
 
-* w ka¿dym z banków pod adresem $7FFF zapisujemy kod banku
+* w kaÅ¼dym z bankÃ³w pod adresem $7FFF zapisujemy kod banku
 
         LDX #MAX_BANKS-1
 
@@ -57,7 +57,7 @@ _s2     LDA dBANK,X
         DEX
         BPL _s2
 
-* wracamy do pamiêci podstawowej, tutaj pod $7FFF zapisujemy wartoœæ $FF
+* wracamy do pamiÄ™ci podstawowej, tutaj pod $7FFF zapisujemy wartoÅ›Ä‡ $FF
 
 	LDA #$FF
 	STA PORTB
@@ -66,9 +66,9 @@ _s2     LDA dBANK,X
 
 	STA @TAB_MEM_BANKS		; pierwszy wpis w @TAB_MEM_BANKS = $FF
 
-* sprawdzamy obecnoœæ banków dodatkowej pamiêci
+* sprawdzamy obecnoÅ›Ä‡ bankÃ³w dodatkowej pamiÄ™ci
 * wykryte banki zapisujemy od adresu @TAB_MEM_BANKS+1
-* rejestr Y zlicza znalezione banki pamiêci
+* rejestr Y zlicza znalezione banki pamiÄ™ci
 
 	LDY #0
 
@@ -99,19 +99,19 @@ _r3     LDA dBANK,X
         DEX
         BPL _r3
 
-* koñczymy, przywracaj¹c pamiêæ podstawow¹
+* koÅ„czymy, przywracajÄ…c pamiÄ™Ä‡ podstawowÄ…
 
         LDA #$FF
         STA PORTB
 
-TEMP	LDA #0		; przywracamy star¹ zawartoœæ komórki pamiêci spod adresu $7FFF w pamiêci podstawowej
+TEMP	LDA #0		; przywracamy starÄ… zawartoÅ›Ä‡ komÃ³rki pamiÄ™ci spod adresu $7FFF w pamiÄ™ci podstawowej
 	STA $7FFF
 
-	TYA		; w regA liczba odnalezionych banków dodatkowej pamiêci
+	TYA		; w regA liczba odnalezionych bankÃ³w dodatkowej pamiÄ™ci
 
         RTS
 
-* tablica dBANK zawiera dopuszczalne kody dla PORTB w³¹czaj¹ce banki
+* tablica dBANK zawiera dopuszczalne kody dla PORTB wÅ‚Ä…czajÄ…ce banki
 
 dBANK   DTA B($E3),B($C3),B($A3),B($83),B($63),B($43),B($23),B($03)
         DTA B($E7),B($C7),B($A7),B($87),B($67),B($47),B($27),B($07)

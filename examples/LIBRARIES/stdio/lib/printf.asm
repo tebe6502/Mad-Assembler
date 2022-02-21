@@ -1,12 +1,12 @@
 
 /*
-znaki formatuj¹ce tekst
+znaki formatujÄ…ce tekst
 
-#	- adres tekstu zakoñczonego znakiem $9b
-@	- adres wartoœci typu ATARI FLOAT
-%	- adres wartoœci typu WORD
+#	- adres tekstu zakoÅ„czonego znakiem $9b
+@	- adres wartoÅ›ci typu ATARI FLOAT
+%	- adres wartoÅ›ci typu WORD
 
-po bajcie koñcz¹cym $00 wystêpuj¹ adresy do poszczególnych obs³ugiwanych w/w typów
+po bajcie koÅ„czÄ…cym $00 wystÄ™pujÄ… adresy do poszczegÃ³lnych obsÅ‚ugiwanych w/w typÃ³w
 
 np.
 

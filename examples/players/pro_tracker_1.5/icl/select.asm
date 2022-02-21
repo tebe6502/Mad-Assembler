@@ -264,14 +264,14 @@ dlk dta d'ppppppppppp'
  dta b(2),b($41),a(dlk)
 
 ek3 dta d'             select device:             '
-    dta d'             Ğ-pokey 4-bit              '
-    dta d'             Ã-covox 8-bit              '
+    dta d'             Ä-pokey 4-bit              '
+    dta d'             Ä‚-covox 8-bit              '
     dta d'      extended RAM - 000000 bytes       '
     dta d'          i need extended RAM           '
 
 ek4 dta d'             select adress:             '
-    dta d'               ±-page $d5               '
-    dta d'               ²-page $d6               '
-    dta d'               ³-page $d7               '
+    dta d'               Â±-page $d5               '
+    dta d'               Ë›-page $d6               '
+    dta d'               Å‚-page $d7               '
 
 .endp
