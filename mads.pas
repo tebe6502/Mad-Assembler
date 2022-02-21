@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2022-01-22                                                  *)
+(*  last changes: 2022-02-21                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -6940,6 +6940,7 @@ end;
    save_lab(tmp, adres+1, bank, zm);				// etykieta do automodyfikacji kodu
 
    inc(i);
+   omin_spacje(i,a);
   end else
    i:=j;
 
