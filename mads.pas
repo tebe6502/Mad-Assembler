@@ -1,11 +1,11 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.1.5 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.6 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*                                                                            *)
 (*  support 6502, 65816, Sparta DOS X, virtual banks                          *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2022-02-21                                                  *)
+(*  last changes: 2022-05-03                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -751,7 +751,7 @@ var lst, lab, hhh, mmm: textfile;
 
 // version
 
-{130} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','5',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{130} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','6',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
@@ -12264,22 +12264,30 @@ JUMP:
 
 	  if yes then begin
 
-          idx:=load_lab(ety, true);
+	   tmp:=lokal_name;
+	   lokal_name:='';
 
-	  if idx<0 then blad_und(zm,ety,5);
+           idx:=load_lab(ety, true);
 
-	  t_loc[lokal_nr].idx := idx;
-          t_loc[lokal_nr].adr := adres;
+	   lokal_name:=tmp;
 
-          save_lst('a');
+	   if idx<0 then blad_und(zm,ety,5);
 
-	  save_end(__endl);
-	  zapisz_lokal;
+	   tmp:=lokal_name + ety;
+           idx:=load_lab(tmp, true);
 
-          lokal_name:=ety+'.';
+	   t_loc[lokal_nr].idx := idx;
+           t_loc[lokal_nr].adr := adres;
 
-          t_end[end_idx-1].adr:=0;
-          t_end[end_idx-1].old:=0;
+           save_lst('a');
+
+	   save_end(__endl);
+	   zapisz_lokal;
+
+           lokal_name := ety + '.';
+
+           t_end[end_idx-1].adr:=0;
+           t_end[end_idx-1].old:=0;
 
 	  end else begin
 
