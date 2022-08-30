@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2022-05-03                                                  *)
+(*  last changes: 2022-08-28                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -10430,13 +10430,16 @@ LOOP:
     _doo:=integer( oblicz_wartosc(txt,zm) );
     testRange(zm, _doo, 0);
 
-
     old_rept    := ___rept_ile;
     ___rept_ile := 0;
 
 
   // test obecnosci czegokolwiek
     k:=i;  txt:=get_datUp(i,zm,#0,true);  i:=k;
+
+    if (txt = '') or (txt[1] = '*') then blad(zm, 23);
+
+
 
     if struct.use then begin
 
