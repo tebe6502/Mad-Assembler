@@ -12258,8 +12258,11 @@ JUMP:
            ety:=get_lab(i,zm, false);
           end;
 
-        // jesli brak nazwy obszaru .LOCAL to przyjmij domyslna nazwe
-          if ety='' then begin
+
+	  omin_spacje(i,zm);
+
+        // jesli brak nazwy obszaru .LOCAL lub ',address' to przyjmij domyslna nazwe
+          if (ety='') and (zm[i]<>',') then begin
            ety:=__local_name+IntToStr(lc_nr);
            inc(lc_nr);
           end;
@@ -12295,11 +12298,10 @@ JUMP:
 	  end else begin
 
 
-          if pass=0 then if ety[1]='?' then warning(8);
+          if pass=0 then if (ety<>'') and (ety[1]='?') then warning(8);
 
 
           t_loc[lokal_nr].ofs := org_ofset;
-
 
           get_address(i,zm);				// nowy adres asemblacji dla .LOCAL
 
@@ -12321,6 +12323,8 @@ JUMP:
 
           zapisz_lokal;
           lokal_name:=lokal_name+ety+'.';
+
+	  if lokal_name='.' then lokal_name:='';
 
 	  end;
 
@@ -15355,6 +15359,7 @@ begin
 
   t_seg[0].adr:=-$ffff;
 
+  hea_ofs.old:=0;
   hea_ofs.adr:=-1; struct.cnt:=-1; ___rept_ile:=-1;
 
   regOpty.reg[0]:=-1; regOpty.reg[1]:=-1; regOpty.reg[2]:=-1;

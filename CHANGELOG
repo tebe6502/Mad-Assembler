@@ -1,3 +1,11 @@
+2022-09-10
+- zastepstwo dla 'org r:address' który nie generuje nowego bloku w pliku
+
+.local ,address
+
+.endl
+
+
 2022-02-21
 - etykiety automodyfikacji 'lda temp:  #$40'
  
