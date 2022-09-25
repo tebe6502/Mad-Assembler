@@ -1,0 +1,176 @@
+Exomizer 3.0
+------------
+
+This document only mentions what has changed since exomizer 2.0. For
+more general exomizer info also read the exo20info.txt file.
+
+New features
+------------
+
+o  New bit stream format for crunched files that allow for faster decrunching.
+
+o  The bit stream format is controlled by a new -P<bit-field> flag. The bits
+   control different aspects of the bit stream format. -P0 disables all new
+   aspects and will generate exomizer 2.0 compatible files. Raw mem and level
+   modes default to -P7.
+
+   bit 0  Controls bit bit orientation, 1=big endian, 0=little endian
+   bit 1  Controls how more than 7 bits are shifted 1=split into a shift of
+          of less than 8 bits + a byte, 0=all bits are shifted
+   bit 2  Implicit first literal byte: 1=enable, 0=disable
+   bit 3  Align bit stream towards start without shift flag bit included:
+          1=enable, 0=disable
+   bit 4  Decides if we are to have two lengths (1 and 2) or three lengths
+          (1, 2 and 3) using offset tables of their own: 0=two, 1=three
+
+   Please note that many decrunchers has not yet been ported to the new bit
+   stream format and requires a -P0 on the command-line. However,
+   exodecrs/exodecrunch.s, rawdecrs/exodecr.c and rawdecrs/exodecrunch.c will
+   work out of the box. Only the built in decruncher src/exodec.c handles all
+   possible bit combinations. Please check it out for implementation details.
+
+o  There is a new -T<bit-field> flag that controls traits of the bit stream that
+   don't affect the bit stream format. Typically traits are disallowed to make
+   the decruncher faster and/or shorter. Raw mode defaults to -T0. Mem
+   and level modes default to -T4.
+
+   bit 0  Disallow literal sequences, 0 allow, 1 disallow
+   bit 1  Disallow sequences with length 1, 0 allow, 1 disallow
+   bit 2  Disallow sequences with length > 255 and (length & 255) < 3, 0 allow,
+          1 disallow
+
+o  The sfx decruncher and exodecrs/exodecrunch.s take advantage of the new bit
+   stream format for decrunching speed improvements. They also become faster if
+   the sequence length is limited to 256 by using -M256 when crunching.
+   (exodecrs/exodecrunch.s has to be told by a define, see the comments in the
+   file for more info)
+
+o  The sfx decruncher now recognizes a new symbol, i_perf, that controls the
+   decruncher size/speed performance trade-off. The valid values are -1 to 2
+   where -1 is slowest/shortest and 2 is fastest/largest. Default is 0. They
+   all are faster than exomizer 2.11 by some margin. None of the decrunchers
+   will destroy zero-page.
+
+o  The sfx decruncher supports the -P16 flag to enable a dedicated offset table
+   for sequences of length 3. Using this flag might increase compression a
+   bit for some files but will also make the decrunch table larger, 204
+   bytes instead of the default 156 bytes.
+
+o  Very slightly improved compression.
+
+
+Contributing
+------------
+
+   You are, as before, very welcome to contribute decruncher source code for
+   nsupported targets and/or improving existing decrunchers.
+
+   However, The unclear licensing of some of the contributions so far has not
+   been ideal. So please decide on what license to use before contributing. If
+   you are unsure about the licensing then I recommend using the same license
+   that I use for my own decruncher sources. It is a plain zlib license with an
+   additional BSD like no-endorsement clause. See exodecrs/exodecrunch.s for
+   how it can be included in the source file as a comment block.
+
+Sources of inspiration
+----------------------
+
+   The new bit stream format features/traits and the 6502 decruncher speed
+   improvements have been inspired from several sources that I would like to
+   mention (in no particular order):
+
+   * The exoopt tool developed by Metalbrain and Antonio Villena
+     (z80 decruncher contributors, the new -P and -T flags should be able to
+      replicate all bit protocol variants that exoopt generates).
+   * The Doynamite 6502 decruncher by Doynax and the subsizer cruncher by TLR,
+     for raising the bar.
+   * Feedback from users
+
+Benchmarks for the improved 6502 decrunchers
+--------------------------------------------
+
+The measured time is the number of cycles the decruncher needs to run.
+Interrupt processing and other kinds of overhead that exists in a typical
+computer environment is not included. (M=*1000000 and k=*1000)
+
+* The benchmark for the sfx decruncher use the file zorrounpacked.prg file
+(https://web.archive.org/web/20050102175732/http://www.swolff.dk/cruncher/zorrounpacked.prg) also used in the README.txt of subsizer for comparisons:
+
+Sorted on size:
+| File name               | Start | End   |   Mcycles |  kB/Mc| c/B out|
+|-------------------------|-------|-------|-----------|-------|--------|
+| zorro_exo3_-1-P16.prg   | $0801 | $7FA7 |  5.949511 |  9.09 | 109.97 |
+| zorro_exo3_0-P16.prg    | $0801 | $7FB0 |  5.755440 |  9.40 | 106.38 |
+| zorro_exo3_1-P16.prg    | $0801 | $7FBA |  5.518362 |  9.80 | 102.00 |
+| zorro_exo3_1-M256P16.prg| $0801 | $7FD1 |  5.291149 | 10.23 |  97.80 |
+| zorro_exo2.0.11.prg     | $0801 | $7FE5 |  8.560318 |  6.32 | 158.22 |
+| zorro_exo3_2-M256P16.prg| $0801 | $7FEB |  5.121831 | 10.56 |  94.67 |
+| zorro_sub0.6.prg        | $0801 | $7FF8 |  7.070462 |  7.65 | 130.69 |
+| zorro_sub0.6_dirty.prg  | $0801 | $8003 |  5.291376 | 10.22 |  97.80 |
+| zorro_exo3_2-M256.prg   | $0801 | $802D |  5.116741 | 10.57 |  94.57 |
+| zorro_pud.prg           | $0801 | $8586 |  9.465515 |  5.72 | 174.95 |
+| zorro_pu.prg            | $0801 | $85DA |  9.257570 |  5.84 | 171.11 |
+| zorro_puf.prg           | $0801 | $85F1 |  8.542865 |  6.33 | 157.90 |
+|-------------------------|-------|-------|-----------|-------|--------|
+
+Sorted on speed:
+| File name               | Start | End   |   Mcycles |  kB/Mc| c/B out|
+|-------------------------|-------|-------|-----------|-------|--------|
+| zorro_exo3_2-M256.prg   | $0801 | $802D |  5.116741 | 10.57 |  94.57 |
+| zorro_exo3_2-M256P16.prg| $0801 | $7FEB |  5.121831 | 10.56 |  94.67 |
+| zorro_exo3_1-M256P16.prg| $0801 | $7FD1 |  5.291149 | 10.23 |  97.80 |
+| zorro_sub0.6_dirty.prg  | $0801 | $8003 |  5.291376 | 10.22 |  97.80 |
+| zorro_exo3_1-P16.prg    | $0801 | $7FBA |  5.518362 |  9.80 | 102.00 |
+| zorro_exo3_0-P16.prg    | $0801 | $7FB0 |  5.755440 |  9.40 | 106.38 |
+| zorro_exo3_-1-P16.prg   | $0801 | $7FA7 |  5.949511 |  9.09 | 109.97 |
+| zorro_sub0.6.prg        | $0801 | $7FF8 |  7.070462 |  7.65 | 130.69 |
+| zorro_puf.prg           | $0801 | $85F1 |  8.542865 |  6.33 | 157.90 |
+| zorro_exo2.0.11.prg     | $0801 | $7FE5 |  8.560318 |  6.32 | 158.22 |
+| zorro_pu.prg            | $0801 | $85DA |  9.257570 |  5.84 | 171.11 |
+| zorro_pud.prg           | $0801 | $8586 |  9.465515 |  5.72 | 174.95 |
+|-------------------------|-------|-------|-----------|-------|--------|
+
+The information in the two tables above has been assembled from output of the
+exomizer desfx command. (Yes, it handles subsizer and pu crunched files too)
+
+
+* The benchmark for the memory decruncher exodecrunch.s uses the "Pearls for
+Pigs" files (http://codebase64.org/doku.php?id=base:compression_benchmarks):
+
+(get_bits not in-lined, unlimited sequence lengths)
+|File name                   |Size    |Reduced |Cycles    |C/B out|C/B in |
+|----------------------------|--------|--------|----------|-------|-------|
+|pfp1.cru                    |    2949|  73.21%|    737850|  67.03| 250.20|
+|pfp2.cru                    |    2192|  55.92%|    479188|  96.36| 218.61|
+|pfp3.cru                    |    1784|  54.82%|    355245|  89.96| 199.13|
+|pfp4.cru                    |    3432|  51.08%|    665760|  94.89| 193.99|
+|pfp5.cru                    |   19581|  43.67%|   3577694| 102.93| 182.71|
+|pfp6.cru                    |    8288|  73.78%|   1973435|  62.44| 238.11|
+|pfp7.cru                    |    8757|  57.06%|   1764659|  86.54| 201.51|
+|pfp8.cru                    |    3073|  46.21%|    534654|  93.59| 173.98|
+|pfp9.cru                    |    5302|  40.83%|    944379| 105.40| 178.12|
+|----------------------------|--------|--------|----------|-------|-------|
+|Total                       |   55358|  56.88%|  11032864|  85.94| 199.30|
+
+(get_bits in-lined, sequence lengths limited to 256 or less)
+|File name                   |Size    |Reduced |Cycles    |C/B out|C/B in |
+|----------------------------|--------|--------|----------|-------|-------|
+|pfp1.crui256                |    2949|  73.21%|    676595|  61.46| 229.43|
+|pfp2.crui256                |    2192|  55.92%|    429109|  86.29| 195.76|
+|pfp3.crui256                |    1784|  54.82%|    319676|  80.95| 179.19|
+|pfp4.crui256                |    3432|  51.08%|    603915|  86.08| 175.97|
+|pfp5.crui256                |   19581|  43.67%|   3256292|  93.68| 166.30|
+|pfp6.crui256                |    8403|  73.41%|   1821915|  57.65| 216.82|
+|pfp7.crui256                |    8759|  57.05%|   1611966|  79.05| 184.04|
+|pfp8.crui256                |    3073|  46.21%|    487499|  85.33| 158.64|
+|pfp9.crui256                |    5311|  40.73%|    860093|  95.99| 161.95|
+|----------------------------|--------|--------|----------|-------|-------|
+|Total                       |   55484|  56.78%|  10067060|  78.42| 181.44|
+
+You can make these tables yourself by naming the pfp files pfp[1-9].raw,
+dropping them in the exodecrs/perf folder and in that folder execute the
+following command line: $ make pfp.stat pfp.stati256
+
+(You need to build exomizer in the src folder first and you also need to have
+cc65, gcc and gnu make on the path) It works in Linux and in a Windows
+mingw/msys2 environment in Windows.

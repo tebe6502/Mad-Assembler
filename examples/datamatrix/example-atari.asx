@@ -1,0 +1,50 @@
+DataMatrix_code	equ	$8000
+DataMatrix_data	equ	$8400
+DataMatrix_SIZE	equ	18
+
+	icl	'datamatrix.asx'
+
+	org	$8e00
+main
+	jsr	DataMatrix_code
+
+; print result
+	mva	#$c	$2c6	; white background
+	sta	$2c8	; white border
+	mva	#0	$2c5	; black ink
+	mva	#1	$2f0	; hide cursor
+	mwa	#DataMatrix_symbol	symbol_ptr
+	mva	#DataMatrix_SIZE	rows
+print_line
+	mva	#DataMatrix_SIZE	columns
+print_char
+	ldx	DataMatrix_symbol
+symbol_ptr	equ	*-2
+	inw	symbol_ptr
+	lda	chars,x
+	jsr	putchar
+	dec	columns
+	bne	print_char
+	lda	#$9b
+	jsr	putchar
+	dec	rows
+	bne	print_line
+
+	jmp	*
+
+putchar
+	mvx	#11	$342
+	mwx	#0	$348
+	jmp	$e456
+
+chars	dta	c' ',c' '*,c'?'
+columns	org	*+1
+rows	org	*+1
+
+	org	DataMatrix_data
+	dta	c'Hello, world!',DataMatrix_EOF
+;	dta	c'Wikipedia',DataMatrix_EOF
+;	dta	c'0xF',DataMatrix_EOF
+
+	run	main
+	end

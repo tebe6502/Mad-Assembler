@@ -1,0 +1,77 @@
+decrunch_src=$2000   ; byte after last byte of compressed data
+
+	*= $0801-2
+	.word *+2	; load address
+	.byt $0b,$08,$0a,$00,$9e,$32,$30,$36,$31,0,0,0
+
+
+	lda #150
+	sta $dd00
+	lda #59
+	sta $d011
+	lda #$80
+	sta $d018
+	lda #6
+	sta $d020
+	ldx #<decrunch_src
+	lda #>(decrunch_src-1)
+	jsr decrunch
+	jsr crc9k
+	ldx#50
+wdata
+	bit$d011
+	bpl *-3
+	bit$d011
+	bmi *-3
+	dex
+	bne wdata
+	stx $d020
+	jsr decrunch_next_group
+	jsr crc9k
+st	jmp st
+
+
+
+crc9k
+	.(
+	ldy#$40
+	ldx#0
+	stx crc
+hbl
+	sty crcl+2
+crcl
+	lda $4000,x
+	jsr crc8
+	inx
+	bne crcl
+	iny
+	cpy #$64
+	bne hbl
+
+	ldy #5
+	cmp #0
+	beq ok
+	ldy #2
+ok	sty $d020
+	rts
+	.)
+
+
+crc8:  ; h/t Greg Cook, 6502.org/source/integers/crc-more.html
+	.(
+	eor crc         ; A contained the data
+	sta crc         ; XOR it with the byte
+	asl             ; current contents of A will become x^2 term
+	bcc up1         ; if b7 = 1
+	eor #$07        ; then apply polynomial with feedback
+up1	eor crc         ; apply x^1
+	asl             ; C contains b7 ^ b6
+	bcc up2
+	eor #$07
+up2	eor crc         ; apply unity term
+	sta crc         ; save result
+	rts
+	.)
+crc     brk
+
+#include "../rdecrunch.a65"

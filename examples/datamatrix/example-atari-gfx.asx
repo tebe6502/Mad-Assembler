@@ -1,0 +1,57 @@
+DataMatrix_code	equ	$8000
+DataMatrix_data	equ	$8400
+DataMatrix_SIZE	equ	48
+
+	icl	'datamatrix.asx'
+
+scr_ptr	equ	$80
+
+	org	$8e00
+main
+	jsr	DataMatrix_code
+
+; enable 80x48x1bpp graphics mode
+	ldx	#$60
+	mva	#3	$342,x
+	mwa	#sdev	$344,x
+	mva	#12	$34a,x
+	mva	#4	$34b,x
+	jsr	$e456
+	mva	#0	$2c4	; black ink
+
+	mwa	$58	scr_ptr
+	ldx	#DataMatrix_SIZE
+draw_line
+	ldy	#0
+:[DataMatrix_SIZE&7]!=0	lda	#$100>>[DataMatrix_SIZE&7]
+draw_byte
+:[DataMatrix_SIZE&7]==0	lda	#1
+draw_bit
+	lsr	DataMatrix_symbol
+symbol_ptr	equ	*-2
+	inw	symbol_ptr
+	rol	@
+	bcc	draw_bit
+	sta	(scr_ptr),y
+:[DataMatrix_SIZE&7]!=0	lda	#1
+	iny
+	cpy	#[DataMatrix_SIZE+7]>>3
+	bcc	draw_byte
+	lda	#10
+	add:sta	scr_ptr
+	scc:inc	scr_ptr+1
+	dex
+	bne	draw_line
+
+	mva	#$c	$2c8	; white background
+
+	jmp	*
+
+sdev	dta	c'S:',$9b
+
+	org	DataMatrix_data
+	dta	c'This projects implements Data Matrix barcode in the 6502 assembly language.',10
+	dta	c'Supported are square ECC 200 symbol sizes up to 48x48.',DataMatrix_EOF
+
+	run	main
+	end

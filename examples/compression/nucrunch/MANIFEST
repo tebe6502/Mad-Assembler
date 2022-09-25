@@ -1,0 +1,11 @@
+MANIFEST
+Makefile
+readme.txt
+decrunch.a65
+nucrunch.rs
+rdecrunch.a65
+test/Makefile
+test/crc8.py
+test/gentest.py
+test/rtestbed.a65
+test/testbed.a65
