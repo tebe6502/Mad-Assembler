@@ -1,0 +1,112 @@
+;        LST BAD
+
+EXTENDED SMB 'EXTENDED'
+INSTALL  SMB 'INSTALL'
+PRINTF   SMB 'PRINTF'
+U_GETNUM SMB 'U_GETNUM'
+
+*
+* Wektory i adresy OS
+*
+
+DDEVIC  EQU $0300
+DUNIT   EQU $0301
+SIOV    EQU $E459
+
+SYSCALL EQU $0787
+JEXTON  EQU $07F1
+JEXTOFF EQU $07F4
+EOL     EQU $9B
+
+        BLK SPARTA $600
+        LDA EXTENDED
+        STA EXTSAV
+
+        JSR U_GETNUM
+        BEQ BADUSE
+
+NDRVLST TAY
+        STA DRVMSK,Y
+        JSR U_GETNUM
+        BNE NDRVLST
+XDRVLST EQU *
+
+        LDX #6
+ENTTBL  LDA $0719,X
+        BEQ INSTSIO
+        DEX
+        DEX
+        BPL ENTTBL
+        JSR PRINTF
+        DTA C'SIO Table full',B($9B)
+        DTA B(0)
+
+        RTS
+
+INSTSIO LDA PSIO2
+        STA $0718,X
+        LDA PSIO2+1
+        STA $0719,X
+***
+        JSR PRINTF
+        DTA C'OS SIO for drive(s) '
+        DTA B(0)
+
+        LDX #1
+NXTDRV  STX DRVNO
+        LDA TDRVBIT-1,X
+        BEQ NODRV
+        JSR PRINTF
+        DTA C'%b '
+        DTA B(0)
+        DTA V(DRVNO)
+NODRV   INX
+        CPX #9
+        BNE NXTDRV
+
+        JSR PRINTF
+        DTA C'in use'
+        DTA B(EOL)
+        DTA B(0)
+
+        DEC INSTALL
+        RTS
+
+BADUSE  JSR PRINTF
+        DTA C'SIO OS 0.1 trub@wp.pl',B(EOL)
+        DTA C'Usage: SIOOS.SYS drive_numbers',B(EOL)
+        DTA B(0)
+        RTS
+
+PSIO2   DTA V(SIO2)
+EXTSAV  DTA B(0)
+DRVNO   DTA B(0)
+
+*************************
+        BLK RELOC MAIN
+
+SIO2    LDX DUNIT   ;$0301
+        BEQ BADUNIT
+        LDA TDRVBIT-1,X
+        BNE UNITOK
+BADUNIT SEC
+        RTS
+UNITOK  LDA $070E,X
+        STA DUNIT   ;$0301
+        LDA SYSCALL ;$0787
+        JSR JEXTON  ;$07F1
+
+DSIO    LDA #$31
+        STA DDEVIC  ;$0300
+        JSR SIOV    ;$E459
+        TYA
+        CLC
+
+        JMP JEXTOFF
+
+DRVMSK  DTA B(0)
+TDRVBIT DTA B(0,0,0,0,0,0,0,0,0)
+
+        BLK UPDATE ADRESS
+        BLK UPDATE SYMBOLS
+

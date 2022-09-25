@@ -1,0 +1,13 @@
+// sdx 4.xx
+
+printf	smb 'printf'
+
+	blk reloc main
+
+hello	jsr printf
+
+	dta c'Hello World !',$9b,0
+
+	rts
+
+	blk update new hello '@HELLO'

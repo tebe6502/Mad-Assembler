@@ -1,0 +1,340 @@
+;         LST BAD
+
+*---- Symbole SDX
+_CRUNCH  SMB '_CRUNCH'
+PRINTF   SMB 'PRINTF'
+U_FAIL   SMB 'U_FAIL'
+COMTAB   SMB 'COMTAB'
+
+*---- Adresy OS
+STMCUR   EQU $8A
+
+
+IOCB0    EQU $0340
+IOCB1    EQU $0350
+CIOV     EQU $E456
+
+*---- Stale OS
+ICCOM    EQU $02
+ICBUFA   EQU $04
+ICBUFL   EQU $08
+ICAX1    EQU $0A
+ICAX2    EQU $0B
+ICAX3    EQU $0C
+ICAX4    EQU $0D
+ICAX5    EQU $0E
+ICAX6    EQU $0F
+
+
+         BLK SPARTA $2000
+
+         JSR _CRUNCH
+         BEQ BADPAR
+         JSR CLOSEIO1
+         LDA #$03    ; Open
+         JSR FILEOP
+         BMI ENDPROC
+         BPL PRNLEN
+
+NOTBIN   LDY #$98    ; Not binary file
+ENDPROC  TYA
+         PHA
+         JSR CLOSEIO1
+         PLA
+         CMP #$A6
+         BEQ EXITEOF
+         CMP #$88
+         BEQ EXITEOF
+         DTA B($2C)   ; BIT
+BADPAR   LDA #$9C     ; Bad parameter
+         JMP U_FAIL
+EXITEOF  JSR PRINTF
+         DTA C'End of file'
+         DTA B($9B,$00)
+         RTS
+
+PRNLEN   LDA #$27     ; file length
+         JSR FILEOP
+         BMI ENDPROC
+         JSR PRINTF
+         DTA B($9B)
+         DTA C'Total: $%6x(%e)'
+         DTA B($9B,$00)
+         DTA A(IOCB1+ICAX3)
+         DTA A(IOCB1+ICAX3)
+         LDA #$00
+         LDX #$10
+         STA IOCB0+ICAX3,X
+         STA IOCB0+ICAX4,X
+         STA IOCB0+ICAX5,X
+         LDA #$25     ; point
+         JSR FILEOP
+_ENDPRO1 BMI ENDPROC
+
+GETHEAD  JSR GET2BYT  ; pobierz 2 bajty naglowka ($86,$87)
+         BMI ENDPROC
+         LDA $87
+         CMP #$FF
+         BNE GET2ADDR ; to musi byc para adresow
+         LDA $86
+         CMP #$FA
+         BCC NOTBIN   ; bledny naglowek
+
+         LDX #$00     ; kasowanie zmiennych
+         STX FHDFLG
+
+         JSR PRINTF
+         DTA C'Head : $%4x'
+         DTA B($9B,$00)
+         DTA A($86)
+
+         LDA $86
+         SEC
+         SBC #$FA
+         ASL @
+         TAX
+         LDA HDHAND,X
+         STA VHDHAND+1
+         LDA HDHAND+1,X
+         STA VHDHAND+2
+VHDHAND  JSR $FFFF
+         RTS
+
+*------ Naglowek $FFFF, $FFFA
+HDFFFF   EQU *
+         DEC FHDFLG   ; nie musi byc nastepnego naglowka
+
+         LDX #$10
+         LDA #$88
+         STA IOCB0+ICBUFA,X
+         LDA #$00
+         STA IOCB0+ICBUFA+1,X
+         LDY #$04
+         JSR GETBYTES ; 2 adresy ($FFFF, $FFFA)
+
+_ENDPRO2 BMI _ENDPRO1
+         BPL L40BC
+
+_NOTBIN1 JMP NOTBIN
+
+GET2ADDR BIT FHDFLG   ; Czy moze nie byc naglowka
+         BPL _NOTBIN1
+         LDA $86
+         STA $88
+         LDA $87
+         STA $89
+         LDX #$10
+         LDA #$8A
+         STA IOCB0+ICBUFA,X
+         LDA #$00
+         STA IOCB0+ICBUFA+1,X
+         LDY #$02
+         JSR GETBYTES
+         BMI _ENDPRO2
+
+L40BC    LDA $88
+         STA $80
+         LDA $89
+         STA $81
+         LDA $8A
+         STA $82
+         LDA $8B
+         STA $83
+         LDA $82
+         SEC
+         SBC $80
+         STA $84
+         LDA $83
+         SBC $81
+         STA $85
+         INC $84
+         BNE L40DF
+         INC $85
+L40DF    JSR PRINTF
+         DTA C' Seg: $%4x-$%4x  Len: $%4x(%d)'
+         DTA B($9B,$00)
+         DTA A($0080,$0082)
+         DTA A($84,$84)
+         LDA $81
+         CMP #$02
+         BNE L4150
+         LDA $80
+         CMP #$E0
+         BEQ L411A
+         CMP #$E2
+         BNE L4150
+L411A    JSR GET2BYT
+         BMI _ENDPRO3
+         LDA $80
+         CMP #$E2
+         BEQ PRNINIT
+         JSR PRINTF
+         DTA C' Run: $%4x'
+         DTA B($9B,$00)
+         DTA A($86)
+         LDA $82
+         CMP #$E3
+         BCC L4150
+         JSR GET2BYT
+PRNINIT  JSR PRINTF
+         DTA C' Init: $%4x'
+         DTA B($9B,$00)
+         DTA A($86)
+
+L4150    LDX #$10
+         LDA #$26	; note
+         JSR FILEOP
+         BMI _ENDPRO3
+         LDA $84
+         CLC
+         ADC IOCB0+ICAX3,X
+         STA IOCB0+ICAX3,X
+         LDA $85
+         ADC IOCB0+ICAX4,X
+         STA IOCB0+ICAX4,X
+         BCC L416F
+         INC IOCB0+ICAX5,X
+
+L416F    LDA #$25	; point
+         JSR FILEOP
+         BMI _ENDPRO3
+         JMP GETHEAD
+
+_ENDPRO3 JMP ENDPROC
+
+
+*------ Naglowek $FFFE
+HDFFFE   EQU *
+         LDX #$10
+         LDA #$80
+         STA IOCB0+ICBUFA,X
+         LDA #$00
+         STA IOCB0+ICBUFA+1,X
+         LDY #$06
+         JSR GETBYTES
+         BMI _ENDPRO3
+         JSR PRINTF
+         DTA C' Blk: %b, Mem: $%2x',B($9B)
+         DTA C' Ofs: $%4x, Len: $%4x(%d)',B($9B)
+         DTA B($00)
+         DTA A($80,$81,$82,$84,$84)
+         LDA $81
+         BPL L4150   ; sa dane bloku
+         JMP GETHEAD ; blok bez danych (rezerwacja)
+
+*------ Naglowek $FFFD
+HDFFFD   EQU *
+         LDX #$10
+         LDA #$80
+         STA IOCB0+ICBUFA,X
+         LDA #$00
+         STA IOCB0+ICBUFA+1,X
+         LDY #$03
+         JSR GETBYTES
+         BMI _ENDPRO3
+         JSR PRINTF
+         DTA C' Blk: %b, Rsrvd:$%4x'
+         DTA B($9B,$00)
+         DTA A($80,$81)
+         JMP FINDEND
+
+*------ Naglowek $FFFB
+HDFFFB   EQU *
+         LDX #$10
+         LDA #$80
+         STA IOCB0+ICBUFA,X
+         LDA #$00
+         STA IOCB0+ICBUFA+1,X
+         LDY #$0A
+         JSR GETBYTES
+         BMI _ENDPRO4
+         JSR PRINTF
+         DTA C' Sym: %8s',B($9B)
+         DTA C' Rsrvd: $%4x'
+         DTA B($9B,$00)
+         DTA A($80,$88)
+         JMP FINDEND
+
+*------ Naglowek $FFFC
+HDFFFC   EQU *
+         LDX #$10
+         LDA #$80
+         STA IOCB0+ICBUFA,X
+         LDA #$00
+         STA IOCB0+ICBUFA+1,X
+         LDY #$0B
+         JSR GETBYTES
+         BMI _ENDPRO4
+         JSR PRINTF
+         DTA C' Sym: %8s',B($9B)
+         DTA C' Blk: %b, Addr:$%4x'
+         DTA B($9B,$00)
+         DTA A($83,$80,$81)
+         JMP GETHEAD
+
+_ENDPRO4 JMP ENDPROC
+
+FINDEND  LDY #$01
+         JSR GETBYTES
+         BMI _ENDPRO4
+         LDA $80
+         CMP #$FC
+         BNE FINDEND
+         JMP GETHEAD
+
+GET2BYT  LDX #$10
+         LDA #$86
+         STA IOCB0+ICBUFA,X
+         LDA #$00
+         STA IOCB0+ICBUFA+1,X
+         LDY #$02
+         JSR GETBYTES
+         BMI XGET2BYT
+         TYA
+         PHA
+         LDA $84
+         SEC
+         SBC #$02
+         STA $84
+         LDA $85
+         SBC #$00
+         STA $85
+         PLA
+XGET2BYT RTS
+
+CLOSEIO1 LDX #$10
+         LDA #$0C  ; Close
+         STA IOCB0+ICCOM,X
+         BNE CALLSIO
+
+GETBYTES LDA #$07  ; Get bytes
+         STA IOCB0+ICCOM,X
+         TYA
+         STA IOCB0+ICBUFL,X
+         LDA #$00
+         STA IOCB0+ICBUFL+1,X
+         BEQ CALLSIO
+
+FILEOP   STA IOCB0+ICCOM,X
+         LDA #$04
+         STA IOCB0+ICAX1,X
+         LDA #$00
+         STA IOCB0+ICAX2,X
+         LDA PCONFNAM
+         STA IOCB0+ICBUFA,X
+         LDA PCONFNAM+1
+         STA IOCB0+ICBUFA+1,X
+CALLSIO  JMP CIOV
+
+PCONFNAM DTA A(COMTAB+33)
+FHDFLG   DTA B(0)   ; Czy plik moze nie miec naglowka
+
+HDHAND   EQU *      ; Handlery naglowkow
+         DTA V(HDFFFF)
+         DTA V(HDFFFB)
+         DTA V(HDFFFC)
+         DTA V(HDFFFD)
+         DTA V(HDFFFE)
+         DTA V(HDFFFF)
+
+         BLK UPDATE SYMBOL

@@ -1,0 +1,351 @@
+       icl 'sdxequ.fas'
+
+lbuff  equ $0580
+skstat equ $d20f
+eol    equ $9b
+
+tmp    equ $cb
+aux    equ $cd
+confno equ $ce
+
+       blk r m
+start  lda vgtext
+       ldx vgtext+1
+       jsr u_sfail
+       lda vswtch
+       ldx vswtch+1
+       ldy <swlen
+       jsr u_slash
+       jsr u_xfail
+
+       asl switch
+       lda #$08
+       bit skstat
+       beq *+5
+       bcc getext
+       rts
+       bcs getext
+       rts
+
+getext jsr u_getpar
+       beq getpth
+       cpx #$04
+       bcs getpth
+       cpx #$03
+       bne mv_ext
+
+       ldy #$02
+cmpext lda comtab+confnam,y
+       cmp sysext,y
+       bne mv_ext
+       dey
+       bpl cmpext
+       sty namflg
+       bmi getpth
+
+mv_ext lda comtab+confnam,x
+       sta sysext,x
+       dex
+       bpl *-7
+
+getpth lda device
+       ora #$40
+       sta lbuff
+       lda #':'
+       sta lbuff+1
+       ldy #$01
+       iny
+       lda path-2,y
+       sta lbuff,y
+       bne *-7
+       lda lbuff-1,y
+       jsr ckspec
+       beq cat
+       lda #'\'
+       sta lbuff,y
+       iny
+cat    ldx #$02
+       lda vecext,x
+       sta name+8,x
+       dex
+       bpl *-7
+       lda <lbuff
+       ldx >lbuff
+       jsr u_expand
+       lda #$00
+       sta lbuff,y
+
+       jsr printf
+       dta b($7d,$1d)
+       dta b($7f),c' SDX Config Selector 1.40',b(eol)
+       dta b($7f),c'  (c) 15 Nov 2001 Lizard',b(eol,0)
+
+       lda vopent
+       ldx vopent+1
+       jsr u_sfail
+       lda <lbuff
+       ldx >lbuff
+       ldy #$04
+       jsr open
+       jsr fread
+       bmi write
+       jmp close
+
+write  jsr fclose
+opentr ldx #$17
+save   lda $0200,x
+       sta vbuff,x
+       cpx #$08
+       bcs __save
+       lda $0222,x
+       sta vbuff+$18,x
+       cpx #$04
+       bcs __save
+       lda $0236,x
+       sta vbuff+$20,x
+__save dex
+       bpl save
+
+       lda vwrttr
+       ldx vwrttr+1
+       jsr u_sfail
+       lda <lbuff
+       ldx >lbuff
+       ldy #$08
+       jsr open
+       jsr u_xfail
+       lda vwerrt
+       ldx vwerrt+1
+       jsr u_sfail
+       jsr fwrite
+       jsr fclose
+       jsr u_xfail
+       jsr printf
+       dta b(eol)
+       dta c'Vectors written to: %s',b(eol,0)
+       dta a(lbuff)
+       jmp sfmask
+
+wrttrp pha
+       jsr fclose
+       pla
+writet pha
+       jsr printf
+       dta b(eol)
+       dta c'Cannot save vectors!',b(0)
+       pla
+       jsr u_error
+       jmp sfmask
+
+close  jsr fclose
+       jsr u_xfail
+
+sfmask lda #eol
+       jsr putc
+       lda vfftrp
+       ldx vfftrp+1
+       jsr u_sfail
+       ldx #$01
+       lda vfmask,x
+       sta file_p,x
+       dex
+       bpl *-7
+       lda #$80
+       sta fatr1
+       jsr ffirst
+       bpl setbuf
+
+       jsr printf
+       dta c'Config files not found',b($9b,0)
+       rts
+
+fftrap pha
+       jsr printf
+       dta c'Cannot read root directory!',b(eol,0)
+       pla
+       jmp u_error
+
+setbuf lda vcname
+       sta tmp
+       lda vcname+1
+       sta tmp+1
+
+copynm lda namflg
+       beq copnam
+
+       ldy #$0a
+cmpnam lda dirfname,y
+       cmp config,y
+       bne copnam
+       dey
+       bpl cmpnam
+       bmi next
+
+copnam ldy #$07
+       lda dirfname,y
+       sta (tmp),y
+       dey
+       bpl *-6
+       clc
+       lda tmp
+       adc #$08
+       sta tmp
+       bcc *+4
+       inc tmp+1
+       jsr printf
+ident  dta c'A. %8s',b(eol,0)
+       dta a(dirfname)
+       inc ident
+       lda ident
+       cmp #'S'
+       bcc next
+       lda #$00
+       sta br+1
+next   jsr fnext
+br     bpl copynm
+
+       jsr u_xfail
+       jsr fclose
+       jsr printf
+       dta b(eol)
+       dta c'Select a configuration: ',b(0)
+
+choose jsr getkey
+       cmp #$1b
+       bne *+3
+       rts
+
+       and #$7f
+       jsr toupper
+       cmp #'A'
+       bcc choose
+       cmp ident
+       bcs choose
+       tax
+       stx confno
+
+       inc $d40e
+       sei
+       ldx #$17
+restor lda vbuff,x
+       sta $0200,x
+       cpx #$08
+       bcs __rest
+       lda vbuff+$18,x
+       sta $0222,x
+       cpx #$04
+       bcs __rest
+       lda vbuff+$20,x
+       sta $0236,x
+__rest dex
+       bpl restor
+       cli
+       lsr $d40e
+
+       lda confno
+       jsr putc
+       lda #eol
+       jsr putc
+       lda confno
+       sec
+       sbc #'A'
+       asl @
+       asl @
+       asl @
+       adc vcname
+       sta tmp
+       lda #$00
+       adc vcname+1
+       sta tmp+1
+
+       sta $d5e0
+       lda #$00
+       sta $08
+       sta $09
+
+       ldx #$08
+       tay
+zero   sta $0700,y
+       iny
+       bne zero
+       inc zero+2
+       dex
+       bne zero
+
+       ldy #$05
+init   ldx $a09d,y
+       sty path
+       jsr $a000
+       ldy path
+       dey
+       bpl init
+
+       ldy #$07
+mvname lda (tmp),y
+       sta $7084,y
+       dey
+       bpl mvname
+       ldy #$02
+mvext  lda sysext,y
+       sta $708c,y
+       dey
+       bpl mvext
+       jmp $3a1e
+
+getkey lda $e425
+       pha
+       lda $e424
+       pha
+       rts
+
+open   sta file_p
+       stx file_p+1
+       sty opmode
+       lda #$80
+       sta fatr1
+       lda #$83
+       sta fatr2
+       jsr fopen
+       lda siocbidx
+       sta aux
+       ldx #$02
+       lda vvbuff-1,x
+       sta faux1-1,x
+       dex
+       bne *-7
+       lda #$24
+       sta faux4
+       stx faux4+1
+       stx syscall
+       rts
+
+switch dta b(0),c'S'
+swlen  equ *-switch
+
+fmask  dta c'A:\*.'
+sysext dta c'SYS',b(eol)
+config dta c'CONFIG  SYS'
+vecext dta c'VEC'
+
+namflg dta b(0)
+
+vfmask dta v(fmask)
+vswtch dta v(switch)
+vgtext dta v(getext)
+
+vopent dta v(opentr)
+vwrttr dta v(writet)
+vwerrt dta v(wrttrp)
+vfftrp dta v(fftrap)
+
+vcname dta v(cname)
+vvbuff dta v(vbuff)
+
+cname  equ *
+vbuff  equ cname+$90
+blkend equ vbuff+$24
+
+       blk e blkend-cname m
+       blk u a
+       blk u s
+       end

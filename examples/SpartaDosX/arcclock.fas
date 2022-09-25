@@ -1,0 +1,259 @@
+         icl 'sdxequ.fas'
+
+portb    equ $d301
+
+rtc      equ $d520
+rtcctrl  equ $d52f
+
+* Inicjalizacja
+
+         blk sparta $0600
+
+* Czy zainstalowano juz sterownik zegara?
+
+         lda $0753
+         bne abort              ; tak, wypad
+
+* Nie, ustawienie wektora nowego sterownika w tablicy urzadzen
+
+         ldx #$01
+         lda venter,x
+         sta $0752,x
+         dex
+         bpl *-7
+
+* Ustawienie wektorow pod ROM-em
+
+         lda portb
+         pha
+         and #$fe
+         sta portb
+         ldx #$05
+         lda jmptbl,x
+         sta jgettd,x
+         dex
+         bpl *-7
+         pla
+         sta portb
+
+* Powiadomienie systemu o nowej nakladce
+* uzywajacej pamiei rozszerzonej
+
+         lda extended
+         sta bank
+         dec install
+abort    rts
+
+* Tablica skokow do procedur sterownika
+
+jmptbl   jmp i_gettd
+         jmp i_settd
+venter   dta v(enter)
+
+* Procedury rezydentne
+
+         blk reloc main
+
+* Wejscie do procedury pobrania czasu poprzez symbol I_GETTD
+
+i_gettd  ldy #$64
+         dta b($2c)             ; BIT abs
+
+* Wejscie do procedury ustawienia czasu poprzez symbol I_SETTD
+
+i_settd  ldy #$65
+
+* Czesc wspolna dla obydwu procedur
+
+         lda #$00
+
+* Wejscie poprzez SIO SpartaDOS-u
+
+enter    pha                    ; wlaczenie banku SpartaDOS-u
+         lda #$00
+bank     equ *-1
+         jsr jext_on
+         pla
+         jsr main
+         jmp jext_off
+
+* Glowna procedura zegara
+
+         blk reloc extended
+
+main     cpy #$64
+         beq gettd
+         cpy #$65
+         beq settd
+
+         lda #$84               ; nierozpoznana komenda
+         sec                    ; dla urzadzenia
+         rts
+
+* Odczyt czasu
+
+gettd    pha                    ; A7 - dane do date i time
+         ldx #$0b
+         jsr _gettd
+         jsr _gettd
+
+         ldx #$05               ; sprawdzenie poprawniosci
+         lda tdbuf,x            ; pobranego czasu
+         cmp tdaux,x
+         beq *+7
+         ldx #$05
+         jsr _gettd             ; bez przeskoku, bo X < 0
+         dex
+         bpl *-14
+
+         lda tdbuf+2            ; korekta godziny
+         cmp #24                ; w systemie 12-godzinnym
+         bcc *+7
+         sbc #28
+         sta tdbuf+2
+
+         lda tdbuf+5            ; korekta roku
+         cmp #22
+         bcc *+4
+         sbc #100
+         adc #78
+         sta tdbuf+5
+
+         ldx #$02               ; przepisanie daty do DATER
+         lda tdbuf+3,x
+         sta comtab+dater,x
+         dex
+         bpl *-7
+
+         ldy #$02               ; przepisanie godziny do TIMER
+         inx
+         lda tdbuf,x
+         sta comtab+timer,y
+         dey
+         bpl *-8
+
+         pla
+         beq exit               ; przepisanie czasu
+         ldx #$05               ; do DATE i TIME
+         lda comtab+dater,x
+         sta date,x
+         dex
+         bpl *-7
+
+exit     lda #$00
+         clc
+         rts
+
+* Zapis czasu
+
+settd    tax                    ; przeniesienie czasu
+         beq _settd             ; z DATE i TIME
+         ldx #$05               ; do DATER i TIMER
+         lda date,x             ; (jesli porzeba)
+         sta comtab+dater,x
+         dex
+         bpl *-7
+
+_settd   ldx #$02               ; przepisanie TIMER
+         ldy #$00               ; do bufora czasu
+         lda comtab+timer,x     ; z jednoczesna konwersja
+         jsr mkbcd              ; na BCD
+         sta tdbuf,y
+         iny
+         dex
+         bpl *-11
+
+         ldx #$02               ; j.w. dla DATER
+         lda comtab+dater,x
+         jsr mkbcd
+         sta tdbuf+3,x
+         dex
+         bpl *-10
+
+         php                    ; przesuniecie lat
+         sed                    ; wzgledem 1978 roku
+         sec
+         lda tdbuf+5
+         sbc #$78
+         sta tdbuf+5
+         plp
+
+         lda #$02               ; zatrzymanie
+         sta rtcctrl            ; zegara
+
+         ldx #$05               ; zapis
+         ldy #$0b               ; czasu
+_save    lda tdbuf,x            ; do rejestrow
+         pha
+         lsr @
+         lsr @
+         lsr @
+         lsr @
+         sta rtc,y
+         dey
+         pla
+         and #$0f
+         sta rtc,y
+         dey
+         dex
+         bpl _save
+
+         lda #$01               ; reset
+         sta rtcctrl            ; i wznowienie
+         lda #$04               ; pracy
+         sta rtcctrl            ; zegara
+         bne exit
+
+* Pobranie czasu i daty do bufora
+
+_gettd   ldy #$0a
+         lda rtc+1,y
+         and #$0f
+         asl @
+         sta tdbuf,x
+         asl @
+         asl @
+         adc tdbuf,x
+         sta tdbuf,x
+         lda rtc,y
+         and #$0f
+         adc tdbuf,x
+         sta tdbuf,x
+         dex
+         dey
+         dey
+         bpl _gettd+2
+         rts
+
+* Konwersja bajtu na BCD
+
+mkbcd    sta tdaux
+         tya
+         pha
+         lda #$00
+         sta tdaux+1
+         ldy #$08
+         php
+         sed
+         asl tdaux
+         adc tdaux+1
+         sta tdaux+1
+         dey
+         bne *-10
+         plp
+         pla
+         tay
+         lda tdaux+1
+         rts
+
+tdbuf    equ *
+tdaux    equ tdbuf+6
+empend   equ tdaux+6
+
+         blk empty empend-tdbuf extended
+         blk update addresses
+         blk update symbols
+         blk update new i_settd 'i_settd'
+         blk update new i_gettd 'i_gettd'
+
+         end
