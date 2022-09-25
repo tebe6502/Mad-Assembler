@@ -1,0 +1,748 @@
+;----------------------------------------------------------------------------------------------------
+; WRONG DIRECTION - 1k intro for Forever 14 party
+;----------------------------------------------------------------------------------------------------
+
+wsync	equ $d40a
+vcount	equ $d40b
+buff1	equ $4000
+buff2	equ $8000			; >=$8000 because of BPL in code
+
+count		equ $ff
+x_frac		equ $fe
+adx_frac	equ $fd
+screen_ptr	equ $fb
+xl		equ $fa
+xl_frac		equ $f9
+hr_posx		equ $f8
+first_color	equ $f7
+index		equ $f6
+pattern		equ $f5
+height		equ $f4
+vr_limit	equ $f3
+
+
+	run start_of_intro
+
+  	org $2000
+;----------------------------------------------------------------------------------------------------
+; HORIZONTAL RAINBOW POSITION 0 - positioned here to have exact start address to avoid different cycle count of loops (page crossing) when adding/deleting instructions in code before
+;----------------------------------------------------------------------------------------------------
+clk0	iny				; 8 soubroutines to change background color on 8 different positions
+	sty $d405
+	lda first_color
+	sta $d01a
+	sta z:1
+	adc #$0
+ 	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc z:$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+:2	nop
+	sta z:1
+	dex
+	bne clk0
+
+	jmp jsrret
+
+
+;----------------------------------------------------------------------------------------------------
+; HORIZONTAL RAINBOW POSITION 1
+;----------------------------------------------------------------------------------------------------
+clk1	iny
+	sty $d405
+	lda first_color
+	sta $d01a
+	nop
+	adc #$0
+ 	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+:2	nop
+	sta z:1
+	dex
+	bne clk1
+
+	jmp jsrret
+
+
+;----------------------------------------------------------------------------------------------------
+; HORIZONTAL RAINBOW POSITION 2
+;----------------------------------------------------------------------------------------------------
+clk2    iny
+	sty $d405
+	lda first_color
+	sta $d01a
+:2	nop
+	adc #$0
+ 	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	sta z:1
+	dex
+	bne clk2
+
+	jmp jsrret
+
+
+;----------------------------------------------------------------------------------------------------
+; HORIZONTAL RAINBOW POSITION 3
+;----------------------------------------------------------------------------------------------------
+clk3    iny
+	sty $d405
+	lda first_color
+	sta $d01a
+:2	nop
+	adc #$0
+ 	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+:2	nop
+	dex
+	bne clk3
+
+	jmp jsrret
+
+
+;----------------------------------------------------------------------------------------------------
+; HORIZONTAL RAINBOW POSITION 4
+;----------------------------------------------------------------------------------------------------
+clk4    iny
+	sty $d405
+	lda first_color
+	sta $d01a
+:3	nop
+	adc #$0
+ 	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+  	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	sta z:1
+	dex
+	bne clk4
+
+	jmp jsrret
+
+
+;----------------------------------------------------------------------------------------------------
+; HORIZONTAL RAINBOW POSITION 5
+;----------------------------------------------------------------------------------------------------
+clk5    iny
+	sty $d405
+	lda first_color
+	sta $d01a
+	nop
+	sta z:1
+	adc #$0
+ 	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc z:$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	sta z:1
+	dex
+	bne clk5
+
+	jmp jsrret
+
+
+;----------------------------------------------------------------------------------------------------
+; HORIZONTAL RAINBOW POSITION 6
+;----------------------------------------------------------------------------------------------------
+clk6    iny
+	sty $d405
+	lda first_color
+	sta $d01a
+:2	nop
+	sta z:1
+	adc #$0
+ 	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc z:$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	dex
+	bne clk6
+
+	jmp jsrret
+
+
+;----------------------------------------------------------------------------------------------------
+; HORIZONTAL RAINBOW POSITION 7
+;----------------------------------------------------------------------------------------------------
+clk7    iny
+	sty $d405
+	lda first_color
+	sta $d01a
+:3	nop
+	adc z:$0
+ 	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc #$0
+	sta $d01a
+	adc z:$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+	nop
+	adc #$0
+	sta $d01a
+:3	nop
+	sta z:1
+	dex
+	bne clk7
+
+	jmp jsrret
+
+
+;----------------------------------------------------------------------------------------------------
+; START OF INTRO
+;----------------------------------------------------------------------------------------------------
+start_of_intro
+	lda #0
+	tax
+clrmem	sta z:$0,x
+	sta $22f,x			; will clear DMA and set colors at $2Cx to black
+	inx
+	bne clrmem
+	lda #3
+	sta $d20f
+	sta pattern
+	lda >buff2
+	sta screen_ptr+1
+	jsr rotate
+
+	ldy <vbi
+	ldx >vbi
+	lda #7
+	jsr $e45c
+
+
+;----------------------------------------------------------------------------------------------------
+;VERTICAL RAINBOW
+;----------------------------------------------------------------------------------------------------
+vr_loop	lda #4				; simple atari vertical rainbow
+	cmp vcount
+	bne *-3
+	lsr @
+	sta $d208			; AUDCTL = 2 (high pass filter chan.2)
+	sta wsync
+	ldx #236
+	stx height                      
+	inx
+vr_line	lda vcount
+	clc
+	adc $14
+	bne limit
+	ldy $13
+	beq limit
+	sta branch+1
+limit	cpx vr_limit
+	sta wsync
+	bcs *+4
+	and #$f
+	eor #$f
+	sta $d01a
+	dex
+	bne vr_line
+	stx $d01a
+branch	beq *+6
+	inc vr_limit
+        inc vr_limit
+	lda pattern
+	and #2
+	bne vr_loop
+
+
+;----------------------------------------------------------------------------------------------------
+; ROTATING BARS
+;----------------------------------------------------------------------------------------------------
+	lda <dli
+	sta $200
+	lda >dli
+	sta $201
+	lda #$c0
+	sta $d40e
+	lda #$40+35
+	sta $26f    			; $40 for GTIA mode 9 - 16 lumas (don't care about lower bits as we dont use PMG)
+	sta $22f                        ; 35 for wide playfield (bit 5 unused by DMACTL)
+	lda <dlist
+	sta $230			; set approportiate dlist
+	lda >dlist
+        sta $231
+
+rotate_loop
+	lda rotatetab
+	sta adx_frac
+	lda #0				; prepare pointer to the screen
+	sta screen_ptr
+chn	lda >buff1
+	sta screen_ptr+1
+	eor #[>buff1^>buff2]            ; double buffering, so changing screen start address
+	sta chn+1
+	sta dlist+3
+	lda $14
+	cmp $14
+	beq *-2
+	jsr rotate			; draw next rotate step in the not visible buffer
+	dec cislo+1
+	inc rotate_loop+1
+ 	lda rotate_loop+1
+ 	cmp #<rte+1			; end of table?
+	bne rotate_loop
+
+
+;----------------------------------------------------------------------------------------------------
+;HORIZONTAL RAINBOW
+;----------------------------------------------------------------------------------------------------
+	lda <dlist2                     ; setup dlist for horizontal rainbow effect
+  	sta $230
+  	lda >dlist2
+  	sta $231
+	sta $26f			; no GTIA mode (bits 6&7 not set)
+	lda $14
+ 	cmp $14
+ 	beq *-2
+	sta hr_posx
+
+hr_loop	lda hr_posx
+	and #7
+	asl @
+	sta $d404			; hscroll
+	tax
+	lda jmptab,x			; prepare jump address to different soubroutines and pointer for searching zeroes based on position
+	sta screen_ptr
+	lda jmptab+1,x
+	sta screen_ptr+1
+
+        ldy #80				; search current coloring soubroutine for last adc #0 and change to adc #$10
+search0	lda (screen_ptr),y
+	beq found0
+	dey
+	bne search0
+	lda chngcol+1
+	ora #$10                        ; no adc #0 or adc z:0 found, so start color cycling
+	sta chngcol+1
+	bne rotcol
+found0	lda #$0
+	sta (screen_ptr),y
+
+rotcol	cpx #0
+	bne nocol
+	lda first_color
+	clc
+chngcol	adc #$0
+	sta first_color
+
+nocol	ldx height     			; height of bars
+	ldy #0
+	sty $d405
+	lda #4
+	sta wsync
+	cmp vcount
+	bne *-6
+
+	iny
+	sty $d405			; start of VSCROL trick to lenghten one scanline over whole screen
+	sta wsync
+	clc
+        lda #$40			; GTIA mode 9
+        sta $d01b
+
+	jmp (screen_ptr)		; jump to specific soubroutine based on hscroll value
+jsrret	stx $d01a			; x=0 from CLOCKx soubroutines
+	stx $d01b
+
+	lda #236			; calculate actual height of vertical rainbow
+	sec
+	sbc height
+	beq novbow
+	tay
+vbow	lda vcount			; vertical rainbow loop
+	clc
+	sta wsync
+        adc $14
+	eor #$f
+	sta $d01a
+	dey
+	bne vbow
+	sty $d01a
+
+novbow	sta wsync
+	lda $14
+	ora pattern
+	bne direct
+	sta hr_posx
+	lda direct
+	eor #[{inc z:}^{dec z:}]        ; change motion from left-right to right-left
+	sta direct
+	lda #$10
+	sta $10
+	sta found0+1			; allow color income
+	lda rotcol+1
+	eor #14
+	sta rotcol+1
+	lda chngcol+1
+	beq direct
+	eor #[$f0^$10]
+	sta chngcol+1
+	lda count
+	bne direct
+	dec count			; allow height changing
+
+direct	inc hr_posx
+	lda height			; changing height of horizontal rainbow
+	clc
+	adc count
+	beq lim
+	cmp #237
+	bne nolim
+lim	lda count			; we hit the top/bottom edge so reverse direction
+	eor #$fe
+	sta count
+	bne direct+2
+nolim	sta height
+
+	jmp hr_loop
+
+
+;----------------------------------------------------------------------------------------------------
+; ROTATE SOUBROUTINE
+;----------------------------------------------------------------------------------------------------
+rotate	lda #0
+	sta xl
+        lda #59				; 59 "mode" lines
+        sta count
+	sta xl_frac
+draw	lda xl_frac
+	sec
+cislo	adc rte-1			; get fraction from table (how much we rotate)
+	sta xl_frac
+	sta x_frac
+	bcc *+4
+	inc xl
+	ldx xl
+ 	ldy #47				; 48 bytes per line
+drawline
+	lda x_frac
+	adc adx_frac                    ; add fraction to x position in texture
+	bcc *+3
+	inx 				; move in texture
+	adc adx_frac                    ; add fraction for 2nd pixel
+	sta x_frac
+	lda textura,x                   ; both pixels in byte has the same color?
+	bcc *+6				; yes, plot it
+	inx
+	lda textura2,x			; no, get byte with two different colors
+	sta (screen_ptr),y
+	dey
+	bpl drawline
+
+	lda screen_ptr
+	clc
+	adc #48                         ; wide screen - 48 bytes each line
+	sta screen_ptr
+	bcc *+4
+	inc screen_ptr+1
+	dec count
+	bne draw
+
+	rts
+
+
+;----------------------------------------------------------------------------------------------------
+; VBI MUSIC ROUTINE
+;----------------------------------------------------------------------------------------------------
+vbi	lda $14
+	and #7				; 8 frames per note
+	tay
+	bne nonewnote
+	inc index
+	lda index
+	and #$3f			; 64 bytes in track
+	sta index
+	bne nonewnote
+	lsr pattern
+
+nonewnote
+	ldx index
+	lda pattern
+	bne nosnare
+	lda track2,x
+	beq nosnare
+	bmi snare
+	sta $d204
+	lda audc2,y
+	sta $d205
+	bne nosnare
+snare	lda audf3,y			; snare drum
+	sta $d204
+	lda audc3,y
+	sta $d205
+
+nosnare	lda track,x
+	ldx #$a8
+	cpy #0				; the pitch of note is different in first frame
+	bne *+5
+	lsr @				; freq/2
+	ldx #$ac
+	sta $d200
+	stx $d201
+
+	lda pattern
+	and #2
+	bne exitnmi
+	lda $13
+	lsr @
+	lda $14
+	ror @
+	tax
+	lda trylek,x
+	sta $d202
+	tax
+	inx
+	stx $d206
+	lda #$a8
+	sta $d203
+
+exitnmi	jmp $e462			; OS NMI exit vector
+
+
+;----------------------------------------------------------------------------------------------------
+; DLI FOR MODE 9++
+;----------------------------------------------------------------------------------------------------
+dli	pha
+	sta wsync
+	lda #$d
+	sta $d405
+	lda #3
+	sta $d405
+	pla
+	rti
+
+
+;----------------------------------------------------------------------------------------------------
+; DATA
+;----------------------------------------------------------------------------------------------------
+dlist	dta $90
+	dta $6f,a(buff1)
+:29	dta $8f,$2f
+	dta $41
+
+dlist2	dta $7f,a($80)
+	dta $5f,a(bardata)
+	dta $41
+
+jmptab	dta a(clk0),a(clk1),a(clk2),a(clk3),a(clk4),a(clk5),a(clk6),a(clk7)
+
+textura	:32 dta $cc,$aa,$88,$66,$44,$22,$00,$ee	; data for drawing rotating bars, both pixels in a byte has the same color
+
+textura2 :32 dta $ce,$ac,$8a,$68,$46,$24,$02,$e0 ; when there are different colors in a byte
+
+bardata
+:16	dta $02,$46,$8a,$ce		; screen data for gtia mode 9 bars
+
+	ert >rte<>>rotatetab
+rotatetab	dta 3,7,10,13,17,20,24,28,31,35,39,43,47,51,55,59,64,68,72,77,81,86,91,96,100,105,110,115,120,125	; values for rotator soubroutine for different angles
+		dta 131,136,141,147,152,158,163,169,175,180,183,187,190,193,195,198,201,204,206,209,211,214,216,218
+		dta 221,223,225,227,229,231,233,234,236,238,239,241,242,244,245,246,247,249,250,251,251,252,253,254,254,255
+rte
+
+track	dta $48,$5B,$6C,$5B,$6C,$90,$B5,$90,$48,$5B,$6C,$5B,$6C,$90,$B5,$90	; music data
+	dta $51,$60,$79,$60,$79,$A2,$C1,$A2,$51,$60,$79,$60,$79,$A2,$C1,$A2
+	dta $44,$51,$6C,$51,$6C,$88,$A2,$88,$44,$51,$6C,$51,$6C,$88,$A2,$88
+	dta $44,$51,$6C,$51,$6C,$88,$A2,$88,$44,$51,$6C,$51,$6C,$88,$A2,$88
+
+track2	dta $39,0,$39,0,$80,$39,0,$3f,$39,$39,$39,0,$80,0,0,0
+	dta $3f,0,$3f,0,$80,$3f,0,$48,$3f,$3f,$3f,0,$80,0,0,$80
+	dta $33,0,$33,0,$80,$33,0,$39,$33,$33,$33,0,$80,0,0,0
+	dta $39,0,$39,0,$80,$39,0,$3f,$39,$39,$39,0,$80,0,$80,$80
+
+trylek	:21 dta $90,$6c,$b5
+	dta $90
+        :21 dta $a2,$79,$c1
+	dta $a2
+        :21 dta $88,$60,$a2
+	dta $88
+        :21 dta $88,$6c,$a2
+	dta $88
+
+audc2	dta $cc,$c8,$c8,$c8,$c8,$c8,$c8,$c2
+
+audf3	dta 2,$a0,$c0,2,2,2,2,0
+
+audc3	dta 9,$a9,$a9,$88,$86,$84,$82,0

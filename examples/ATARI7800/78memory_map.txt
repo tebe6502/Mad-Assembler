@@ -1,0 +1,85 @@
+Atari 7800 Memory Map
+by Daniel Boris (11/9/98)
+
+0000 - 001F  TIA
+0020 - 003F  MARIA
+0040 - 00FF  RAM block 0
+0100 - 011F  TIA (mirror of 0000-001F)
+0120 - 013f  MARIA (mirror of 0020-003F)
+0140 - 01FF  RAM block 1
+0200 - 021F  TIA (mirror of 0000-001F)
+0220 - 023F  MARIA (mirror of 0020-003F)
+0280 - 02FF  RIOT I/O ports
+0300 - 031F  TIA (mirror of 0000-001F)
+0320 - 033F  MARIA (mirror of 0020-003F)
+0480 - 04FF  RIOT RAM
+0580 - 05FF  RIOT RAM (mirror of 0480-04FF)
+1800 - 27FF  RAM
+2040 - 20FF  RAM block 0 (mirror of 0000-001F)
+2140 - 21FF  RAM block 1 (mirror of 0140-01FF)
+2800 - 2FFF  Mirror of 1800-27FF
+3000 - 37FF  Mirror of 1800-27FF 
+3800 - 3FFF  Mirror of 1800-27FF
+4000 - FFFF  Cartridge address space
+F000 - FFFF  BIOS ROM
+
+Note: F000-FFFF can be switched between either the cartridge or the bios ROM
+Note: The mirroring of sections of the memory map is pretty complex and I am not sure if this
+is 100% correct
+
+Maria addresses:
+
+0020 - Background color
+0021 - Palette 0 color 1
+0022 - Palette 0 color 2
+0023 - Palette 0 color 3
+0024 - Wait for Sync
+0025 - Palette 1 color 1
+0026 - Palette 1 color 2
+0027 - Palette 1 color 3
+0028 - Maria Status
+       bit 7: 1 = VBLANK/0 = Not VBLANK
+0029 - Palette 2 color 1
+002A - Palette 2 color 2
+002B - Palette 2 color 3
+002C - Display List List pointer high
+002D - Palette 3 color 1
+002E - Palette 3 color 2
+002F - Palette 3 color 3
+0030 - Display List List pointer low
+0031 - Palette 4 color 1
+0032 - Palette 4 color 2
+0033 - Palette 4 color 3
+0034 - Character base address
+0035 - Palette 5 color 1
+0036 - Palette 5 color 2
+0037 - Palette 5 color 3
+0038 - Reserved for future expansion
+0039 - Palette 6 color 1
+003A - Palette 6 color 2
+003B - Palette 6 color 3
+003C - MARIA control
+       Bit 7: Color Kill  0 = Normal Color/1 = No Color
+       Bit 6,5: DMA control
+		0 = Test A (DO NOT USE)
+		1 = Test B (DO NOT USE)
+		2 = Normal DMA
+		3 = No DMA
+		(Note: The Atari MARIA documentation says to NOT USE test mode A or B since it
+                 can damage the 7800's hardware)
+       Bit 4: Character Width  0 = Two byte characters/1 = Single byte characters
+       Bit 3: Border Control  0 = Background color border / 1 = Black border
+       Bit 2: Kangaroo mode  0 = Transparency / 1 = Kangaroo mode
+       Bit 1,0: Read mode
+		0 = 160x2 or 160x4 
+		1 = Not used
+		2 = 320B or 320D
+		3 = 320A or 320C 
+003D - Palette 7 color 1
+003E - Palette 7 color 2
+003F - Palette 7 color 3
+
+
+
+
+
