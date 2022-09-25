@@ -1,0 +1,113 @@
+* MOUSE handling
+* based on code from Jaskier found on Heaven's website
+* http://www.s-direktnet.de/homepages/k_nadj/mouse.html
+
+MOUSE	.LOCAL
+
+MOUSE_ST	equ 0 ; 0-amiga, 1-st
+
+			ift MOUSE_ST
+htab	dta 0,2,3,1 ; st
+vtab	dta 0,8,12,4
+hand	equ 3
+vand	equ 12
+info_line		dta d'                  use ST mouse in port 2'
+			els
+htab	dta 0,2,10,8 ; amiga
+vtab	dta 0,1,5,4
+hand	equ 10
+vand	equ 5
+info_line		dta d'               use Amiga mouse in port 2'
+			eif
+
+xind	dta 0
+yind	dta 0
+
+init	.LOCAL
+	lda $d300
+:4	lsr @
+	pha
+	and #hand
+	ldy #3
+i1	cmp htab,y
+	beq i2
+	dey
+	bne i1
+i2	sty xind
+	pla
+	and #vand
+	ldy #3
+i3	cmp vtab,y
+	beq i4
+	dey
+	bne i3
+i4	sty yind
+	rts
+	.ENDL
+
+update	.LOCAL
+;	lda $d300
+;	ldxy DL.status+33
+;	jsr write_hex
+
+	lda $d300
+:4	lsr @
+	pha
+	and #hand
+	; there you check left-right move (H)
+	ldy #3
+h1	cmp htab,y
+	beq h2
+	dey
+	bne h1
+h2	tya
+	clc
+	adc #1
+	and #3
+	cmp xind
+	bne h3
+	sty xind
+	jsr cursor_dec_X
+	jmp h4
+;	dec xcur
+h3	tya
+	sec
+	sbc #1
+	and #3
+	cmp xind
+	bne h4
+	sty xind
+;	inc xcur
+	jsr cursor_inc_X
+h4	pla
+	and #vand
+	; and here we check up-down move (V)
+	ldy #3
+v1	cmp vtab,y
+	beq v2
+	dey
+	bne v1
+v2	tya
+	clc
+	adc #1
+	and #3
+	cmp yind
+	bne v3
+	sty yind
+	jsr cursor_dec_Y
+	jmp v4
+;	dec ycur
+v3	tya
+	sec
+	sbc #1
+	and #3
+	cmp yind
+	bne v4
+	sty yind
+;	inc ycur
+	jsr cursor_inc_Y
+v4	rts
+	.ENDL ;update
+
+MOD_LEN	equ *-MOUSE
+	.ENDL ; MOUSE

@@ -1,0 +1,35 @@
+DL	.LOCAL
+
+init
+;	mwa #top $230
+;	mva #$22 $22f
+	rts
+
+*******************************************************************************
+* DL data
+
+
+status
+	dta d'X=___ Y=___ W=_ H=_ Z:. C:_     _::LePix'
+
+down
+	dta $00
+	dta $c2,a(status)
+	dta $42,a(MOD_screen),2
+	dta $41,a(down)
+
+gr0_sub
+	dta d'                                 ::LePix'
+	dta d'                                   0.2.0'
+
+gr0
+	dta $70,$70
+	dta $42,a(gr0_mem)
+:23	dta 2
+	dta $60
+	dta $42,a(gr0_sub),2
+;	dta $42,a(MOUSE.info_line)
+	dta $41,a(gr0)
+
+MOD_LEN	equ *-DL
+	.ENDL ; DL

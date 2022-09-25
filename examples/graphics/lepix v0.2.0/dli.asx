@@ -1,0 +1,43 @@
+DLI	.LOCAL
+* DLI Interrupts
+
+init	equ *
+;	mwa top_vec $200
+	rts
+
+DLI_down
+	pha
+
+	lda #0
+	sta $d40a
+	sta $d01a
+	mva #1 $d01b
+	lda #$c0
+	sta $d018
+;	sta $d01a
+	lda #$0a
+	sta $d017
+
+	mwa #DLI_down2 $200 ; switch DLI
+
+	pla
+	rti
+
+DLI_down2
+	pha
+
+;	mva #0 $d01b
+	lda #$80
+	sta $d40a
+	sta $d018
+;	sta $d01a
+
+;	mwa #DLI_down $200 ; switch DLI
+
+	pla
+	rti
+
+down_vec	dta a(DLI_down)
+
+MOD_LEN	equ *-DLI
+	.ENDL ;DLI

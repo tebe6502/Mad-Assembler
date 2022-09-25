@@ -1,0 +1,165 @@
+* Keyboard handling
+KB .LOCAL
+
+pressed	dta 0 ; any key pressed?
+key		dta 0 ; not ascii code!
+delay	dta 0 ; how long is this key pressed
+joymask	dta 15 ; imitates joy movements
+
+init
+	; reset default key map
+	lda #$ff
+	sta KEYTABLE_END
+	rts
+
+update
+	jsr _update
+
+		ift 0
+	lda key
+	ldx <MOD_screen+40
+	ldy >MOD_screen+40
+	jsr write_dec
+
+	lda delay
+	ldx <MOD_screen+50
+	ldy >MOD_screen+50
+	jsr write_dec
+		eif
+
+	; clear joymask
+	mva #$0f KB.joymask
+
+	lda pressed
+	beq kbu_exit
+
+	; and now, parse KEYTABLE
+	ldy #0
+kbu	lda keytable,y
+	cmp #$ff
+	beq kbu_exit
+	cmp key
+	bne kbu_cont
+	lda delay
+	and keytable+1,y
+	bne kbu_cont
+	lda keytable+2,y
+	sta kbu_jump+1
+	lda keytable+3,y
+	sta kbu_jump+2
+	lda keytable+4,y
+kbu_jump	jmp *
+kbu_cont	tya
+	clc
+	adc #5
+	tay
+	bne kbu
+kbu_exit
+	rts
+
+_update
+	lda SKSTAT
+	and #8
+:3	lsr @
+	eor #1
+	ora cursor_pressed
+	sta cursor_pressed
+
+;	lda KBCODE
+;	ldx <MOD_screen+48
+;	ldy >MOD_screen+48
+;	jsr write_dec
+
+	lda SKSTAT
+	and #4
+:2	lsr @
+	eor #1
+	sta pressed
+	beq _kb_no_key
+	lda KBCODE
+	cmp key
+	beq _kb_same_key
+
+	sta key
+	lda #0
+	sta delay
+	rts
+
+_kb_same_key
+	inc delay
+	rts
+
+_kb_no_key
+	lda #$ff
+	sta key
+	lda #0
+	sta delay
+	rts
+* ****************************************************************************
+joymask_update
+	sta KB.joymask
+	rts
+* ****************************************************************************
+* adds set of keys to KEYTABLE, X/Y lo/hi address of the new table
+extend_keytable
+	stx zer0
+	sty zer0+1
+	ldx #0
+_ket0	lda Keytable,x
+	cmp #$ff
+	beq _ket1
+:5	inx
+	bne _ket0
+	jsr ERROR ;
+_ket1	ldy #0
+_ket2	lda (zer0),y
+	sta keytable,x
+	cmp #$ff
+	beq _ket_exit
+	iny
+	inx
+	lda #4
+	sta zerHlp
+_ket3
+	lda (zer0),y
+	sta keytable,x
+	inx
+	iny
+	dec zerHlp
+	bne _ket3
+	beq _ket2
+_ket_exit
+	rts
+
+* ****************************************************************************
+KB_return	equ *
+
+	org KB_KEYTABLE
+KEYTABLE
+	; cursor movement
+	dta KEYCODE_UP,0,a(joymask_update),%1110
+	dta KEYCODE_DOWN,0,a(joymask_update),%1101
+	dta KEYCODE_LEFT,0,a(joymask_update),%1011
+	dta KEYCODE_RIGHT,0,a(joymask_update),%0111
+
+	; cursor management
+	dta KEYCODE_J,3,a(cursor_dec_w),0
+	dta KEYCODE_L,3,a(cursor_inc_w),0
+	dta KEYCODE_I,3,a(cursor_dec_h),0
+	dta KEYCODE_K,3,a(cursor_inc_h),0
+	dta KEYCODE_C,7,a(cursor_switch),0
+	; pick color
+	dta KEYCODE_P,255,a(MOD_pick_color),0
+	; zoom
+	dta KEYCODE_Z,255,a(ZOOM.zoom_switch),0
+	; undo/redo
+	dta KEYCODE_U,7,a(UNDO.do_undo), 0
+	dta KEYCODE_Y,7,a(UNDO.do_redo), 0
+
+KEYTABLE_END	equ *
+	dta $ff
+
+	org KB_return
+
+MOD_LEN	equ *-KB
+	.ENDL ; KB

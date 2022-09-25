@@ -1,0 +1,36 @@
+To install LEPIX you first need to compile the sources.
+LEPIX is written using MADS assembler by Tomasz 'TeBe' Biela, available
+on the LEPIX homepage.
+
+To compile issue the following command:
+  mads.exe lepix.asx -o:lepix.xex -l -t
+
+This will create LEPIX.XEX file.
+
+Note, that since LEPIX supports multiple graphics modes it is necessary to
+tell it which mode to use for the current compilation.
+The used module is defined in lepix.asx file, in this part:
+
+		ift !GFX_MODE
+GFX_MODE	equ 1	; MIC
+;GFX_MODE	equ 2	; INP
+;GFX_MODE	equ 3	; CIN
+;GFX_MODE	equ 4	; HIP
+;GFX_MODE	equ 5	; TIP
+		eif
+
+This code means that MIC version will be compiled.
+If you need to e.g. compile INP version, just modify that code into:
+
+		ift !GFX_MODE
+;GFX_MODE	equ 1	; MIC
+GFX_MODE	equ 2	; INP
+;GFX_MODE	equ 3	; CIN
+;GFX_MODE	equ 4	; HIP
+;GFX_MODE	equ 5	; TIP
+		eif
+
+You can also specify which mode you want to compile with a command line
+switch for mads. For example to compile CIN mode, do:
+  mads lepix.asx -o:lepixhip.xex -l -t  -d:GFX_MODE=3
+

@@ -1,0 +1,68 @@
+* VBL interrupts
+VBL	.LOCAL
+
+enabled	dta 0
+frame	dta 0,0
+old_nmivec	dta a(0)
+
+init	equ *
+	jsr enable
+	rts
+
+enable
+	lda $d40b
+	bne *-3
+	sei
+	sta $d40e
+	mva #$fe $d301
+	mwa :NMIVEC old_nmivec
+	mwa #nmi :NMIVEC
+	mva #1 enabled
+	lda $d40b
+	bne *-3
+	mva #$c0 $d40e
+	rts
+disable
+	lda $d40b
+	bne *-3
+	sta $d40e
+	mwa old_nmivec :NMIVEC
+	mva #$ff $d301
+	cli
+	mva #$40 $d40e
+	mva #0 enabled
+	rts
+
+* ****************************************************************************
+* NMI routine
+nmi
+	bit $d40f
+	bpl nmi_vbl
+nmi_dli
+	jmp ($200)
+nmi_vbl
+	jmp VBL_main
+
+
+* ****************************************************************************
+VBL_main
+	phaxy
+
+	lda enabled
+	beq done
+
+	mva >fontset CHBASE
+
+	inc frame
+	bne *+5
+	inc frame+1
+
+	jsr main_vbl
+	jsr mod_vbl
+
+done
+	plaxy
+	rti
+
+MOD_LEN	equ *-VBL
+	.ENDL ; VBL

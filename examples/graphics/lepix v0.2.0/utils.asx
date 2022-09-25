@@ -1,0 +1,209 @@
+* LEPIX module UTILS
+UTILS_MOD	equ *
+
+ldxy	.MACRO
+	ldx <:1
+	ldy >:1
+	.ENDM
+
+phax	.MACRO
+	pha
+	txa
+	pha
+	.ENDM
+plax	.MACRO
+	pla
+	tax
+	pla
+	.ENDM
+
+phaxy	.MACRO
+	phax
+	tya
+	pha
+	.ENDM
+plaxy	.MACRO
+	pla
+	tay
+	plax
+	.ENDM
+
+addToZer .MACRO ' '
+	lda :1
+	clc
+	adc #:2
+	sta :1
+	bcc *+4
+	inc :1+1
+	.ENDM
+	
+incZer .MACRO ' '
+	inc :1
+	lda :1
+	bne _skip
+	inc :1+1
+_skip	
+	.ENDM  ; incZer
+decZer .MACRO ' '
+	lda :1
+	dec :1
+	cmp #0
+	bne _skip
+	dec :1+1
+_skip	
+	.ENDM  ; decZer
+	
+
+
+* expects value in A and lo/hi dest in X/Y
+_wddata dta d'000'
+_wdsubs	dta 100,10,1
+write_dec
+	stx _wdsave+1
+	sty _wdsave+2
+	ldx #0
+_wd0
+	tay
+	lda #$10 ; '0'
+	sta _wddata,x
+	tya
+_wd1
+	cmp _wdsubs,x
+	bcc _wd2
+	sbc _wdsubs,x
+	inc _wddata,x
+	bne _wd1 ;!
+_wd2
+	inx
+	cpx #3
+	bne _wd0
+
+	ldy #2
+_wd3	lda _wddata,y
+_wdsave	sta 0000,y
+	dey
+	bpl _wd3
+	rts
+
+* expects value in A and lo/hi dest in X/Y
+write_hex
+	stx zerHlp
+	sty zerHlp+1
+	tax
+	ldy #0
+	and #$f0
+:4	lsr @
+	cmp #10
+	bcc *+4
+	adc #['a'-'9']-34
+	adc #$10
+	sta (zerHlp),y
+	txa
+	iny
+	and #$0f
+	cmp #10
+	bcc *+4
+	adc #['a'-'9']-34
+	adc #$10
+	sta (zerHlp),y
+	rts
+
+* error, keep on printing random colors
+error
+	sei
+	inc $d40e
+	lda 53770
+	sta $d01a
+	jmp error
+
+* in atascii
+phex
+	stx zerHlp
+	sty zerHlp+1
+	ldy #1
+	pha
+	jsr pxdig
+	pla
+:4	lsr @
+pxdig	and #$0f
+	ora #'0'
+	cmp #'9'+1
+	bcc *+4
+	adc #6
+_inv ora #0
+	sta (zerHlp),y
+	dey
+	rts
+
+
+* shows colors for 0.2 sec
+fuzz .MACRO
+	lda #:1
+	sta zerHlp
+	ldy #10
+l0	lda $d40b
+	bne *-3
+l1	lda 53770
+	and #$0f
+	ora zerHlp
+	sta $d01a
+	lda $d40b
+	cmp #$60
+	bne l1
+	dey
+	bne l0
+	.ENDM
+
+*******************************************************************************
+* A:val dst:zer1, cnt:zer2
+memset .LOCAL
+	ldx zer2+1
+	beq small
+	ldy #0
+lp0
+	sta (zer1),y
+	dey
+	bne lp0
+	inc zer1+1
+	dex
+	bne lp0
+small
+	ldy zer2
+	beq ex
+lp
+	dey
+	sta (zer1),y
+	cpy #0
+	bne lp
+ex	rts
+	.ENDL ; cleanmem
+
+* dst:zer1 src:zer2 cnt:zer3
+memcpy	.LOCAL
+	ldx zer3+1
+	beq small
+	ldy #0
+lp0
+	lda (zer2),y
+	sta (zer1),y
+	dey
+	bne lp0
+	inc zer1+1
+	inc zer2+1
+	dex
+	bne lp0
+small
+	ldy zer3
+	beq ex
+lp
+	dey
+	lda (zer2),y
+	sta (zer1),y
+	cpy #0
+	bne lp
+ex
+	rts
+	.ENDL
+
+UTILS_MOD_LEN	equ *-UTILS_MOD
+

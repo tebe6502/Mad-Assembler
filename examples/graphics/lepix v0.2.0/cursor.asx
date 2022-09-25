@@ -1,0 +1,656 @@
+* Cursor management
+* To allow blinking of the cursor, we can't simply change the palette, as the
+* colors are often used by the underlying graphics mode (e.g. HIP, TIP).
+* For this reason, we assume PM colors are set such that they vary, and each
+* frame we change the player number used by a given cursor.
+* Used player colors:
+* (VBL + 0) % 3 - cursor on the main picture
+* (VBL + 1) % 3 - zoomed cursor
+* (VBL + 2) % 3 - left zoom frame
+* (VBL + 3) % 3 - right zoom frame
+
+
+CURSOR_BEG	equ *
+
+ZFR_ENABLED	equ 1		; enable zoom frame
+
+cursor_X	dta 0
+cursor_Y	dta 0
+cursor_H	dta 1
+cursor_W	dta 1
+cursor_PRESSED	dta 0
+player_sizes	dta 0,1,0,3
+
+cursor_masks	dta $80,$c0,$e0,$f0,$f8,$fc,$fe,$ff
+cursor_lastVBL	dta 0
+cursor_lastY	dta 0
+cursor_lastH	dta 0
+cursor_shape	dta 1
+
+cursor_init
+	lda $22f
+	ora #$1c
+	sta $22f
+
+	mva #$00 $2c0
+	mva #$55 $2c1
+	mva #$aa $2c2
+	mva #$ff $2c3
+
+	mva #3 $d01d	;p/m on
+
+	mva >PM_BASE $d407
+
+	ldy #0
+	tya
+_ci1
+	sta PLR0_BASE+$000,y	;clear P/M data
+	sta PLR0_BASE+$100,y
+	sta PLR0_BASE+$200,y
+	sta PLR0_BASE+$300,y
+	sta MISS_BASE,y
+	iny
+	bne _ci1
+	ldy #7
+_ci2
+	lda #0
+	sta $d000,y		;clear PM positions
+	dey
+	bpl _ci2
+
+	jsr curcolor_init
+		ift ZFR_ENABLED
+	jsr zfr_init
+		eif
+
+	rts
+
+* returns absolute Y position
+_cursor_get_Y
+	lda MOD_pmY
+	ldx MOD_pixel_h
+_cgy
+	clc
+	adc cursor_Y
+	sec
+	sbc ZOOM.zoom_top_y
+	dex
+	bne _cgy
+	rts
+
+* returns absolute X position
+_cursor_get_X
+	lda #$30
+	ldx MOD_pixel_w
+_cgx
+	clc
+	adc cursor_x
+	dex
+	bne _cgx
+	rts
+
+* returns absolute height
+_cursor_get_H
+	lda #0
+	ldx MOD_pixel_h
+_cgh
+	clc
+	adc cursor_H
+	dex
+	bne _cgh
+	rts
+
+cs1
+	dta	%00010000
+	dta	%00010000
+	dta	%00000000
+	dta	%11000110
+	dta	%00000000
+	dta	%00010000
+	dta	%00010000
+cs2
+	dta	%11000110
+	dta	%10000010
+	dta	%00000000
+	dta	%00000000
+	dta	%00000000
+	dta	%10000010
+	dta	%11000110
+cs3
+	dta	%10000001
+	dta	%00000000
+	dta	%00000000
+	dta	%00000000
+	dta	%00000000
+	dta	%00000000
+	dta	%10000001
+cs4
+	dta	%00000000
+	dta	%00000000
+	dta	%00010000
+	dta	%00101000
+	dta	%00010000
+	dta	%00000000
+	dta	%00000000
+cs5
+	dta	%10000010
+	dta	%01000100
+	dta	%00000000
+	dta	%00000000
+	dta	%00000000
+	dta	%01000100
+	dta	%10000010
+
+cursor_shapes	dta a(0),a(cs1),a(cs2),a(cs3),a(cs4),a(cs5)
+
+cursor_clear
+	ldy cursor_lastVBL
+	tya
+	ora >PLR0_BASE
+	sta zer0+1			;set prev player address
+	lda #0
+	sta zer0
+	sta $d000,y			;clear prev player position
+	sta SIZEP0,y		;clear prev player width
+	sta cursor_pressed	;set cursor as not pressed
+	ldy cursor_lastY
+	ldx cursor_lastH
+
+	lda cursor_shape
+	beq _cc_pixel
+
+:4	dey
+	txa
+	clc
+	adc #8
+	tax
+_cc_pixel
+	lda #0
+_cc0	sta (zer0),y
+	iny
+	dex
+	bne _cc0
+
+	jsr zcur_clear
+		ift ZFR_ENABLED
+	jsr zfr_clear
+		eif
+
+	rts ; cursor_clear
+
+cursor_update
+	mva #1 PRIOR		;priority
+	lda cursor_shape
+	ora #"0"
+	sta DL.status+26
+; print cursor position
+	lda cursor_X
+	ldx <DL.status+2
+	ldy >DL.status+2
+	jsr write_dec
+	lda cursor_Y
+	ldx <DL.status+8
+	ldy >DL.status+8
+	jsr write_dec
+; and width/height
+	lda cursor_W
+	ora #$10
+	sta DL.status+14
+	lda cursor_H
+	ora #$10
+	sta DL.status+18
+
+	lda cursor_pressed
+;	ora #$20
+	sta DL.status+32
+
+	lda VBL.frame
+:3	lsr @
+	and #3
+	sta cursor_lastVBL
+	ora >PLR0_BASE
+	sta zer0+1
+	mva #0 zer0
+
+; set sprite
+	ldy cursor_W
+	lda cursor_masks-1,y
+	pha
+	jsr _cursor_get_Y
+	sta cursor_lastY
+	tay
+
+	lda cursor_shape
+	bne _cu_shape
+_cu_pixel
+	jsr _cursor_get_H
+	sta cursor_lastH
+	tax
+	pla
+_cu0	sta (zer0),y
+	iny
+	dex
+	bne _cu0
+; set current player's position
+	jsr _cursor_get_X
+	ldy cursor_lastVBL
+	sta $d000,y
+	jmp _cu_done
+_cu_shape
+	asl @
+	tax
+	mwa cursor_shapes,x _cus+1
+	pla
+	ldx #0
+	dey
+	dey
+	dey
+_cus	lda cs1,x
+	sta (zer0),y
+	iny
+	inx
+	cpx #7
+	bne _cus
+	jsr _cursor_get_X
+	ldy cursor_lastVBL
+	sec
+:3	sbc MOD_pixel_w
+	sta $d000,y
+_cu_done
+; and width
+	ldx MOD_pixel_w
+	lda player_sizes-1,x
+	sta SIZEP0,y
+
+	jsr curcolor_update
+
+	jsr zcur_update
+		ift ZFR_ENABLED
+	jsr zfr_update
+		eif
+
+	rts
+
+*******************************************************************************
+curcolor_init	equ *
+	lda #%11111111
+	sta MISS_BASE+8
+	sta MISS_BASE+17
+	sta :SIZEM
+	rts
+
+curcolor_update
+	lda mod_curcolor_w
+	lsr @
+	clc
+	adc #$30
+	adc mod_curcolor_x
+	sec
+	sbc #4
+	tax
+	lda #0
+	sta $d004
+	sta $d005
+	sta $d006
+	sta $d007
+	lda VBL.frame
+:2	lsr @
+	and #3
+	tay
+	txa
+	sta $d004,y
+	rts
+
+
+
+*******************************************************************************
+* Cursor X/Y/W/H manipulation
+
+cursor_inc_X
+	lda cursor_X
+	clc
+	adc cursor_W
+	cmp MOD_max_X
+	beq *+5
+	inc cursor_X
+	rts
+
+cursor_inc_Y
+	lda cursor_Y
+	clc
+	adc cursor_H
+	cmp MOD_max_Y
+	beq *+5
+	inc cursor_Y
+	rts
+
+cursor_dec_X
+	lda cursor_X
+	beq *+5
+	dec cursor_X
+	rts
+
+cursor_dec_Y
+	lda cursor_Y
+	beq *+5
+	dec cursor_Y
+	rts
+
+cursor_inc_W	.LOCAL
+	lda ZOOM.state
+	bne ex
+	ldy :cursor_W
+	cpy :MOD_max_cursor_w
+	beq ex
+	tya
+	clc
+	adc :cursor_X
+	cmp :MOD_max_X
+	bne *+5
+	dec :cursor_X
+	iny
+	sty :cursor_W
+ex	mva #0 cursor_shape
+	rts
+	.ENDL
+
+cursor_dec_W	.LOCAL
+	lda ZOOM.state
+	bne ex
+	ldy :cursor_W
+	cpy #1
+	beq *+3
+	dey
+	sty :cursor_W
+ex	mva #0 cursor_shape
+	rts
+	.ENDL
+
+cursor_inc_H	.LOCAL
+	lda ZOOM.state
+	bne ex
+	ldy :cursor_H
+	cpy :MOD_max_cursor_h
+	beq ex
+	tya
+	clc
+	adc :cursor_Y
+	cmp :MOD_max_Y
+	bne *+5
+	dec :cursor_Y
+	iny
+	sty :cursor_H
+ex	mva #0 cursor_shape
+	rts
+	.ENDL
+
+cursor_dec_H	.LOCAL
+	lda ZOOM.state
+	bne ex
+	ldy :cursor_H
+	cpy #1
+	beq *+3
+	dey
+	sty :cursor_H
+ex	mva #0 cursor_shape
+	rts
+	.ENDL
+
+*******************************************************************************
+* Zoom frame manipulation
+		ift ZFR_ENABLED
+zfr_last1	dta 0
+zfr_last2	dta 0
+zfr_lastY	dta 0
+zfr_H		dta 0
+zfr_W		dta 0
+
+
+zfr_init	.LOCAL
+	lda MOD_zoom_h
+	ldx MOD_pixel_h
+	dex
+	beq _ok
+	clc
+_ml
+	adc MOD_zoom_h
+	dex
+	bne _ml
+_ok
+	sec
+	sbc #6
+	sta zfr_H
+	lda MOD_zoom_w
+	ldx MOD_pixel_w
+	dex
+	beq _ok2
+	clc
+_ml2
+	adc MOD_zoom_w
+	dex
+	bne _ml2
+_ok2
+	clc
+	adc #1
+	sta zfr_W
+	rts
+	.ENDL
+
+zfr_clear	.LOCAL
+	lda zfr_last1
+	ora >PLR0_BASE
+	sta zer1+1
+	lda zfr_last2
+	ora >PLR0_BASE
+	sta zer2+1
+
+	ldy zfr_lastY
+	mva #0 zer1
+	sta zer2
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	tya
+	clc
+	adc zfr_H
+	tay
+	lda #0
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	rts
+	.ENDL
+
+zfr_update .LOCAL
+	lda zoom.state
+	bne *+3
+	rts
+	lda #0
+	sta zer1
+	sta zer2
+	lda cursor_lastVBL
+	clc
+	adc #2
+	and #$03
+	sta zfr_last1
+	ora >PLR0_BASE
+	sta zer1+1
+	adc #1
+	and #$03
+	sta zfr_last2
+	ora >PLR0_BASE
+	sta zer2+1
+	lda zoom.zoom_y
+	sec
+	sbc zoom.zoom_top_y
+	sta zerHlp
+	ldx MOD_pixel_h
+	dex
+	beq ok
+mul	clc
+	adc zerHlp
+	dex
+	bne mul
+ok	clc
+	adc MOD_pmY
+	sec
+	sbc #1
+	sta zfr_lastY
+	tay
+	lda #%00011110
+	sta (zer1),y
+	lda #%11110000
+	sta (zer2),y+
+	lda #%00010000
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	tya
+	clc
+	adc zfr_H
+	tay
+	lda #%00010000
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	sta (zer1),y
+	sta (zer2),y+
+	lda #%00011110
+	sta (zer1),y
+	lda #%11110000
+	sta (zer2),y+
+	ldy mod_pixel_w
+	lda #0
+_add
+	clc
+	adc zoom.zoom_X
+	dey
+	bne _add
+	clc
+	adc #$30-4
+	ldy zfr_last1
+	sta :HPOSP0,y
+	ldy zfr_last2
+	clc
+	adc zfr_W
+	sta :HPOSP0,y
+ex	rts
+	.ENDL
+		eif ; ZFR_ENABLED
+*******************************************************************************
+* Zoomed cursor manipulation
+zcur_lastVBL	dta 0
+zcur_lastY		dta 0
+zcur_lastSize	dta 0
+
+
+zcur_clear	.LOCAL
+	lda :zcur_lastVBL
+	ora >:PLR0_BASE
+	sta dst+2
+	ldy :zcur_lastY
+	ldx :zcur_lastSize
+	beq _ex
+	lda #0
+dst	sta :PLR0_BASE,y
+	iny
+	dex
+	bne dst
+_ex	rts
+	.ENDL
+
+zcur_update	.LOCAL
+	lda ZOOM.state
+	beq ex
+	lda :cursor_lastVBL
+	clc
+	adc #1
+	and #3
+	sta :zcur_lastVBL
+	ora >:PLR0_BASE
+	sta dst+2
+
+	; calc Y
+	lda :cursor_Y
+	sec
+	sbc ZOOM.zoom_y
+	bcs *+4
+	lda #0
+	sta :zerHlp
+
+	lda #0
+	ldy :MOD_zoom_pixel_h
+ly	clc
+	adc :zerHlp
+	dey
+	bne ly
+
+	clc
+	adc :MOD_zoom_PMY
+	tay
+	sty :zcur_lastY
+
+;	tya
+;	ldx <:MOD_screen+40
+;	ldy >:MOD_SCREEN+40
+;	jsr :write_dec
+;	ldy :zcur_lastY
+
+	ldx :MOD_zoom_pixel_w
+	lda :cursor_masks-1,x
+
+	ldx :MOD_zoom_pixel_h
+	stx :zcur_lastSize
+dst	sta :PLR0_BASE,y
+	iny
+	dex
+	bne dst
+
+	; calc X
+	lda :cursor_X
+	sec
+	sbc ZOOM.zoom_x
+	bcs *+4
+	lda #0
+	sta :zerHlp
+
+	lda #0
+	ldx :MOD_zoom_pixel_w
+lx	clc
+	adc :zerHlp
+	dex
+	bne lx
+
+	ldx :zcur_lastVBL
+	clc
+	adc #$30
+	sta :HPOSP0,x
+ex	rts
+	.ENDL ; zcur_clear
+
+cursor_switch
+	ldy cursor_shape
+	iny
+	cpy #6
+	bne *+4
+	ldy #0
+	sty cursor_shape
+	mva #1 cursor_w
+	sta cursor_h
+	rts
+
+CURSOR_MOD_LEN	equ *-CURSOR_BEG

@@ -1,0 +1,50 @@
+Mad-Assembler v1.4.9beta by TeBe/Madteam
+Source: F:\!Delphi\Masm\mode_9++.asm
+     1 				/*
+     2 				  MODE 9++
+     3 				*/
+     4
+     5 				 org $2000
+     6
+     7 FFFF> 00,2000-2076> A9 +	 lda <dli
+     8 00,2002 8D 00 02		 sta $200
+     9 00,2005 A9 20		 lda >dli
+    10 00,2007 8D 01 02		 sta $201
+    11
+    12 00,200A A9 22		 lda #$22
+    13 00,200C 8D 2F 02		 sta $22f
+    14
+    15 00,200F A9 36		 lda <dl
+    16 00,2011 8D 30 02		 sta $230
+    17 00,2014 A9 20		 lda >dl
+    18 00,2016 8D 31 02		 sta $231
+    19
+    20 00,2019 A9 40		 lda #$40
+    21 00,201B 8D 6F 02		 sta $26f
+    22
+    23 00,201E A9 C0		 lda #$c0
+    24 00,2020 8D 0E D4		 sta $d40e
+    25
+    26 00,2023 4C 23 20		 jmp *
+    27
+    28
+    29 00,2026 48		dli pha
+    30 00,2027 8D 0A D4		 sta $d40a
+    31
+    32 00,202A A9 0D		 lda #13
+    33 00,202C 8D 05 D4		 sta $d405
+    34
+    35 00,202F A9 03		 lda #3
+    36 00,2031 8D 05 D4		 sta $d405
+    37
+    38 00,2034 68		 pla
+    39 00,2035 40		 rti
+    40
+    41
+    42 00,2036			dl
+    43 				; 2 puste linie, 1 linia trybu
+    44 00,2036 90 6F 00 F0	 dta $90,$6f,a($f000)
+    45 				; $8f,$2f powtorzone 29 razy => 58 linii
+    46 00,203A 8F 2F 8F 2F 8F +	 :29 dta a($2f8f)
+    47
+    48 00,2074 41 36 20		 dta $41,a(dl)

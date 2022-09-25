@@ -1,0 +1,18 @@
+FONT	.LOCAL
+
+init
+	mva CHBAS zer0+1
+	mva >fontset zer1+1
+	mvy #0 zer0
+	sty zer1
+	ldx #4
+lp	lda (zer0),y
+	sta (zer1),y
+	iny
+	bne lp
+	inc zer0+1
+	inc zer1+1
+	dex
+	bne lp
+	rts
+	.ENDL

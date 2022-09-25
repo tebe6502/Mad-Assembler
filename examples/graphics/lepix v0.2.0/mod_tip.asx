@@ -1,0 +1,1393 @@
+*******************************************************************************
+* External
+MOD_MOD		equ *
+
+MOD_init		jmp TIP.init
+MOD_vbl			jmp TIP.vbl
+MOD_pick_color	jmp TIP.pick_color
+MOD_put_pixel	jmp TIP.put_pixel
+MOD_enable_zoom		jmp TIP.enable_zoom
+MOD_disable_zoom	jmp TIP.disable_zoom
+MOD_zoom_update		jmp TIP.zoom_update
+; updates a single zoomed line. Y=line number
+MOD_zoom_update_line	jmp TIP.zoom_update_line
+; updates upper part
+MOD_zoom_update_top		jmp TIP.zoom_update_top
+
+MOD_pmY			dta 19 ; in scanlines, Y position of the first line
+MOD_pixel_w		dta 1 ; can be 1,2 or 4
+MOD_pixel_h		dta 2 ; - anything
+
+MOD_max_x		dta 160
+MOD_max_y		dta 100
+
+MOD_max_cursor_w	dta 4 ; for performance
+MOD_max_cursor_h	dta 8
+
+MOD_zoom_w			dta 80 ; in mode pixels
+MOD_zoom_h			dta TIP.zoomlines ; in mode pixels
+MOD_zoom_pmY		dta 219-[4*TIP.zoomlines] ; in scanlines, Y position of the first line in zoom
+MOD_zoom_pixel_w	dta 2 ; in 15 pixels
+MOD_zoom_pixel_h	dta 4 ; in scanlines
+MOD_zoom_top_h		dta 100-2-[2*TIP.zoomlines] ; lines from main panel visible
+
+MOD_screen	equ *
+	dta d'BRI:.. TONE:..                     ::TIP'
+	dta d'keys:QWER           JLIK PCZ UY  M :....'
+
+MOD_curcolor_X	dta 0  ; in 15 pixels, from 0
+MOD_curcolor_W	dta 8  ; in 15 pixels
+
+; returns the mode color as a byte (used in UNDO)
+MOD_get_color	jmp TIP.get_color
+; sets the mode colors as a byte (used in UNDO)
+MOD_set_color	jmp TIP.set_color
+
+MOD_MOD_LEN	equ *-MOD_MOD
+
+*******************************************************************************
+* Internal
+TIP			.LOCAL
+
+zoomlines	equ 23
+
+pline		equ $8000
+scr40		equ $8060	;GTIA $40 - GR9  (HipA)
+scr80		equ $7060	;GTIA $80 - GR10 (HipB)
+scrC0		equ $6060	;GTIA $c0 - GR11 (TIP)
+SCR_40_80_EOR		equ [>scr40 ^ >scr80]
+SCR_40_C0_EOR		equ [>scr40 ^ >scrC0]
+SCR_80_C0_EOR		equ [>scr80 ^ >scrC0]
+
+dl1_zoom	equ $b800
+dl2_zoom	equ $ba00
+DLZOOM_EOR	equ [>dl1_zoom^>dl2_zoom]
+
+dl1			equ $b000
+dl2			equ $b400
+DL_EOR		equ [>dl1^>dl2]
+
+loline		equ $a000	; line addresses - LO
+hiline		equ $a100	; line addresses - HI
+div4		equ $a200
+zoomlo_gtia	equ $a300  ; (00, 11, 22, ...,FF) x 16
+zoomhi_gtia	equ $a400  ; 00 x 16, 11 x 16, ..., FF x 16 
+trash_page	equ $a500	; for I/O skipping
+dlzoom_fill	equ $aa00
+
+*******************************************************************************
+
+MODE_BOTH	equ 3
+MODE_BRI	equ 2
+MODE_TONE	equ 1
+cur_mode	dta MODE_BOTH
+
+cur_bri 	dta 7	; values: 00,01,02,...,0f
+cur_tone	dta $70 ; values: 00,10,20,...,f0
+tip_hscrol	dta 12
+
+set_color	
+	pha
+	and #$f0
+	sta cur_tone
+	pla
+	and #$0f
+	sta cur_bri
+	rts
+get_color
+	lda cur_bri
+	ora cur_tone
+	rts
+
+vbl
+	lda VBL.frame
+	and #1
+	tay
+	tax
+	beq *+4
+	lda #DL_EOR
+	eor #>dl1
+	sta $d403
+	mva #0 $d402
+	mwa #dli_palette $200
+
+	lda zoom.state
+	beq vbl_nozoom
+	lda VBL.frame
+	eor zoom.zoom_top_Y
+	and #1
+	tax
+
+vbl_nozoom
+	lda _cols,y
+	ora cur_tone
+	sta cols
+	lda _cols+1,y
+	ora cur_tone
+	sta cols+1
+	lda _gtias+1,x
+	sta dli_core._dli_value+1
+;	sta dli_zoom._dli_value+1
+	
+	mva #$00 $d012
+	mva #$55 $d013
+	mva #$aa $d014
+	mva #$ff $d015
+
+	mva #$08 $d016
+	mva #$0a $d017
+	mva #$0c $d018
+	mva #$0e $d019
+	mva #$00 $d01a
+
+	rts
+
+init
+	jsr create_DL
+	jsr create_tabs
+	jsr update_status
+	ldxy TIP_KEYTABLE
+	jsr KB.extend_keytable
+	ldxy TIP_MENUTABLE
+	jsr MENU.extend_menutable
+
+	jsr prp_dlzoom_fill
+
+;	jsr conv87
+;	jsr conv2spr
+
+	rts
+
+_cols	dta $00,$0e,$00
+_gtias	dta $81,$41,$81,$41
+cols	dta 0,0
+gtias	dta 0,0
+
+dli_palette	.LOCAL
+	phaxy
+	mva tip_hscrol :HSCROL
+	sta $d40a
+;	sta $d40a
+
+	lda cur_tone
+	sta $d01a
+	lda #$41
+	sta $d01b
+
+	ldx #7
+_dp	sta $d40a
+	dex
+	bne _dp
+
+	mva #$00 $d012
+	mva #$02 $d013
+	mva #$04 $d014
+	mva #$06 $d015
+
+	mwa #dli_core $200 ; switch DLI
+
+	ldy #$6e
+	lda zoom.state
+	beq *+4
+	ldy #$6e-4-2*zoomlines
+	sty dli_core.maxline+1
+	
+	mva #$c1 $d01b
+	mva #$0 $d01a
+
+	plaxy
+	rti
+	.ENDL
+
+dli_core	.LOCAL
+	pha
+	lda $d40b
+maxline	cmp #$6e
+	bcs blah
+
+_dli_value	lda #$41
+	sta $d40a
+	sta $d01b
+	eor #$c0
+	sta _dli_value+1
+
+	lda #$c1
+	sta $d40a
+	sta $d01b
+
+	pla
+	rti
+blah
+	cmp #$6e
+	bcc zoom
+normal
+	pla
+	jmp (DLI.down_vec)
+zoom
+	lda _dli_value+1
+	sta $d40a
+	sta $d01b
+	
+	mwa #dli_zoom $200
+	lda #$c1
+	sta $d40a
+	sta $d01b
+	pla
+	rti
+	.ENDL
+
+dli_zoom	.LOCAL
+	pha
+	lda $d40b
+	cmp #$6e
+	bcs finito
+	
+	lda #$41
+	sta $d40a
+	sta $d01b
+
+	lda #$c1
+	sta $d40a
+	sta $d01b
+
+	pla
+	rti
+
+finito
+	pla
+	jmp (DLI.down_vec)
+	.ENDL  ; dli_zoom
+
+
+create_DL	.LOCAL
+	mwa #scr40 zer1
+	mwa #dl1_core _mcd1+1
+	mwa #dl2_core _mcd2+1
+
+	ldy #100
+_lp
+	lda #$4f+$80
+	jsr _mcd
+	lda zer1
+	jsr _mcd
+	lda zer1+1
+	eor #SCR_40_C0_EOR
+	jsr _mcd
+	lda #$4f+$00
+	jsr _mcd
+	lda zer1
+	jsr _mcd
+	lda zer1+1
+_switch	eor #0
+	jsr _mcd1
+	eor #SCR_40_80_EOR
+	jsr _mcd2
+	lda _switch+1
+	eor #SCR_40_80_EOR
+	sta _switch+1
+
+	addToZer zer1 40
+
+	dey
+	bne _lp
+
+	; return to DL_return
+	lda #$01
+	jsr _mcd
+	lda <dl1_return
+	jsr _mcd1
+	lda >dl1_return
+	jsr _mcd1
+	lda <dl2_return
+	jsr _mcd2
+	lda >dl2_return
+	jsr _mcd2
+
+	; create DL_zoom
+	mwa #dl1_zoom _mcd1+1
+	mwa #dl2_zoom _mcd2+1
+	lda #$80
+	jsr _mcd
+	lda #$10
+	jsr _mcd
+	ldy #[2*zoomlines]
+cdl1
+	lda #$5f+$80
+	jsr _mcd
+	lda #0
+	jsr _mcd
+	jsr _mcd
+	lda #$5f+$00
+	jsr _mcd
+	lda #0
+	jsr _mcd
+	jsr _mcd
+	dey
+	bne cdl1
+	lda #$01
+	jsr _mcd
+	lda <dl1_return
+	jsr _mcd
+	lda >dl1_return
+	jsr _mcd1
+	lda >dl2_return
+	jsr _mcd2
+	rts
+_mcd	jsr _mcd2
+_mcd1	sta dl1_core
+	inw _mcd1+1
+	rts
+_mcd2	sta dl2_core
+	inw _mcd2+1
+	rts
+	.ENDL
+
+prp_dlzoom_fill .LOCAL
+	mwa #dlzoom_fill wr+1
+; first, fill lo byte of GR.11 (line + $00), same in both DLs
+	mwa #DL1_zoom+3 zer1
+	ldx #[2*zoomlines]
+lo1
+	lda #{sta DL1_zoom+3}
+	jsr wr
+	lda zer1
+	jsr wr
+	lda zer1+1
+	jsr wr
+	lda #{sta DL1_zoom+3}
+	jsr wr
+	lda zer1
+	jsr wr
+	lda zer1+1
+	eor #DLZOOM_eor
+	jsr wr
+	addtozer zer1 6
+	dex
+	bne lo1
+; then, fill lo byte of GR.9 (line + $50) - even in dl1_zoom, odd in dl2_zoom
+	lda #{clc}
+	jsr wr
+	lda #{adc #$50}
+	jsr wr
+	lda #$50
+	jsr wr
+	ldx #[2*zoomlines-1]
+	mwa #DL1_zoom+6 zer1
+lo2	
+	lda #{sta DL1_zoom+6}
+	jsr wr
+	lda zer1
+	jsr wr
+	txa
+	and #2
+	beq *+4
+	lda #DLZOOM_EOR
+	eor zer1+1
+	jsr wr
+	addtozer zer1 6
+	dex
+	bpl lo2
+; then, fill lo byte of GR.10 (line + $a0) - odd in dl1_zoom, even in dl2_zoom
+	lda #{clc}
+	jsr wr
+	lda #{adc #$50}
+	jsr wr
+	lda #$50
+	jsr wr
+	ldx #[2*zoomlines-1]
+	mwa #DL1_zoom+6 zer1
+lo3	
+	lda #{sta DL1_zoom+6}
+	jsr wr
+	lda zer1
+	jsr wr
+	txa
+	and #2
+	beq *+4
+	lda #DLZOOM_EOR
+	eor #DLZOOM_EOR
+	eor zer1+1
+	jsr wr
+	addtozer zer1 6
+	dex
+	bpl lo3
+; then, fill hi byte
+	ldx #0
+	mwa #DL1_zoom+4 zer1
+	mwa #DL2_zoom+4 zer2
+hloop ;)
+	txa
+	and #3
+	bne no_lda
+	lda #{lda zoom_lineadr,X}
+	jsr wr
+	txa
+	lsr @
+	lsr @
+	jsr wr
+	lda >zoom_lineadr
+	jsr wr
+no_lda
+	lda #{sta DL1_zoom}
+	jsr wr
+	lda zer1
+	jsr wr
+	lda zer1+1
+	jsr wr
+	addtozer zer1 3
+	lda #{sta DL2_zoom}
+	jsr wr
+	lda zer2
+	jsr wr
+	lda zer2+1
+	jsr wr
+	addtozer zer2 3
+	inc zerHlp
+	inx
+	cpx #[4*zoomlines]
+	bne hloop
+; and exit
+	lda #{rts}
+wr	sta dlzoom_fill
+	inw wr+1
+	rts
+	.ENDL
+
+
+* ****************************************************************************
+* Palette management
+colorpos dta 8,24,32,40,48,56,64,72,80,88,96,104,112,120,128,144
+
+chg_tone
+	clc
+	adc cur_tone
+	sta cur_tone
+	jmp update_status
+chg_bri
+	clc
+	adc cur_bri
+	and #$0f
+	sta cur_bri
+	jmp update_status
+
+* ****************************************************************************
+pick_color	.LOCAL
+	ldy cursor_y
+	mva loline,y zer1
+	sta zer2
+	mva hiline,y zer1+1
+	eor #SCR_40_C0_EOR
+	sta zer2+1
+
+	ldx cursor_x
+
+	lda cur_mode
+	and #MODE_BRI
+	beq pc_tone
+	
+pc_bri	; pick brightness - roughly copied from HIP
+	txa
+	lsr @
+	tay
+	bcc GR9
+GRA
+	lda zer1+1
+	eor #SCR_40_80_EOR
+	sta zer1+1
+	tya
+	lsr @
+	tay
+	lda (zer1),y
+	bcs GRA_lo
+GRA_hi
+:4	lsr @
+GRA_lo
+	and #$07
+	asl @
+	bcc taken ;!
+GR9
+	tya
+	lsr @
+	tay
+	lda (zer1),y
+	bcs GR9_lo
+GR9_hi
+:4	lsr @
+GR9_lo
+	and #$0f
+taken
+	sta cur_bri
+	
+	; before we enter pc_tone, we need to divide cursor_X by 2
+	txa
+	lsr @
+	tax
+
+pc_tone		; pick tone, roughly from CIN
+	lda cur_mode
+	and #MODE_TONE
+	beq finito
+	
+	txa
+	lsr @
+	tay
+	lda (zer2),y
+	tay
+	txa
+	lsr @
+	bcc pct_hi
+pct_lo
+	tya
+:4	asl @
+	sta cur_tone
+	jmp finito
+pct_hi
+	tya
+	and #$f0
+	sta cur_tone
+finito	
+	jmp update_status
+
+	.ENDL  ; pick_color
+* ****************************************************************************
+pp_cntY	dta 0
+pp_cntX	dta 0
+pp_do_bri	dta 0
+pp_do_tone	dta 0
+pp_old_bri	dta 0
+pp_old_tone	dta 0
+pp_new_bri	dta 0
+pp_new_tone	dta 0
+
+put_pixel .LOCAL
+	jsr UNDO.put_pixel_prelude
+
+	mva cursor_h pp_cntY
+
+	lda cur_mode
+	and #MODE_BRI
+	ora undo.ignore			; when in ignore, always set everything
+	sta pp_do_bri
+
+	lda cur_mode
+	and #MODE_TONE
+	ora undo.ignore
+	sta pp_do_tone
+
+	ldy cursor_y
+	sty UNDO.pos_y
+	lda loline,y
+	sta zer1
+	sta zer2
+	sta zer3
+	lda hiline,y
+	sta zer1+1
+	eor #SCR_40_80_EOR
+	sta zer2+1
+	eor #SCR_80_C0_EOR
+	sta zer3+1
+loopY
+	mva #0 pp_cntX
+loopx
+	mva #0 UNDO.pos_x
+
+	lda cursor_x
+	clc
+	adc pp_cntX
+	ldx pp_do_bri
+	bne *+3
+	asl @		; multiply by 2, as we're in the tone mode 
+	tax
+	stx UNDO.pos_x
+	
+	ldy div4,x
+	txa
+	lsr @
+	bcc GR9
+GR10
+	lsr @
+	bcs GR10_lo
+GR10_hi
+; save brightness
+	lda (zer2),y
+:4	lsr @
+	asl @
+	sta pp_old_bri
+	lda pp_do_bri
+	jeq pp_pre_tone
+; put brightness
+	lda (zer2),y
+	and #$0f
+	sta zerHlp
+	lda cur_bri
+	sta pp_new_bri
+	lsr @
+:4	asl @
+	ora zerHlp
+	sta (zer2),y
+	jmp pp_pre_tone
+GR10_lo
+; save brightness
+	lda (zer2),y
+	asl @
+	and #$0f
+	sta pp_old_bri
+	lda pp_do_bri
+	beq pp_pre_tone
+; put_brightness
+	lda (zer2),y
+	and #$f0
+	sta zerHlp
+	lda cur_bri
+	sta pp_new_bri
+	lsr @
+	ora zerHlp
+	sta (zer2),y
+	jmp pp_pre_tone
+GR9
+	lsr @
+	bcs GR9_lo
+GR9_hi
+; save brightness
+	lda (zer1),y
+:4	lsr @
+	sta pp_old_bri
+	lda pp_do_bri
+	beq pp_pre_tone
+; put brightness
+	lda (zer1),y
+	and #$0f
+	sta zerHlp
+	lda cur_bri
+	sta pp_new_bri
+:4	asl @
+	ora zerHlp
+	sta (zer1),y
+	jmp pp_pre_tone
+GR9_lo
+; save brightness
+	lda (zer1),y
+	and #$0f
+	sta pp_old_bri
+	lda pp_do_bri
+	beq pp_pre_tone
+; put brightness
+	lda cur_bri
+	sta pp_new_bri
+	lda (zer1),y
+	and #$f0
+	ora cur_bri
+	sta (zer1),y
+
+pp_pre_tone  ; divide cursor X by 2 for tone
+	txa		
+	lsr @
+	tax
+
+pp_tone
+	txa
+	lsr @
+	tay
+	bcc ppt_hi
+ppt_lo
+; save tone
+	lda (zer3),y
+:4	asl @
+	sta pp_old_tone
+	lda pp_do_tone
+	beq pp_cont
+; put tone
+	lda cur_tone
+	sta pp_new_tone
+:4	lsr @
+	sta zerHlp
+	lda (zer3),y
+	and #$f0
+	ora zerHlp
+	sta (zer3),y
+	jmp pp_cont
+ppt_hi
+; save tone
+	lda (zer3),y
+	and #$f0
+	sta pp_old_tone
+	lda pp_do_tone
+	beq pp_cont
+; put tone
+	lda cur_tone
+	sta pp_new_tone
+	lda (zer3),y
+	and #$0f
+	ora cur_tone
+	sta (zer3),y
+	
+pp_cont
+	lda pp_old_tone
+	ora pp_old_bri
+	sta UNDO.old_c
+	
+	lda pp_old_tone
+	ldx pp_do_tone
+	bne *+5
+	sta pp_new_tone
+	lda pp_old_bri
+	ldx pp_do_bri
+	bne *+5
+	sta pp_new_bri
+	
+	lda pp_new_tone
+	ora pp_new_bri
+	sta UNDO.new_c
+	jsr UNDO.put_pixel_save
+
+	inc pp_cntX
+	lda pp_cntX
+	cmp cursor_W
+	jne loopX
+
+	lda zer1
+	clc
+	adc #40
+	sta zer1
+	sta zer2
+	sta zer3
+	bcc *+8
+	inc zer1+1
+	inc zer2+1
+	inc zer3+1
+	
+	inc UNDO.pos_y
+	dec pp_cntY
+	jne loopY
+	
+	jsr UNDO.put_pixel_epilogue
+
+	rts
+	.ENDL ; put_pixel
+
+* ****************************************************************************
+create_tabs	.LOCAL
+	mwa #scr40 zer0
+	ldy #0
+_lp	tya
+	lsr @
+	lsr @
+	sta div4,y
+	lda zer0
+	sta loline,y
+	clc
+	adc #40
+	sta zer0
+	lda zer0+1
+	sta hiline,y
+	adc #0
+	sta zer0+1
+
+	tya
+	and #$0f
+	sta zerHlp
+:4	asl @
+	ora zerHlp
+	sta zoomlo_gtia,y
+	tya
+	and #$f0
+	sta zerHlp
+:4	lsr @
+	ora zerHlp
+	sta zoomhi_gtia,y
+
+	iny
+	bne _lp
+	rts
+	.ENDL ; create_tabs
+* ****************************************************************************
+mode_names dta d'err tonebri both'
+update_status
+	ldy #3
+	lda cur_mode
+:2	asl @
+	ora #3
+	tax
+us	lda mode_names,x
+	sta MOD_screen+76,y
+	dex
+	dey
+	bpl us
+
+	ldy cur_bri
+	lda colorpos,y
+	sta MOD_curcolor_x
+
+	tya	; cur_bri
+	ldxy MOD_SCREEN+4
+	jsr write_hex
+	lda cur_tone
+	ldxy MOD_SCREEN+12
+	jsr write_hex
+	rts
+
+* ****************************************************************************
+* zoom handling                                                              *
+* ****************************************************************************
+zoom_lastY	dta 0
+
+zoom_update	.LOCAL
+	mwa #dl1_zoom+3 zer3
+	mwa #dl2_zoom+3 zer4
+	lda cur_mode
+	cmp #MODE_TONE
+	beq zu_tone
+zu_bri
+	lda ZOOM.zoom_X
+	lsr @
+	tay
+	lda #12
+	bcc *+4
+	lda #10
+	bne zu_ready
+zu_tone
+	ldy ZOOM.zoom_X
+	lda #12
+zu_ready
+	sta :HSCROL
+	sta tip_hscrol
+
+	tya
+	ldx ZOOM.zoom_Y
+	jmp dlzoom_fill
+	.ENDL
+
+enable_zoom
+	rts
+
+disable_zoom
+	jsr fix_lastY
+
+	; fix last line
+	mwa #[dl1_core+600] zer1
+	mwa #[dl2_core+600] zer2
+	ldy #0
+	lda #$01
+	sta (zer1),y
+	sta (zer2),y+
+	lda <dl1_return
+	sta (zer1),y
+	sta (zer2),y+
+	lda >dl1_return
+	sta (zer1),y
+	lda >dl2_return
+	sta (zer2),y
+
+	; restore main DL
+	mwa #dl1_core DL1_jsr
+	mwa #dl2_core DL2_jsr
+	rts
+
+; Y - lineno
+zoom_update_line	.LOCAL
+	lda zoom_lineadr,y
+	sta dst1+2
+	sta dst2+2
+	sta dst3+2
+	sta dst4+2
+	sta dst5+2
+	sta dst6+2
+	lda loline,y
+	sta src1+1
+	sta src2+1
+	sta src3+1
+	lda hiline,y
+	eor #SCR_40_C0_EOR
+	sta src1+2
+	lda hiline,y
+	sta src2+2
+	eor #SCR_40_80_EOR
+	sta src3+2
+	
+	mva #0 nib
+	ldx #39
+	ldy #79
+loop
+	stx xval
+; update mode C0 to line+$00
+src1	lda scrC0,x
+	tax
+	lda zoomlo_gtia,x
+dst1	sta $c001,y-
+	lda zoomhi_gtia,x
+dst2	sta $c001,y+
+; update mode 40 to line+$50
+	ldx xval
+src2	lda scr40,x
+	tax
+	lda zoomlo_gtia,x
+dst3	sta $c051,y-
+	lda zoomhi_gtia,x
+dst4	sta $c051,y+
+; update mode 80 to line+$a0
+	ldx xval
+src3	lda scr80,x
+	tax
+	lda zoomlo_gtia,x
+	and #$f0
+	asl @
+	ora nib
+dst5	sta $c0a2,y-
+	lda zoomlo_gtia,x
+	asl @
+	and #$0f
+	sta nib
+	lda zoomhi_gtia,x
+	asl @
+	and #$f0
+	ora nib
+dst6	sta $c0a2,y-
+	lda zoomhi_gtia,x
+	asl @
+	and #$0f
+	sta nib
+	ldx xval
+	dex
+	bpl loop
+	rts
+
+xval	dta 0
+nib		dta 0
+	.ENDL
+
+zoom_update_top
+	;fix previous last line
+	jsr fix_lasty
+
+	;set new first line
+	ldy ZOOM.zoom_top_y
+	jsr calc_dl_pos
+	lda zer0
+	sta dl1_jsr
+	sta dl2_jsr
+	lda zer0+1
+	sta dl1_jsr+1
+	eor #DL_EOR
+	sta dl2_jsr+1
+
+	;set new last line
+	lda ZOOM.zoom_top_y
+	clc
+	adc MOD_zoom_top_h
+	sta zoom_lastY
+	tay
+	jsr calc_dl_pos
+	mva zer0 zer1
+	lda zer0+1
+	eor #DL_EOR
+	sta zer1+1
+	ldy #0
+	lda #$01
+	sta (zer0),y
+	sta (zer1),y+
+	lda <dl1_zoom
+	sta (zer0),y
+	sta (zer1),y+
+	lda >dl1_zoom
+	sta (zer0),y
+	lda >dl2_zoom
+	sta (zer1),y
+	rts
+
+; Y - lineno, sets zer0
+calc_dl_pos
+	mwa #dl1_core zer0
+	sty cdp_add+1
+	ldx #6
+cdp	lda zer0
+	clc
+cdp_add	adc #0
+	sta zer0
+	bcc *+4
+	inc zer0+1
+	dex
+	bne cdp
+	rts
+
+fix_lasty
+	ldy zoom_lastY
+	jsr calc_dl_pos
+	mva zer0 zer1
+	lda zer0+1
+	eor #DL_EOR
+	sta zer1+1
+	
+	ldy #0
+	ldx zoom_lastY
+	lda #$cf
+	sta (zer0),y
+	sta (zer1),y
+	iny
+	lda loline,x
+	sta (zer0),y
+	sta (zer1),y
+	iny
+	lda hiline,x
+	eor #SCR_40_C0_EOR
+	sta (zer0),y
+	sta (zer1),y
+	rts
+
+* ****************************************************************************
+; Same code in mod_cin and mod_tip
+chg_mode
+	; multiply cursor_X by 2 if only tone
+	lda cur_mode
+	cmp #MODE_TONE
+	bne um1
+	lda cursor_x
+	asl @
+	sta cursor_x
+um1
+	ldx cur_mode
+	dex
+	bne *+4
+	ldx #MODE_BOTH
+	stx cur_mode
+
+	jsr update_status
+
+	ldx cur_mode
+	cpx #MODE_TONE
+	beq um_tone
+um_bri
+	mva #160 MOD_max_x
+	mva #1 MOD_pixel_w
+	mva #2 MOD_zoom_pixel_w
+	mva #80 MOD_zoom_w
+	rts
+um_tone
+	lda cursor_X
+	lsr @
+	sta cursor_X
+	mva #80 MOD_max_x
+	mva #2 MOD_pixel_w
+	mva #4 MOD_zoom_pixel_w
+	mva #40 MOD_zoom_w
+	rts
+* ****************************************************************************
+TIP_KEYTABLE
+	dta KEYCODE_Q,7,a(chg_bri),$ff
+	dta KEYCODE_W,7,a(chg_bri),$01
+
+	dta KEYCODE_E,7,a(chg_tone),$f0
+	dta KEYCODE_R,7,a(chg_tone),$10
+
+	dta KEYCODE_M,15,a(chg_mode),0
+
+	dta $ff
+
+* ****************************************************************************
+* I/O routines
+TIP_ext dta c'TIP'
+
+TIP_hdr
+	dta c'TIP'  ; 0: tag
+	dta $01		; 3: version ?
+	dta $00 	; 4: ?
+	dta 160		; 5: pixels in line
+	dta 100		; 6: lines
+	dta a(4000)	; 7: segment length
+TIP_loaded_hdr
+:9	dta 0
+transfer_size	dta 0,0		; how many bytes to transfer in each segment
+skip_size		dta 0,0		; how many bytes to skip in each segment
+
+header_ok			dta $1d,c'Header OK',eol
+wrong_header_msg	dta $1d,c'Unsupported header !!!',$fd,$fd,eol
+
+load_tip .LOCAL
+	ldxy TIP_ext
+	jsr IO.open_read
+	bpl opened
+	rts
+opened
+	MWA #TIP_loaded_hdr IO.adr
+	mwa #9 IO.len
+	jsr IO.do
+	bmi ex
+	
+	; verify the header
+	ldy #5
+_l	lda TIP_hdr,y
+	cmp TIP_loaded_hdr,y
+	bne header_error
+	dey
+	bpl _l
+	bmi header_verified
+header_error
+	ldxy wrong_header_msg
+	jsr IO.msg
+	jmp $f2f8
+header_verified
+	ldxy header_ok
+	jsr IO.msg
+	; clean screen
+	jsr clear.confirmed
+
+	mwa TIP_hdr+7 transfer_size
+	
+	lda TIP_loaded_hdr+7
+	sec
+	sbc TIP_hdr+7
+	sta skip_size
+	lda TIP_loaded_hdr+8
+	sbc TIP_hdr+8
+	sta skip_size+1
+	bpl sizes_set
+nothing_to_skip
+	mwa TIP_loaded_hdr+7 transfer_size
+	mwa #0 skip_size
+sizes_set
+	jmp transfer_tip
+ex
+	rts
+	.ENDL	; load_tip
+
+transfer_tip	.LOCAL
+	mwa #scr40 IO.adr
+	jsr transfer_segment
+	bmi ex
+	
+	mwa #scr80 IO.adr
+	jsr transfer_segment
+	bmi ex
+	
+	mwa #scrC0 IO.adr
+	jsr transfer_segment
+	bmi ex
+
+ex
+	jsr IO.close
+	rts
+	.ENDL  ; transfer_tip
+	
+transfer_msg			dta $1d,c'Transferring segment...',eol
+transfer_segment .LOCAL
+	ldxy transfer_msg
+	jsr IO.msg
+	mwa transfer_size IO.len
+	jsr IO.do
+	bmi ex
+	
+	mwa skip_size zer1
+skip_loop
+	mwa #trash_page IO.adr
+	mwa #0 IO.len
+	
+	lda zer1+1
+	beq no_hi
+hi	dec zer1+1
+	lda #1
+	sta IO.len+1
+	bne do_skip
+no_hi
+	lda zer1
+	beq skip_done
+	sta IO.len
+	lda #0
+	sta zer1
+do_skip
+	jsr IO.do
+	jmp skip_loop	
+skip_done
+	
+ex
+	rts
+	.ENDL	; transfer_segment
+
+save_tip .LOCAL
+; prepare headers
+	ldxy TIP_ext
+	jsr IO.open_write
+	bpl ok
+	rts
+ok	
+	MWA #TIP_hdr IO.adr
+	mwa #9 IO.len
+	jsr IO.do
+	bmi ex
+	mwa TIP_hdr+7 transfer_size
+	mwa #0 skip_size
+	jsr transfer_tip
+ex
+	rts
+	.ENDL
+
+clear .LOCAL
+	jsr IO.confirm
+	beq ex
+
+confirmed
+	mwa #scr40 zer1
+	mwa #4000 zer2
+	lda #0
+	jsr memset
+
+	mwa #scr80 zer1
+	mwa #4000 zer2
+	lda #0
+	jsr memset
+	
+	mwa #scrC0 zer1
+	mwa #4000 zer2
+	lda #0
+	jsr memset
+	
+ex	rts
+	.ENDL  ; clear
+	
+clearcol .LOCAL
+	jsr IO.confirm
+	beq ex
+
+	mwa #scrC0 zer1
+	mwa #4000 zer2
+	lda #0
+	jsr memset
+
+ex	rts
+	.ENDL  ; clearcol
+
+
+* ****************************************************************************
+TIP_MENUTABLE
+	dta '1',a(load_tip),a(load_tip_msg)
+	dta '2',a(save_tip),a(save_tip_msg)
+	dta 'C',a(clear),a(clear_msg)
+	dta 'X',a(clearcol),a(clearcol_msg)
+;	dta '7',a(conv78),a(conv78_msg)
+;	dta '8',a(conv87),a(conv87_msg)
+	dta $ff
+
+load_tip_msg
+	dta c'1 - Load *.TIP',eol
+save_tip_msg
+	dta c'2 - Save *.TIP',eol
+clear_msg
+	dta c'C - Clear picture',eol
+clearcol_msg
+	dta c'X - Clear colors',eol
+conv78_msg
+	dta c'7 - Convert colors 0..7 to 1..8',eol
+conv87_msg
+	dta c'8 - Convert colors 1..8 to 0..7',eol
+
+* ****************************************************************************
+conv_colors .LOCAL
+	stx ad1+1
+	stx ad2+1
+	sty ad1+2
+	sty ad2+2
+
+	ldx #0
+_l1	stx zerHlp+1
+	mva loline,x zer1
+	lda hiline,x
+	eor #SCR_40_80_EOR
+	sta	zer1+1
+	ldy #39
+_l2	lda (zer1),y
+	and #$0f
+	tax
+ad1	lda _27,x
+	sta zerHlp
+	lda (zer1),y
+:4	lsr @
+	tax
+ad2	lda _27,x
+:4	asl @
+	ora zerHlp
+	sta (zer1),y
+	dey
+	bpl _l2
+	ldx zerHlp+1
+	inx
+	cpx #100
+	bne _l1
+	rts
+	.ENDL
+* Convert old HIP mode (colors 1..8) to the proper one (colors 0..7)
+_27	dta 0,0,1,2,3,4,5,6,7
+_28 dta 1,2,3,4,5,6,7,8,8
+conv87
+	ldxy _27
+	jmp conv_colors
+conv78
+	ldxy _28
+	jmp conv_colors
+
+
+
+; Converts colors 0,1,2,3,4,5,6,7 into 0,2,4,6,1,3,5,7
+_2nrm	dta 0,2,4,6,1,3,5,7
+_2spr	dta 0,4,1,5,2,6,3,7
+conv2spr
+	ldxy _2spr
+	jmp conv_colors
+* ****************************************************************************
+TIP_return	equ *
+		ift INCLUDE_PICTURE
+	org scr40 ;gtia40
+;	ins 'tip/SURPRICE.TIP',0009,4000
+	ins 'tip/RESTING.TIP',0009,4000
+;	ins 'hip/imagine.hip',8012,4000
+;	ins 'tip/EDEN377.TIP',0009,4000
+	
+	org scr80 ;gtia80
+;	ins 'tip/SURPRICE.TIP',4009,4000
+	ins 'tip/RESTING.TIP',4769,4000
+;	ins 'hip/imagine.hip',6,4000
+;	ins 'tip/EDEN377.TIP',4769,4000
+
+	org scrC0 ;gtiac0
+;	ins 'tip/SURPRICE.TIP',8009,4000
+	ins 'tip/RESTING.TIP',9529,4000
+;	ins 'cin/rpl.grB',0,4000
+;	ins 'tip/EDEN377.TIP',9529,4000
+		eif
+		
+	org pline
+	dta $00,$00,$00,$00
+	dta $00,$00,$11,$11,$22,$22,$33,$33
+	dta $44,$44,$55,$55,$66,$66,$77,$77
+	dta $88,$88,$99,$99,$aa,$aa,$bb,$bb
+	dta $cc,$cc,$dd,$dd,$ee,$ee,$ff,$ff
+	dta $ff,$ff,$ff,$ff
+
+	org dl1
+	dta $80
+;	dta $00
+:8	dta $4f,a(pline)
+	dta $00
+DL1_jsr	equ *+1
+	dta $01,a(dl1_core)
+DL1_return
+	dta $00
+	dta $81,a(DL.down)
+
+dl1_core	equ *
+
+	org dl2
+	dta $80
+;	dta	$00
+:8	dta $4f,a(pline)
+	dta $00
+DL2_jsr	equ *+1
+	dta $01,a(dl2_core)
+DL2_return
+	dta $00
+	dta $81,a(DL.down)
+
+dl2_core	equ *
+
+	org TIP_return
+
+MOD_LEN	equ *-TIP
+	.ENDL  ; TIP
+

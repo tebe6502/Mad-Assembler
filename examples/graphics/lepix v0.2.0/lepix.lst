@@ -1,0 +1,4052 @@
+mads 1.9.9 build 25 (29 Aug 14)
+Source: lepix.asx
+     1
+     2 				;	MIC	GFX_MODE=1
+     3 				;	INP	GFX_MODE=2
+     4 				;	CIN	GFX_MODE=3
+     5 				;	HIP	GFX_MODE=4
+     6 				;	TIP	GFX_MODE=5
+     7
+     8 = 0004			GFX_MODE	= 4
+     9
+    10 				* Main definitions
+    11 = 2800			undo_buffer	equ $2800
+    12 = 0800			undo_length	equ $0800
+    13
+    14 = 3000			prog		equ $3000
+    15
+    16 = 5000			prog_max	equ $5000
+    17
+    18 = 5000			PM_base		equ $5000 ; memory for player data
+    19 = 5000			KB_KEYTABLE	equ PM_BASE+$000 ; $100, for 63 keys
+    20 = 5100			MENU_MENUTABLE	equ PM_BASE+$100	;$100, for ca 35 entries
+    21 = 5200			zoom_lineadr	equ PM_BASE+$200 	;hi addr of zoom per line
+    22 = 5300			MISS_base	equ PM_BASE+$300
+    23 = 5400			PLR0_base	equ PM_BASE+$400
+    24
+    25 = 5800			fontset		equ $5800
+    26 = 5C00			gr0_mem		equ $5c00	;ca 1000
+    27
+    28 = 6000			module		equ $6000 ; module has memory $6000-$bfff and ROM if it wants
+    29
+    30 = 0000			TESTMODE	equ 0 ; !0
+    31
+    32 				* zero page
+    33 = 00E0			zer		equ $e0
+    34 = 00E2			zer0	equ $e2
+    35 = 00E4			zer1	equ $e4
+    36 = 00E6			zer2	equ $e6
+    37 = 00E8			zer3	equ $e8
+    38 = 00EA			zer4	equ $ea
+    39 = 00F0			zerHlp	equ $f0
+    40
+    41 					org prog
+    42 				start
+    43 FFFF> 3000-3938> 20 80 + 	jsr init
+    44 						ift TESTMODE
+    45 				START_LINE	equ $20
+    46 						els
+    47 = 0070			START_LINE	equ $70
+    48 						eif
+    49 3003			loop
+    50 3003 20 0E 38			jsr MOUSE.update
+    51 3006 A9 70			lda #START_LINE
+    52 3008 CD 0B D4			cmp $d40b
+    53 300B 90 FB			bcc *-3
+    54 300D A9 70			lda #START_LINE
+    55 300F CD 0B D4			cmp $d40b
+    56 3012 B0 FB			bcs *-3
+    57
+    58 				;	mva #$22 $d01a
+    59 3014 20 A7 3A			jsr zoom.zul_reset
+    60 3017 20 05 33			jsr cursor_clear
+    61 				;	mva #$44 $d01a
+    62
+    63 301A 20 84 38			jsr KB.update
+    64 301D 20 53 37			jsr JOY.update
+    65 				;	mva #$66 $d01a
+    66
+    67 3020 20 3D 33			jsr cursor_update
+    68
+    69 				;	mva #$aa $d01a
+    70
+    71 3023 20 A8 39			jsr ZOOM.update
+    72
+    73 3026 20 48 30			jsr put_pixel_if_needed
+    74
+    75 3029 AD 7A 38			lda KB.pressed
+    76 302C F0 14			beq no_menu
+    77 302E AD 7B 38			lda KB.key
+    78 3031 C9 1C			cmp #KEYCODE_ESC
+    79 3033 F0 04			beq go_menu
+    80 3035 C9 2C			cmp #KEYCODE_TAB
+    81 3037 D0 09			bne no_menu
+    82 3039			go_menu
+    83 3039 20 F6 31			jsr VBL.disable
+    84 303C 20 3F 3D			jsr MENU.enter
+    85 303F 20 C2 31			jsr VBL.enable
+    86 3042			no_menu
+    87
+    88 				;	mva #$4c $d01a
+    89
+    90 3042 20 BF 3A			jsr zoom.zul_apply
+    91
+    92 				;	mva #$00 $d01a
+    93
+    94 				;	mva #$cc $d01a
+    95 3045 4C 03 30			jmp loop
+    96
+    97 				***********************************************************
+    98 				* Puts pixel, but only if button has just been pressed or if
+    99 				* it's still pressed and the cursor moved
+   100 3048			put_pixel_if_needed .LOCAL
+   101 3048 AE 7D 30			ldx last_pressed
+   102 304B AD 4D 32			lda cursor_pressed
+   103 304E 8D 7D 30			sta last_pressed
+   104 3051 F0 29			beq dont_draw
+   105 3053 8A				txa
+   106 3054 AE 49 32			ldx cursor_X
+   107 3057 AC 4A 32			ldy cursor_Y
+   108 305A C9 00			cmp #0
+   109 305C F0 0A			beq draw
+   110 305E EC 7E 30			cpx last_X
+   111 3061 D0 05			bne draw
+   112 3063 CC 7F 30			cpy last_Y
+   113 3066 F0 14			beq dont_draw
+   114 3068			draw
+   115 3068 8E 7E 30			stx last_X
+   116 306B 8C 7F 30			sty last_Y
+   117 306E 20 1C 41			jsr MOD_put_pixel
+   118 3071 AD 39 39			lda ZOOM.state
+   119 3074 F0 06			beq dont_draw
+   120 3076 AD 4A 32			lda cursor_Y
+   121 3079 20 AD 3A			jsr zoom.zul_add ; max 1 line updated in zoom
+   122 307C			dont_draw
+   123 307C 60				rts
+   124 					
+   125 307D 00			last_pressed	dta 0
+   126 307E 00			last_X			dta 0
+   127 307F 00			last_Y			dta 0
+   128 					.ENDL  ; put_pixel_if_new
+   129
+   130 				*******************************************************************************
+   131 				* Initializes everything
+   132 = 3080			init	equ *
+   133 				;	sei
+   134 				;	inc $d40e
+   135 3080 AD 0B D4			lda $d40b
+   136 3083 D0 FB			bne *-3
+   137 3085 8D 00 D4			sta $d400
+   138 				;	sta $d40e
+   139
+   140 3088 20 BF 30			jsr FONT.init
+   141 308B 20 71 39			jsr ZOOM.init
+   142 308E 20 39 3D			jsr MENU.init
+   143 3091 20 DF 30			jsr dl.init
+   144 3094 20 5E 32			jsr cursor_init
+   145 3097 20 7E 38			jsr KB.init
+   146 309A 20 E6 37			jsr MOUSE.init
+   147 309D 20 21 3E			jsr UNDO.init
+   148
+   149 30A0 20 13 41			jsr mod_init
+   150
+   151 30A3 AD 0B D4			lda $d40b
+   152 30A6 D0 FB			bne *-3
+   153
+   154 30A8 20 87 31			jsr DLI.init
+   155 30AB 20 BE 31			jsr VBL.init
+   156 				;	mva #$c0 $d40e	; switch on all interrupts
+   157 				;	mva $22f $d400
+   158 30AE AD 0B D4			lda $d40b
+   159 30B1 D0 FB			bne *-3
+   160 30B3 AD 2F 02 8D 00 D4		mva $22f $d400
+   161 						ift TESTMODE
+   162 					mva #$40 $d40e
+   163 						els
+   164 30B9 A9 C0 8D 0E D4		mva #$c0 $d40e
+   165 						eif
+   166
+   167
+   168 30BE 60				rts
+   169
+   170 				*******************************************************************************
+   171 30BF				icl 'atari.asx'
+Source: atari.asx
+     1 				* ****************************************************************************
+     2 				* varia
+     3 				* ****************************************************************************
+     4
+     5 = 009B			eol		equ 155
+     6 = 0088			eof		equ 136
+     7 = 001B			esc		equ $1b
+     8 				;cls		equ $1d
+     9 = 007D			cls		equ $7d
+    10
+    11 				* ****************************************************************************
+    12 				* MEMORY MAP
+    13 				* ****************************************************************************
+    14 = 0278			STICK0	equ $278
+    15 = 0279			STICK1	equ $279
+    16 = 027A			STICK2	equ $27A
+    17 = 027B			STICK3	equ $27B
+    18 = 027C			PTRIG0	equ $27C
+    19 = 027D			PTRIG1	equ $27D
+    20 = 027E			PTRIG2	equ $27E
+    21 = 027F			PTRIG3	equ $27F
+    22 = 0280			PTRIG4	equ $280
+    23 = 0281			PTRIG5	equ $281
+    24 = 0282			PTRIG6	equ $282
+    25 = 0283			PTRIG7	equ $283
+    26 = 0284			STRIG0	equ $284
+    27 = 0285			STRIG1	equ $285
+    28 = 0286			STRIG2	equ $286
+    29 = 0287			STRIG3	equ $287
+    30 = 02F4			CHBAS	equ $02f4
+    31
+    32 = D000			HPOSP0	equ $d000 ;R
+    33 = D001			HPOSP1	equ $d001 ;R
+    34 = D002			HPOSP2	equ $d002 ;R
+    35 = D003			HPOSP3	equ $d003 ;R
+    36 = D004			HPOSM0	equ $d004 ;R
+    37 = D005			HPOSM1	equ $d005 ;R
+    38 = D006			HPOSM2	equ $d006 ;R
+    39 = D007			HPOSM3	equ $d007 ;R
+    40
+    41 = D008			SIZEP0	equ $d008 ;W
+    42 = D009			SIZEP1	equ $d009 ;W
+    43 = D00A			SIZEP2	equ $d00a ;W
+    44 = D00B			SIZEP3	equ $d00b ;W
+    45 = D00C			SIZEM	equ $d00c ;W
+    46
+    47 = D010			TRIG0	equ $d010 ;R
+    48 = D011			TRIG1	equ $d011 ;R
+    49 = D012			TRIG2	equ $d012 ;R
+    50 = D013			TRIG3	equ $d013 ;R
+    51 = D01B			PRIOR	equ $d01b ;W
+    52
+    53 = D209			KBCODE	equ $d209 ;R
+    54 = D20F			SKCTL	equ $d20f ;W
+    55 = D20F			SKSTAT	equ $d20f ;R
+    56
+    57 = D300			PORTA	equ $d300
+    58 = D301			PORTB	equ $d301
+    59
+    60 = D400			DMACTL	equ $d400
+    61 = D401			CHACTL	equ $d401
+    62 = D402			DLIST	equ $d402
+    63 = D402			DLISTL	equ $d402
+    64 = D403			DLISTH	equ $d403
+    65 = D404			HSCROL	equ $d404
+    66 = D405			VSCROL	equ $d405
+    67 = D409			CHBASE	equ $d409
+    68
+    69 = FFFA			NMIVEC		equ $FFFA
+    70 = FFFC			RESETVEC	equ $FFFC
+    71 = FFFE			IRQVEC		equ $FFFE
+    72
+    73 				* ****************************************************************************
+    74 				* KEYCODES
+    75 				* ****************************************************************************
+    76
+    77 = 003F			KEYCODE_A	equ 63
+    78 = 0015			KEYCODE_B	equ 21
+    79 = 0012			KEYCODE_C	equ 18
+    80 = 003A			KEYCODE_D	equ 58
+    81 = 002A			KEYCODE_E	equ 42
+    82 = 0038			KEYCODE_F	equ 56
+    83 = 003D			KEYCODE_G	equ 61
+    84 = 0039			KEYCODE_H	equ 57
+    85 = 000D			KEYCODE_I	equ 13
+    86 = 0001			KEYCODE_J	equ 1
+    87 = 0005			KEYCODE_K	equ 5
+    88 = 0000			KEYCODE_L	equ 0
+    89 = 0025			KEYCODE_M	equ 37
+    90 = 0023			KEYCODE_N	equ 35
+    91 = 0008			KEYCODE_O	equ 8
+    92 = 000A			KEYCODE_P	equ 10
+    93 = 002F			KEYCODE_Q	equ 47
+    94 = 0028			KEYCODE_R	equ 40
+    95 = 003E			KEYCODE_S	equ 62
+    96 = 002D			KEYCODE_T	equ 45
+    97 = 000B			KEYCODE_U	equ 11
+    98 = 0010			KEYCODE_V	equ 16
+    99 = 002E			KEYCODE_W	equ 46
+   100 = 0016			KEYCODE_X	equ 22
+   101 = 002B			KEYCODE_Y	equ 43
+   102 = 0017			KEYCODE_Z	equ 23
+   103
+   104 = 0032			KEYCODE_0	equ 50
+   105 = 001F			KEYCODE_1	equ 31
+   106 = 001E			KEYCODE_2	equ 30
+   107 = 001A			KEYCODE_3	equ 26
+   108 = 0018			KEYCODE_4	equ 24
+   109 = 001D			KEYCODE_5	equ 29
+   110 = 001B			KEYCODE_6	equ 27
+   111 = 0033			KEYCODE_7	equ 51
+   112 = 0035			KEYCODE_8	equ 53
+   113 = 0030			KEYCODE_9	equ 48
+   114
+   115 = 001C			KEYCODE_ESC	equ 28
+   116 = 002C			KEYCODE_TAB	equ 44
+   117
+   118 = 0006			KEYCODE_LEFT	equ 6
+   119 = 0007			KEYCODE_RIGHT	equ 7
+   120 = 000E			KEYCODE_UP		equ 14
+   121 = 000F			KEYCODE_DOWN	equ 15
+   172 				* Included libraries
+   173 30BF				icl 'font.asx'
+Source: font.asx
+     1 30BF			FONT	.LOCAL
+     2
+     3 30BF			init
+     4 30BF AD F4 02 85 E3		mva CHBAS zer0+1
+     5 30C4 A9 58 85 E5			mva >fontset zer1+1
+     6 30C8 A0 00 84 E2			mvy #0 zer0
+     7 30CC 84 E4			sty zer1
+     8 30CE A2 04			ldx #4
+     9 30D0 B1 E2		lp	lda (zer0),y
+    10 30D2 91 E4			sta (zer1),y
+    11 30D4 C8				iny
+    12 30D5 D0 F9			bne lp
+    13 30D7 E6 E3			inc zer0+1
+    14 30D9 E6 E5			inc zer1+1
+    15 30DB CA				dex
+    16 30DC D0 F2			bne lp
+    17 30DE 60				rts
+    18 					.ENDL
+   174 30DF				icl 'dl.asx'
+Source: dl.asx
+     1 30DF			DL	.LOCAL
+     2
+     3 30DF			init
+     4 				;	mwa #top $230
+     5 				;	mva #$22 $22f
+     6 30DF 60				rts
+     7
+     8 				*******************************************************************************
+     9 				* DL data
+    10
+    11
+    12 30E0			status
+    13 30E0 38 1D 3F 3F 3F 00 + 	dta d'X=___ Y=___ W=_ H=_ Z:. C:_     _::LePix'
+    14
+    15 3108			down
+    16 3108 00				dta $00
+    17 3109 C2 E0 30			dta $c2,a(status)
+    18 310C 42 3B 41 02			dta $42,a(MOD_screen),2
+    19 3110 41 08 31			dta $41,a(down)
+    20
+    21 3113			gr0_sub
+    22 3113 00 00 00 00 00 00 + 	dta d'                                 ::LePix'
+    23 313B 00 00 00 00 00 00 + 	dta d'                                   0.2.0'
+    24
+    25 3163			gr0
+    26 3163 70 70			dta $70,$70
+    27 3165 42 00 5C			dta $42,a(gr0_mem)
+    28 3168 02 02 02 02 02 02 + :23	dta 2
+    29 317F 60				dta $60
+    30 3180 42 13 31 02			dta $42,a(gr0_sub),2
+    31 				;	dta $42,a(MOUSE.info_line)
+    32 3184 41 63 31			dta $41,a(gr0)
+    33
+    34 = 00A8			MOD_LEN	equ *-DL
+    35 					.ENDL ; DL
+   175 3187				icl 'dli.asx'
+Source: dli.asx
+     1 3187			DLI	.LOCAL
+     2 				* DLI Interrupts
+     3
+     4 = 3187			init	equ *
+     5 				;	mwa top_vec $200
+     6 3187 60				rts
+     7
+     8 3188			DLI_down
+     9 3188 48				pha
+    10
+    11 3189 A9 00			lda #0
+    12 318B 8D 0A D4			sta $d40a
+    13 318E 8D 1A D0			sta $d01a
+    14 3191 A9 01 8D 1B D0		mva #1 $d01b
+    15 3196 A9 C0			lda #$c0
+    16 3198 8D 18 D0			sta $d018
+    17 				;	sta $d01a
+    18 319B A9 0A			lda #$0a
+    19 319D 8D 17 D0			sta $d017
+    20
+    21 31A0 A9 AC 8D 00 02 A9 + 	mwa #DLI_down2 $200 ; switch DLI
+    22
+    23 31AA 68				pla
+    24 31AB 40				rti
+    25
+    26 31AC			DLI_down2
+    27 31AC 48				pha
+    28
+    29 				;	mva #0 $d01b
+    30 31AD A9 80			lda #$80
+    31 31AF 8D 0A D4			sta $d40a
+    32 31B2 8D 18 D0			sta $d018
+    33 				;	sta $d01a
+    34
+    35 				;	mwa #DLI_down $200 ; switch DLI
+    36
+    37 31B5 68				pla
+    38 31B6 40				rti
+    39
+    40 31B7 88 31		down_vec	dta a(DLI_down)
+    41
+    42 = 0032			MOD_LEN	equ *-DLI
+    43 					.ENDL ;DLI
+   176 31B9				icl 'vbl.asx'
+Source: vbl.asx
+     1 				* VBL interrupts
+     2 31B9			VBL	.LOCAL
+     3
+     4 31B9 00			enabled	dta 0
+     5 31BA 00 00		frame	dta 0,0
+     6 31BC 00 00		old_nmivec	dta a(0)
+     7
+     8 = 31BE			init	equ *
+     9 31BE 20 C2 31			jsr enable
+    10 31C1 60				rts
+    11
+    12 31C2			enable
+    13 31C2 AD 0B D4			lda $d40b
+    14 31C5 D0 FB			bne *-3
+    15 31C7 78				sei
+    16 31C8 8D 0E D4			sta $d40e
+    17 31CB A9 FE 8D 01 D3		mva #$fe $d301
+    18 31D0 AD FA FF 8D BC 31 + 	mwa :NMIVEC old_nmivec
+    19 31DC A9 1B 8D FA FF A9 + 	mwa #nmi :NMIVEC
+    20 31E6 A9 01 8D B9 31		mva #1 enabled
+    21 31EB AD 0B D4			lda $d40b
+    22 31EE D0 FB			bne *-3
+    23 31F0 A9 C0 8D 0E D4		mva #$c0 $d40e
+    24 31F5 60				rts
+    25 31F6			disable
+    26 31F6 AD 0B D4			lda $d40b
+    27 31F9 D0 FB			bne *-3
+    28 31FB 8D 0E D4			sta $d40e
+    29 31FE AD BC 31 8D FA FF + 	mwa old_nmivec :NMIVEC
+    30 320A A9 FF 8D 01 D3		mva #$ff $d301
+    31 320F 58				cli
+    32 3210 A9 40 8D 0E D4		mva #$40 $d40e
+    33 3215 A9 00 8D B9 31		mva #0 enabled
+    34 321A 60				rts
+    35
+    36 				* ****************************************************************************
+    37 				* NMI routine
+    38 321B			nmi
+    39 321B 2C 0F D4			bit $d40f
+    40 321E 10 03			bpl nmi_vbl
+    41 3220			nmi_dli
+    42 3220 6C 00 02			jmp ($200)
+    43 3223			nmi_vbl
+    44 3223 4C 26 32			jmp VBL_main
+    45
+    46
+    47 				* ****************************************************************************
+    48 3226			VBL_main
+    49 3226				phaxy
+Macro: PHAXY [Source: utils.asx]
+     1 3226 48				pha
+     2 3227 8A				txa
+     3 3228 48				pha
+Source: vbl.asx
+     2 3229 98				tya
+     3 322A 48				pha
+Source: vbl.asx
+    50
+    51 322B AD B9 31			lda enabled
+    52 322E F0 13			beq done
+    53
+    54 3230 A9 58 8D 09 D4		mva >fontset CHBASE
+    55
+    56 3235 EE BA 31			inc frame
+    57 3238 D0 03			bne *+5
+    58 323A EE BB 31			inc frame+1
+    59
+    60 323D 20 06 4A			jsr main_vbl
+    61 3240 20 16 41			jsr mod_vbl
+    62
+    63 3243			done
+    64 3243				plaxy
+Macro: PLAXY [Source: utils.asx]
+     1 3243 68				pla
+     2 3244 A8				tay
+     1 3245 68				pla
+     2 3246 AA				tax
+     3 3247 68				pla
+Source: vbl.asx
+Source: vbl.asx
+    65 3248 40				rti
+    66
+    67 = 0090			MOD_LEN	equ *-VBL
+    68 					.ENDL ; VBL
+   177 3249				icl 'cursor.asx'
+Source: cursor.asx
+     1 				* Cursor management
+     2 				* To allow blinking of the cursor, we can't simply change the palette, as the
+     3 				* colors are often used by the underlying graphics mode (e.g. HIP, TIP).
+     4 				* For this reason, we assume PM colors are set such that they vary, and each
+     5 				* frame we change the player number used by a given cursor.
+     6 				* Used player colors:
+     7 				* (VBL + 0) % 3 - cursor on the main picture
+     8 				* (VBL + 1) % 3 - zoomed cursor
+     9 				* (VBL + 2) % 3 - left zoom frame
+    10 				* (VBL + 3) % 3 - right zoom frame
+    11
+    12
+    13 = 3249			CURSOR_BEG	equ *
+    14
+    15 = 0001			ZFR_ENABLED	equ 1		; enable zoom frame
+    16
+    17 3249 00			cursor_X	dta 0
+    18 324A 00			cursor_Y	dta 0
+    19 324B 01			cursor_H	dta 1
+    20 324C 01			cursor_W	dta 1
+    21 324D 00			cursor_PRESSED	dta 0
+    22 324E 00 01 00 03		player_sizes	dta 0,1,0,3
+    23
+    24 3252 80 C0 E0 F0 F8 FC + cursor_masks	dta $80,$c0,$e0,$f0,$f8,$fc,$fe,$ff
+    25 325A 00			cursor_lastVBL	dta 0
+    26 325B 00			cursor_lastY	dta 0
+    27 325C 00			cursor_lastH	dta 0
+    28 325D 01			cursor_shape	dta 1
+    29
+    30 325E			cursor_init
+    31 325E AD 2F 02			lda $22f
+    32 3261 09 1C			ora #$1c
+    33 3263 8D 2F 02			sta $22f
+    34
+    35 3266 A9 00 8D C0 02		mva #$00 $2c0
+    36 326B A9 55 8D C1 02		mva #$55 $2c1
+    37 3270 A9 AA 8D C2 02		mva #$aa $2c2
+    38 3275 A9 FF 8D C3 02		mva #$ff $2c3
+    39
+    40 327A A9 03 8D 1D D0		mva #3 $d01d	;p/m on
+    41
+    42 327F A9 50 8D 07 D4		mva >PM_BASE $d407
+    43
+    44 3284 A0 00			ldy #0
+    45 3286 98				tya
+    46 3287			_ci1
+    47 3287 99 00 54			sta PLR0_BASE+$000,y	;clear P/M data
+    48 328A 99 00 55			sta PLR0_BASE+$100,y
+    49 328D 99 00 56			sta PLR0_BASE+$200,y
+    50 3290 99 00 57			sta PLR0_BASE+$300,y
+    51 3293 99 00 53			sta MISS_BASE,y
+    52 3296 C8				iny
+    53 3297 D0 EE			bne _ci1
+    54 3299 A0 07			ldy #7
+    55 329B			_ci2
+    56 329B A9 00			lda #0
+    57 329D 99 00 D0			sta $d000,y		;clear PM positions
+    58 32A0 88				dey
+    59 32A1 10 F8			bpl _ci2
+    60
+    61 32A3 20 F9 33			jsr curcolor_init
+    62 						ift ZFR_ENABLED
+    63 32A6 20 D9 34			jsr zfr_init
+    64 						eif
+    65
+    66 32A9 60				rts
+    67
+    68 				* returns absolute Y position
+    69 32AA			_cursor_get_Y
+    70 32AA AD 2E 41			lda MOD_pmY
+    71 32AD AE 30 41			ldx MOD_pixel_h
+    72 32B0			_cgy
+    73 32B0 18				clc
+    74 32B1 6D 4A 32			adc cursor_Y
+    75 32B4 38				sec
+    76 32B5 ED 3C 39			sbc ZOOM.zoom_top_y
+    77 32B8 CA				dex
+    78 32B9 D0 F5			bne _cgy
+    79 32BB 60				rts
+    80
+    81 				* returns absolute X position
+    82 32BC			_cursor_get_X
+    83 32BC A9 30			lda #$30
+    84 32BE AE 2F 41			ldx MOD_pixel_w
+    85 32C1			_cgx
+    86 32C1 18				clc
+    87 32C2 6D 49 32			adc cursor_x
+    88 32C5 CA				dex
+    89 32C6 D0 F9			bne _cgx
+    90 32C8 60				rts
+    91
+    92 				* returns absolute height
+    93 32C9			_cursor_get_H
+    94 32C9 A9 00			lda #0
+    95 32CB AE 30 41			ldx MOD_pixel_h
+    96 32CE			_cgh
+    97 32CE 18				clc
+    98 32CF 6D 4B 32			adc cursor_H
+    99 32D2 CA				dex
+   100 32D3 D0 F9			bne _cgh
+   101 32D5 60				rts
+   102
+   103 32D6			cs1
+   104 32D6 10				dta	%00010000
+   105 32D7 10				dta	%00010000
+   106 32D8 00				dta	%00000000
+   107 32D9 C6				dta	%11000110
+   108 32DA 00				dta	%00000000
+   109 32DB 10				dta	%00010000
+   110 32DC 10				dta	%00010000
+   111 32DD			cs2
+   112 32DD C6				dta	%11000110
+   113 32DE 82				dta	%10000010
+   114 32DF 00				dta	%00000000
+   115 32E0 00				dta	%00000000
+   116 32E1 00				dta	%00000000
+   117 32E2 82				dta	%10000010
+   118 32E3 C6				dta	%11000110
+   119 32E4			cs3
+   120 32E4 81				dta	%10000001
+   121 32E5 00				dta	%00000000
+   122 32E6 00				dta	%00000000
+   123 32E7 00				dta	%00000000
+   124 32E8 00				dta	%00000000
+   125 32E9 00				dta	%00000000
+   126 32EA 81				dta	%10000001
+   127 32EB			cs4
+   128 32EB 00				dta	%00000000
+   129 32EC 00				dta	%00000000
+   130 32ED 10				dta	%00010000
+   131 32EE 28				dta	%00101000
+   132 32EF 10				dta	%00010000
+   133 32F0 00				dta	%00000000
+   134 32F1 00				dta	%00000000
+   135 32F2			cs5
+   136 32F2 82				dta	%10000010
+   137 32F3 44				dta	%01000100
+   138 32F4 00				dta	%00000000
+   139 32F5 00				dta	%00000000
+   140 32F6 00				dta	%00000000
+   141 32F7 44				dta	%01000100
+   142 32F8 82				dta	%10000010
+   143
+   144 32F9 00 00 D6 32 DD 32 + cursor_shapes	dta a(0),a(cs1),a(cs2),a(cs3),a(cs4),a(cs5)
+   145
+   146 3305			cursor_clear
+   147 3305 AC 5A 32			ldy cursor_lastVBL
+   148 3308 98				tya
+   149 3309 09 54			ora >PLR0_BASE
+   150 330B 85 E3			sta zer0+1			;set prev player address
+   151 330D A9 00			lda #0
+   152 330F 85 E2			sta zer0
+   153 3311 99 00 D0			sta $d000,y			;clear prev player position
+   154 3314 99 08 D0			sta SIZEP0,y		;clear prev player width
+   155 3317 8D 4D 32			sta cursor_pressed	;set cursor as not pressed
+   156 331A AC 5B 32			ldy cursor_lastY
+   157 331D AE 5C 32			ldx cursor_lastH
+   158
+   159 3320 AD 5D 32			lda cursor_shape
+   160 3323 F0 09			beq _cc_pixel
+   161
+   162 3325 88 88 88 88		:4	dey
+   163 3329 8A				txa
+   164 332A 18				clc
+   165 332B 69 08			adc #8
+   166 332D AA				tax
+   167 332E			_cc_pixel
+   168 332E A9 00			lda #0
+   169 3330 91 E2		_cc0	sta (zer0),y
+   170 3332 C8				iny
+   171 3333 CA				dex
+   172 3334 D0 FA			bne _cc0
+   173
+   174 3336 20 F1 35			jsr zcur_clear
+   175 						ift ZFR_ENABLED
+   176 3339 20 06 35			jsr zfr_clear
+   177 						eif
+   178
+   179 333C 60				rts ; cursor_clear
+   180
+   181 333D			cursor_update
+   182 333D A9 01 8D 1B D0		mva #1 PRIOR		;priority
+   183 3342 AD 5D 32			lda cursor_shape
+   184 3345 09 10			ora #"0"
+   185 3347 8D FA 30			sta DL.status+26
+   186 				; print cursor position
+   187 334A AD 49 32			lda cursor_X
+   188 334D A2 E2			ldx <DL.status+2
+   189 334F A0 30			ldy >DL.status+2
+   190 3351 20 91 36			jsr write_dec
+   191 3354 AD 4A 32			lda cursor_Y
+   192 3357 A2 E8			ldx <DL.status+8
+   193 3359 A0 30			ldy >DL.status+8
+   194 335B 20 91 36			jsr write_dec
+   195 				; and width/height
+   196 335E AD 4C 32			lda cursor_W
+   197 3361 09 10			ora #$10
+   198 3363 8D EE 30			sta DL.status+14
+   199 3366 AD 4B 32			lda cursor_H
+   200 3369 09 10			ora #$10
+   201 336B 8D F2 30			sta DL.status+18
+   202
+   203 336E AD 4D 32			lda cursor_pressed
+   204 				;	ora #$20
+   205 3371 8D 00 31			sta DL.status+32
+   206
+   207 3374 AD BA 31			lda VBL.frame
+   208 3377 4A 4A 4A		:3	lsr @
+   209 337A 29 03			and #3
+   210 337C 8D 5A 32			sta cursor_lastVBL
+   211 337F 09 54			ora >PLR0_BASE
+   212 3381 85 E3			sta zer0+1
+   213 3383 A9 00 85 E2			mva #0 zer0
+   214
+   215 				; set sprite
+   216 3387 AC 4C 32			ldy cursor_W
+   217 338A B9 51 32			lda cursor_masks-1,y
+   218 338D 48				pha
+   219 338E 20 AA 32			jsr _cursor_get_Y
+   220 3391 8D 5B 32			sta cursor_lastY
+   221 3394 A8				tay
+   222
+   223 3395 AD 5D 32			lda cursor_shape
+   224 3398 D0 1A			bne _cu_shape
+   225 339A			_cu_pixel
+   226 339A 20 C9 32			jsr _cursor_get_H
+   227 339D 8D 5C 32			sta cursor_lastH
+   228 33A0 AA				tax
+   229 33A1 68				pla
+   230 33A2 91 E2		_cu0	sta (zer0),y
+   231 33A4 C8				iny
+   232 33A5 CA				dex
+   233 33A6 D0 FA			bne _cu0
+   234 				; set current player's position
+   235 33A8 20 BC 32			jsr _cursor_get_X
+   236 33AB AC 5A 32			ldy cursor_lastVBL
+   237 33AE 99 00 D0			sta $d000,y
+   238 33B1 4C E6 33			jmp _cu_done
+   239 33B4			_cu_shape
+   240 33B4 0A				asl @
+   241 33B5 AA				tax
+   242 33B6 BD F9 32 8D C9 33 + 	mwa cursor_shapes,x _cus+1
+   243 33C2 68				pla
+   244 33C3 A2 00			ldx #0
+   245 33C5 88				dey
+   246 33C6 88				dey
+   247 33C7 88				dey
+   248 33C8 BD D6 32		_cus	lda cs1,x
+   249 33CB 91 E2			sta (zer0),y
+   250 33CD C8				iny
+   251 33CE E8				inx
+   252 33CF E0 07			cpx #7
+   253 33D1 D0 F5			bne _cus
+   254 33D3 20 BC 32			jsr _cursor_get_X
+   255 33D6 AC 5A 32			ldy cursor_lastVBL
+   256 33D9 38				sec
+   257 33DA ED 2F 41 ED 2F 41 + :3	sbc MOD_pixel_w
+   258 33E3 99 00 D0			sta $d000,y
+   259 33E6			_cu_done
+   260 				; and width
+   261 33E6 AE 2F 41			ldx MOD_pixel_w
+   262 33E9 BD 4D 32			lda player_sizes-1,x
+   263 33EC 99 08 D0			sta SIZEP0,y
+   264
+   265 33EF 20 05 34			jsr curcolor_update
+   266
+   267 33F2 20 0B 36			jsr zcur_update
+   268 						ift ZFR_ENABLED
+   269 33F5 20 4E 35			jsr zfr_update
+   270 						eif
+   271
+   272 33F8 60				rts
+   273
+   274 				*******************************************************************************
+   275 = 33F9			curcolor_init	equ *
+   276 33F9 A9 FF			lda #%11111111
+   277 33FB 8D 08 53			sta MISS_BASE+8
+   278 33FE 8D 11 53			sta MISS_BASE+17
+   279 3401 8D 0C D0			sta :SIZEM
+   280 3404 60				rts
+   281
+   282 3405			curcolor_update
+   283 3405 AD 8C 41			lda mod_curcolor_w
+   284 3408 4A				lsr @
+   285 3409 18				clc
+   286 340A 69 30			adc #$30
+   287 340C 6D 8B 41			adc mod_curcolor_x
+   288 340F 38				sec
+   289 3410 E9 04			sbc #4
+   290 3412 AA				tax
+   291 3413 A9 00			lda #0
+   292 3415 8D 04 D0			sta $d004
+   293 3418 8D 05 D0			sta $d005
+   294 341B 8D 06 D0			sta $d006
+   295 341E 8D 07 D0			sta $d007
+   296 3421 AD BA 31			lda VBL.frame
+   297 3424 4A 4A		:2	lsr @
+   298 3426 29 03			and #3
+   299 3428 A8				tay
+   300 3429 8A				txa
+   301 342A 99 04 D0			sta $d004,y
+   302 342D 60				rts
+   303
+   304
+   305
+   306 				*******************************************************************************
+   307 				* Cursor X/Y/W/H manipulation
+   308
+   309 342E			cursor_inc_X
+   310 342E AD 49 32			lda cursor_X
+   311 3431 18				clc
+   312 3432 6D 4C 32			adc cursor_W
+   313 3435 CD 31 41			cmp MOD_max_X
+   314 3438 F0 03			beq *+5
+   315 343A EE 49 32			inc cursor_X
+   316 343D 60				rts
+   317
+   318 343E			cursor_inc_Y
+   319 343E AD 4A 32			lda cursor_Y
+   320 3441 18				clc
+   321 3442 6D 4B 32			adc cursor_H
+   322 3445 CD 32 41			cmp MOD_max_Y
+   323 3448 F0 03			beq *+5
+   324 344A EE 4A 32			inc cursor_Y
+   325 344D 60				rts
+   326
+   327 344E			cursor_dec_X
+   328 344E AD 49 32			lda cursor_X
+   329 3451 F0 03			beq *+5
+   330 3453 CE 49 32			dec cursor_X
+   331 3456 60				rts
+   332
+   333 3457			cursor_dec_Y
+   334 3457 AD 4A 32			lda cursor_Y
+   335 345A F0 03			beq *+5
+   336 345C CE 4A 32			dec cursor_Y
+   337 345F 60				rts
+   338
+   339 3460			cursor_inc_W	.LOCAL
+   340 3460 AD 39 39			lda ZOOM.state
+   341 3463 D0 19			bne ex
+   342 3465 AC 4C 32			ldy :cursor_W
+   343 3468 CC 33 41			cpy :MOD_max_cursor_w
+   344 346B F0 11			beq ex
+   345 346D 98				tya
+   346 346E 18				clc
+   347 346F 6D 49 32			adc :cursor_X
+   348 3472 CD 31 41			cmp :MOD_max_X
+   349 3475 D0 03			bne *+5
+   350 3477 CE 49 32			dec :cursor_X
+   351 347A C8				iny
+   352 347B 8C 4C 32			sty :cursor_W
+   353 347E A9 00 8D 5D 32	ex	mva #0 cursor_shape
+   354 3483 60				rts
+   355 					.ENDL
+   356
+   357 3484			cursor_dec_W	.LOCAL
+   358 3484 AD 39 39			lda ZOOM.state
+   359 3487 D0 0B			bne ex
+   360 3489 AC 4C 32			ldy :cursor_W
+   361 348C C0 01			cpy #1
+   362 348E F0 01			beq *+3
+   363 3490 88				dey
+   364 3491 8C 4C 32			sty :cursor_W
+   365 3494 A9 00 8D 5D 32	ex	mva #0 cursor_shape
+   366 3499 60				rts
+   367 					.ENDL
+   368
+   369 349A			cursor_inc_H	.LOCAL
+   370 349A AD 39 39			lda ZOOM.state
+   371 349D D0 19			bne ex
+   372 349F AC 4B 32			ldy :cursor_H
+   373 34A2 CC 34 41			cpy :MOD_max_cursor_h
+   374 34A5 F0 11			beq ex
+   375 34A7 98				tya
+   376 34A8 18				clc
+   377 34A9 6D 4A 32			adc :cursor_Y
+   378 34AC CD 32 41			cmp :MOD_max_Y
+   379 34AF D0 03			bne *+5
+   380 34B1 CE 4A 32			dec :cursor_Y
+   381 34B4 C8				iny
+   382 34B5 8C 4B 32			sty :cursor_H
+   383 34B8 A9 00 8D 5D 32	ex	mva #0 cursor_shape
+   384 34BD 60				rts
+   385 					.ENDL
+   386
+   387 34BE			cursor_dec_H	.LOCAL
+   388 34BE AD 39 39			lda ZOOM.state
+   389 34C1 D0 0B			bne ex
+   390 34C3 AC 4B 32			ldy :cursor_H
+   391 34C6 C0 01			cpy #1
+   392 34C8 F0 01			beq *+3
+   393 34CA 88				dey
+   394 34CB 8C 4B 32			sty :cursor_H
+   395 34CE A9 00 8D 5D 32	ex	mva #0 cursor_shape
+   396 34D3 60				rts
+   397 					.ENDL
+   398
+   399 				*******************************************************************************
+   400 				* Zoom frame manipulation
+   401 						ift ZFR_ENABLED
+   402 34D4 00			zfr_last1	dta 0
+   403 34D5 00			zfr_last2	dta 0
+   404 34D6 00			zfr_lastY	dta 0
+   405 34D7 00			zfr_H		dta 0
+   406 34D8 00			zfr_W		dta 0
+   407
+   408
+   409 34D9			zfr_init	.LOCAL
+   410 34D9 AD 36 41			lda MOD_zoom_h
+   411 34DC AE 30 41			ldx MOD_pixel_h
+   412 34DF CA				dex
+   413 34E0 F0 07			beq _ok
+   414 34E2 18				clc
+   415 34E3			_ml
+   416 34E3 6D 36 41			adc MOD_zoom_h
+   417 34E6 CA				dex
+   418 34E7 D0 FA			bne _ml
+   419 34E9			_ok
+   420 34E9 38				sec
+   421 34EA E9 06			sbc #6
+   422 34EC 8D D7 34			sta zfr_H
+   423 34EF AD 35 41			lda MOD_zoom_w
+   424 34F2 AE 2F 41			ldx MOD_pixel_w
+   425 34F5 CA				dex
+   426 34F6 F0 07			beq _ok2
+   427 34F8 18				clc
+   428 34F9			_ml2
+   429 34F9 6D 35 41			adc MOD_zoom_w
+   430 34FC CA				dex
+   431 34FD D0 FA			bne _ml2
+   432 34FF			_ok2
+   433 34FF 18				clc
+   434 3500 69 01			adc #1
+   435 3502 8D D8 34			sta zfr_W
+   436 3505 60				rts
+   437 					.ENDL
+   438
+   439 3506			zfr_clear	.LOCAL
+   440 3506 AD D4 34			lda zfr_last1
+   441 3509 09 54			ora >PLR0_BASE
+   442 350B 85 E5			sta zer1+1
+   443 350D AD D5 34			lda zfr_last2
+   444 3510 09 54			ora >PLR0_BASE
+   445 3512 85 E7			sta zer2+1
+   446
+   447 3514 AC D6 34			ldy zfr_lastY
+   448 3517 A9 00 85 E4			mva #0 zer1
+   449 351B 85 E6			sta zer2
+   450 351D 91 E4			sta (zer1),y
+   451 351F 91 E6 C8			sta (zer2),y+
+   452 3522 91 E4			sta (zer1),y
+   453 3524 91 E6 C8			sta (zer2),y+
+   454 3527 91 E4			sta (zer1),y
+   455 3529 91 E6 C8			sta (zer2),y+
+   456 352C 91 E4			sta (zer1),y
+   457 352E 91 E6 C8			sta (zer2),y+
+   458 3531 98				tya
+   459 3532 18				clc
+   460 3533 6D D7 34			adc zfr_H
+   461 3536 A8				tay
+   462 3537 A9 00			lda #0
+   463 3539 91 E4			sta (zer1),y
+   464 353B 91 E6 C8			sta (zer2),y+
+   465 353E 91 E4			sta (zer1),y
+   466 3540 91 E6 C8			sta (zer2),y+
+   467 3543 91 E4			sta (zer1),y
+   468 3545 91 E6 C8			sta (zer2),y+
+   469 3548 91 E4			sta (zer1),y
+   470 354A 91 E6 C8			sta (zer2),y+
+   471 354D 60				rts
+   472 					.ENDL
+   473
+   474 354E			zfr_update .LOCAL
+   475 354E AD 39 39			lda zoom.state
+   476 3551 D0 01			bne *+3
+   477 3553 60				rts
+   478 3554 A9 00			lda #0
+   479 3556 85 E4			sta zer1
+   480 3558 85 E6			sta zer2
+   481 355A AD 5A 32			lda cursor_lastVBL
+   482 355D 18				clc
+   483 355E 69 02			adc #2
+   484 3560 29 03			and #$03
+   485 3562 8D D4 34			sta zfr_last1
+   486 3565 09 54			ora >PLR0_BASE
+   487 3567 85 E5			sta zer1+1
+   488 3569 69 01			adc #1
+   489 356B 29 03			and #$03
+   490 356D 8D D5 34			sta zfr_last2
+   491 3570 09 54			ora >PLR0_BASE
+   492 3572 85 E7			sta zer2+1
+   493 3574 AD 3B 39			lda zoom.zoom_y
+   494 3577 38				sec
+   495 3578 ED 3C 39			sbc zoom.zoom_top_y
+   496 357B 85 F0			sta zerHlp
+   497 357D AE 30 41			ldx MOD_pixel_h
+   498 3580 CA				dex
+   499 3581 F0 06			beq ok
+   500 3583 18			mul	clc
+   501 3584 65 F0			adc zerHlp
+   502 3586 CA				dex
+   503 3587 D0 FA			bne mul
+   504 3589 18			ok	clc
+   505 358A 6D 2E 41			adc MOD_pmY
+   506 358D 38				sec
+   507 358E E9 01			sbc #1
+   508 3590 8D D6 34			sta zfr_lastY
+   509 3593 A8				tay
+   510 3594 A9 1E			lda #%00011110
+   511 3596 91 E4			sta (zer1),y
+   512 3598 A9 F0			lda #%11110000
+   513 359A 91 E6 C8			sta (zer2),y+
+   514 359D A9 10			lda #%00010000
+   515 359F 91 E4			sta (zer1),y
+   516 35A1 91 E6 C8			sta (zer2),y+
+   517 35A4 91 E4			sta (zer1),y
+   518 35A6 91 E6 C8			sta (zer2),y+
+   519 35A9 91 E4			sta (zer1),y
+   520 35AB 91 E6 C8			sta (zer2),y+
+   521 35AE 98				tya
+   522 35AF 18				clc
+   523 35B0 6D D7 34			adc zfr_H
+   524 35B3 A8				tay
+   525 35B4 A9 10			lda #%00010000
+   526 35B6 91 E4			sta (zer1),y
+   527 35B8 91 E6 C8			sta (zer2),y+
+   528 35BB 91 E4			sta (zer1),y
+   529 35BD 91 E6 C8			sta (zer2),y+
+   530 35C0 91 E4			sta (zer1),y
+   531 35C2 91 E6 C8			sta (zer2),y+
+   532 35C5 A9 1E			lda #%00011110
+   533 35C7 91 E4			sta (zer1),y
+   534 35C9 A9 F0			lda #%11110000
+   535 35CB 91 E6 C8			sta (zer2),y+
+   536 35CE AC 2F 41			ldy mod_pixel_w
+   537 35D1 A9 00			lda #0
+   538 35D3			_add
+   539 35D3 18				clc
+   540 35D4 6D 3A 39			adc zoom.zoom_X
+   541 35D7 88				dey
+   542 35D8 D0 F9			bne _add
+   543 35DA 18				clc
+   544 35DB 69 2C			adc #$30-4
+   545 35DD AC D4 34			ldy zfr_last1
+   546 35E0 99 00 D0			sta :HPOSP0,y
+   547 35E3 AC D5 34			ldy zfr_last2
+   548 35E6 18				clc
+   549 35E7 6D D8 34			adc zfr_W
+   550 35EA 99 00 D0			sta :HPOSP0,y
+   551 35ED 60			ex	rts
+   552 					.ENDL
+   553 						eif ; ZFR_ENABLED
+   554 				*******************************************************************************
+   555 				* Zoomed cursor manipulation
+   556 35EE 00			zcur_lastVBL	dta 0
+   557 35EF 00			zcur_lastY		dta 0
+   558 35F0 00			zcur_lastSize	dta 0
+   559
+   560
+   561 35F1			zcur_clear	.LOCAL
+   562 35F1 AD EE 35			lda :zcur_lastVBL
+   563 35F4 09 54			ora >:PLR0_BASE
+   564 35F6 8D 05 36			sta dst+2
+   565 35F9 AC EF 35			ldy :zcur_lastY
+   566 35FC AE F0 35			ldx :zcur_lastSize
+   567 35FF F0 09			beq _ex
+   568 3601 A9 00			lda #0
+   569 3603 99 00 54		dst	sta :PLR0_BASE,y
+   570 3606 C8				iny
+   571 3607 CA				dex
+   572 3608 D0 F9			bne dst
+   573 360A 60			_ex	rts
+   574 					.ENDL
+   575
+   576 360B			zcur_update	.LOCAL
+   577 360B AD 39 39			lda ZOOM.state
+   578 360E F0 64			beq ex
+   579 3610 AD 5A 32			lda :cursor_lastVBL
+   580 3613 18				clc
+   581 3614 69 01			adc #1
+   582 3616 29 03			and #3
+   583 3618 8D EE 35			sta :zcur_lastVBL
+   584 361B 09 54			ora >:PLR0_BASE
+   585 361D 8D 4E 36			sta dst+2
+   586
+   587 					; calc Y
+   588 3620 AD 4A 32			lda :cursor_Y
+   589 3623 38				sec
+   590 3624 ED 3B 39			sbc ZOOM.zoom_y
+   591 3627 B0 02			bcs *+4
+   592 3629 A9 00			lda #0
+   593 362B 85 F0			sta :zerHlp
+   594
+   595 362D A9 00			lda #0
+   596 362F AC 39 41			ldy :MOD_zoom_pixel_h
+   597 3632 18			ly	clc
+   598 3633 65 F0			adc :zerHlp
+   599 3635 88				dey
+   600 3636 D0 FA			bne ly
+   601
+   602 3638 18				clc
+   603 3639 6D 37 41			adc :MOD_zoom_PMY
+   604 363C A8				tay
+   605 363D 8C EF 35			sty :zcur_lastY
+   606
+   607 				;	tya
+   608 				;	ldx <:MOD_screen+40
+   609 				;	ldy >:MOD_SCREEN+40
+   610 				;	jsr :write_dec
+   611 				;	ldy :zcur_lastY
+   612
+   613 3640 AE 38 41			ldx :MOD_zoom_pixel_w
+   614 3643 BD 51 32			lda :cursor_masks-1,x
+   615
+   616 3646 AE 39 41			ldx :MOD_zoom_pixel_h
+   617 3649 8E F0 35			stx :zcur_lastSize
+   618 364C 99 00 54		dst	sta :PLR0_BASE,y
+   619 364F C8				iny
+   620 3650 CA				dex
+   621 3651 D0 F9			bne dst
+   622
+   623 					; calc X
+   624 3653 AD 49 32			lda :cursor_X
+   625 3656 38				sec
+   626 3657 ED 3A 39			sbc ZOOM.zoom_x
+   627 365A B0 02			bcs *+4
+   628 365C A9 00			lda #0
+   629 365E 85 F0			sta :zerHlp
+   630
+   631 3660 A9 00			lda #0
+   632 3662 AE 38 41			ldx :MOD_zoom_pixel_w
+   633 3665 18			lx	clc
+   634 3666 65 F0			adc :zerHlp
+   635 3668 CA				dex
+   636 3669 D0 FA			bne lx
+   637
+   638 366B AE EE 35			ldx :zcur_lastVBL
+   639 366E 18				clc
+   640 366F 69 30			adc #$30
+   641 3671 9D 00 D0			sta :HPOSP0,x
+   642 3674 60			ex	rts
+   643 					.ENDL ; zcur_clear
+   644
+   645 3675			cursor_switch
+   646 3675 AC 5D 32			ldy cursor_shape
+   647 3678 C8				iny
+   648 3679 C0 06			cpy #6
+   649 367B D0 02			bne *+4
+   650 367D A0 00			ldy #0
+   651 367F 8C 5D 32			sty cursor_shape
+   652 3682 A9 01 8D 4C 32		mva #1 cursor_w
+   653 3687 8D 4B 32			sta cursor_h
+   654 368A 60				rts
+   655
+   656 = 0442			CURSOR_MOD_LEN	equ *-CURSOR_BEG
+   178 368B				icl 'utils.asx'
+Source: utils.asx
+     1 				* LEPIX module UTILS
+     2 = 368B			UTILS_MOD	equ *
+     3
+     4 				ldxy	.MACRO
+     5 					ldx <:1
+     6 					ldy >:1
+     7 					.ENDM
+     8
+     9 				phax	.MACRO
+    10 					pha
+    11 					txa
+    12 					pha
+    13 					.ENDM
+    14 				plax	.MACRO
+    15 					pla
+    16 					tax
+    17 					pla
+    18 					.ENDM
+    19
+    20 				phaxy	.MACRO
+    21 					phax
+    22 					tya
+    23 					pha
+    24 					.ENDM
+    25 				plaxy	.MACRO
+    26 					pla
+    27 					tay
+    28 					plax
+    29 					.ENDM
+    30
+    31 				addToZer .MACRO ' '
+    32 					lda :1
+    33 					clc
+    34 					adc #:2
+    35 					sta :1
+    36 					bcc *+4
+    37 					inc :1+1
+    38 					.ENDM
+    39 					
+    40 				incZer .MACRO ' '
+    41 					inc :1
+    42 					lda :1
+    43 					bne _skip
+    44 					inc :1+1
+    45 				_skip	
+    46 					.ENDM  ; incZer
+    47 				decZer .MACRO ' '
+    48 					lda :1
+    49 					dec :1
+    50 					cmp #0
+    51 					bne _skip
+    52 					dec :1+1
+    53 				_skip	
+    54 					.ENDM  ; decZer
+    55 					
+    56
+    57
+    58 				* expects value in A and lo/hi dest in X/Y
+    59 368B 10 10 10		_wddata dta d'000'
+    60 368E 64 0A 01		_wdsubs	dta 100,10,1
+    61 3691			write_dec
+    62 3691 8E B8 36			stx _wdsave+1
+    63 3694 8C B9 36			sty _wdsave+2
+    64 3697 A2 00			ldx #0
+    65 3699			_wd0
+    66 3699 A8				tay
+    67 369A A9 10			lda #$10 ; '0'
+    68 369C 9D 8B 36			sta _wddata,x
+    69 369F 98				tya
+    70 36A0			_wd1
+    71 36A0 DD 8E 36			cmp _wdsubs,x
+    72 36A3 90 08			bcc _wd2
+    73 36A5 FD 8E 36			sbc _wdsubs,x
+    74 36A8 FE 8B 36			inc _wddata,x
+    75 36AB D0 F3			bne _wd1 ;!
+    76 36AD			_wd2
+    77 36AD E8				inx
+    78 36AE E0 03			cpx #3
+    79 36B0 D0 E7			bne _wd0
+    80
+    81 36B2 A0 02			ldy #2
+    82 36B4 B9 8B 36		_wd3	lda _wddata,y
+    83 36B7 99 00 00		_wdsave	sta 0000,y
+    84 36BA 88				dey
+    85 36BB 10 F7			bpl _wd3
+    86 36BD 60				rts
+    87
+    88 				* expects value in A and lo/hi dest in X/Y
+    89 36BE			write_hex
+    90 36BE 86 F0			stx zerHlp
+    91 36C0 84 F1			sty zerHlp+1
+    92 36C2 AA				tax
+    93 36C3 A0 00			ldy #0
+    94 36C5 29 F0			and #$f0
+    95 36C7 4A 4A 4A 4A		:4	lsr @
+    96 36CB C9 0A			cmp #10
+    97 36CD 90 02			bcc *+4
+    98 36CF 69 06			adc #['a'-'9']-34
+    99 36D1 69 10			adc #$10
+   100 36D3 91 F0			sta (zerHlp),y
+   101 36D5 8A				txa
+   102 36D6 C8				iny
+   103 36D7 29 0F			and #$0f
+   104 36D9 C9 0A			cmp #10
+   105 36DB 90 02			bcc *+4
+   106 36DD 69 06			adc #['a'-'9']-34
+   107 36DF 69 10			adc #$10
+   108 36E1 91 F0			sta (zerHlp),y
+   109 36E3 60				rts
+   110
+   111 				* error, keep on printing random colors
+   112 36E4			error
+   113 36E4 78				sei
+   114 36E5 EE 0E D4			inc $d40e
+   115 36E8 AD 0A D2			lda 53770
+   116 36EB 8D 1A D0			sta $d01a
+   117 36EE 4C E4 36			jmp error
+   118
+   119 				* in atascii
+   120 36F1			phex
+   121 36F1 86 F0			stx zerHlp
+   122 36F3 84 F1			sty zerHlp+1
+   123 36F5 A0 01			ldy #1
+   124 36F7 48				pha
+   125 36F8 20 00 37			jsr pxdig
+   126 36FB 68				pla
+   127 36FC 4A 4A 4A 4A		:4	lsr @
+   128 3700 29 0F		pxdig	and #$0f
+   129 3702 09 30			ora #'0'
+   130 3704 C9 3A			cmp #'9'+1
+   131 3706 90 02			bcc *+4
+   132 3708 69 06			adc #6
+   133 370A 09 00		_inv ora #0
+   134 370C 91 F0			sta (zerHlp),y
+   135 370E 88				dey
+   136 370F 60				rts
+   137
+   138
+   139 				* shows colors for 0.2 sec
+   140 				fuzz .MACRO
+   141 					lda #:1
+   142 					sta zerHlp
+   143 					ldy #10
+   144 				l0	lda $d40b
+   145 					bne *-3
+   146 				l1	lda 53770
+   147 					and #$0f
+   148 					ora zerHlp
+   149 					sta $d01a
+   150 					lda $d40b
+   151 					cmp #$60
+   152 					bne l1
+   153 					dey
+   154 					bne l0
+   155 					.ENDM
+   156
+   157 				*******************************************************************************
+   158 				* A:val dst:zer1, cnt:zer2
+   159 3710			memset .LOCAL
+   160 3710 A6 E7			ldx zer2+1
+   161 3712 F0 0C			beq small
+   162 3714 A0 00			ldy #0
+   163 3716			lp0
+   164 3716 91 E4			sta (zer1),y
+   165 3718 88				dey
+   166 3719 D0 FB			bne lp0
+   167 371B E6 E5			inc zer1+1
+   168 371D CA				dex
+   169 371E D0 F6			bne lp0
+   170 3720			small
+   171 3720 A4 E6			ldy zer2
+   172 3722 F0 07			beq ex
+   173 3724			lp
+   174 3724 88				dey
+   175 3725 91 E4			sta (zer1),y
+   176 3727 C0 00			cpy #0
+   177 3729 D0 F9			bne lp
+   178 372B 60			ex	rts
+   179 					.ENDL ; cleanmem
+   180
+   181 				* dst:zer1 src:zer2 cnt:zer3
+   182 372C			memcpy	.LOCAL
+   183 372C A6 E9			ldx zer3+1
+   184 372E F0 10			beq small
+   185 3730 A0 00			ldy #0
+   186 3732			lp0
+   187 3732 B1 E6			lda (zer2),y
+   188 3734 91 E4			sta (zer1),y
+   189 3736 88				dey
+   190 3737 D0 F9			bne lp0
+   191 3739 E6 E5			inc zer1+1
+   192 373B E6 E7			inc zer2+1
+   193 373D CA				dex
+   194 373E D0 F2			bne lp0
+   195 3740			small
+   196 3740 A4 E8			ldy zer3
+   197 3742 F0 09			beq ex
+   198 3744			lp
+   199 3744 88				dey
+   200 3745 B1 E6			lda (zer2),y
+   201 3747 91 E4			sta (zer1),y
+   202 3749 C0 00			cpy #0
+   203 374B D0 F7			bne lp
+   204 374D			ex
+   205 374D 60				rts
+   206 					.ENDL
+   207
+   208 = 00C3			UTILS_MOD_LEN	equ *-UTILS_MOD
+   209
+   179 374E				icl 'joy.asx'
+Source: joy.asx
+     1 				* JOY handling
+     2 374E			JOY		.LOCAL
+     3
+     4 = 000A			MAX_DELAY	equ 10
+     5
+     6 374E 00			len		dta 0
+     7 374F 00			delay	dta 0
+     8 3750 00			old		dta 0
+     9 3751 01			dynamic	dta 1
+    10 3752 00			value	dta 0
+    11
+    12 3753			update
+    13 3753 AD 10 D0			lda TRIG0
+    14 3756 49 01			eor #1
+    15 3758 0D 4D 32			ora cursor_pressed
+    16 375B 8D 4D 32			sta cursor_pressed
+    17
+    18 375E AD 00 D3			lda PORTA
+    19 3761 29 0F			and #$0f
+    20 3763 2D 7D 38			and KB.joymask
+    21 3766 8D 52 37			sta value
+    22 3769 AA				tax
+    23 376A AD 51 37			lda dynamic
+    24 376D F0 24			beq _check
+    25 376F EC 50 37			cpx old
+    26 3772 F0 0D			beq _same
+    27 3774 8E 50 37			stx old
+    28 3777 A9 0A 8D 4E 37		mva #MAX_DELAY len
+    29 377C A9 01 8D 4F 37		mva #1 delay
+    30 3781			_same
+    31 3781 CE 4F 37			dec delay
+    32 3784 F0 01			beq _goon
+    33 3786			_wait
+    34 3786 60				rts
+    35 3787			_goon
+    36 3787 AC 4E 37			ldy len
+    37 378A 8C 4F 37			sty delay
+    38 378D 88				dey
+    39 378E F0 03			beq _check
+    40 3790 8C 4E 37			sty len
+    41 3793			_check
+    42 3793 4E 52 37			lsr value
+    43 3796 B0 03			bcs *+5
+    44 3798 20 57 34			jsr cursor_dec_Y
+    45 379B 4E 52 37			lsr value
+    46 379E B0 03			bcs *+5
+    47 37A0 20 3E 34			jsr cursor_inc_Y
+    48 37A3 4E 52 37			lsr value
+    49 37A6 B0 03			bcs *+5
+    50 37A8 20 4E 34			jsr cursor_dec_X
+    51 37AB 4E 52 37			lsr value
+    52 37AE B0 03			bcs *+5
+    53 37B0 20 2E 34			jsr cursor_inc_X
+    54 37B3 60				rts
+    55
+    56 = 0066			MOD_LEN	equ *-JOY
+    57 					.ENDL ; JOY
+   180 37B4				icl 'mouse.asx'
+Source: mouse.asx
+     1 				* MOUSE handling
+     2 				* based on code from Jaskier found on Heaven's website
+     3 				* http://www.s-direktnet.de/homepages/k_nadj/mouse.html
+     4
+     5 37B4			MOUSE	.LOCAL
+     6
+     7 = 0000			MOUSE_ST	equ 0 ; 0-amiga, 1-st
+     8
+     9 							ift MOUSE_ST
+    10 				htab	dta 0,2,3,1 ; st
+    11 				vtab	dta 0,8,12,4
+    12 				hand	equ 3
+    13 				vand	equ 12
+    14 				info_line		dta d'                  use ST mouse in port 2'
+    15 							els
+    16 37B4 00 02 0A 08		htab	dta 0,2,10,8 ; amiga
+    17 37B8 00 01 05 04		vtab	dta 0,1,5,4
+    18 = 000A			hand	equ 10
+    19 = 0005			vand	equ 5
+    20 37BC 00 00 00 00 00 00 + info_line		dta d'               use Amiga mouse in port 2'
+    21 							eif
+    22
+    23 37E4 00			xind	dta 0
+    24 37E5 00			yind	dta 0
+    25
+    26 37E6			init	.LOCAL
+    27 37E6 AD 00 D3			lda $d300
+    28 37E9 4A 4A 4A 4A		:4	lsr @
+    29 37ED 48				pha
+    30 37EE 29 0A			and #hand
+    31 37F0 A0 03			ldy #3
+    32 37F2 D9 B4 37		i1	cmp htab,y
+    33 37F5 F0 03			beq i2
+    34 37F7 88				dey
+    35 37F8 D0 F8			bne i1
+    36 37FA 8C E4 37		i2	sty xind
+    37 37FD 68				pla
+    38 37FE 29 05			and #vand
+    39 3800 A0 03			ldy #3
+    40 3802 D9 B8 37		i3	cmp vtab,y
+    41 3805 F0 03			beq i4
+    42 3807 88				dey
+    43 3808 D0 F8			bne i3
+    44 380A 8C E5 37		i4	sty yind
+    45 380D 60				rts
+    46 					.ENDL
+    47
+    48 380E			update	.LOCAL
+    49 				;	lda $d300
+    50 				;	ldxy DL.status+33
+    51 				;	jsr write_hex
+    52
+    53 380E AD 00 D3			lda $d300
+    54 3811 4A 4A 4A 4A		:4	lsr @
+    55 3815 48				pha
+    56 3816 29 0A			and #hand
+    57 					; there you check left-right move (H)
+    58 3818 A0 03			ldy #3
+    59 381A D9 B4 37		h1	cmp htab,y
+    60 381D F0 03			beq h2
+    61 381F 88				dey
+    62 3820 D0 F8			bne h1
+    63 3822 98			h2	tya
+    64 3823 18				clc
+    65 3824 69 01			adc #1
+    66 3826 29 03			and #3
+    67 3828 CD E4 37			cmp xind
+    68 382B D0 09			bne h3
+    69 382D 8C E4 37			sty xind
+    70 3830 20 4E 34			jsr cursor_dec_X
+    71 3833 4C 47 38			jmp h4
+    72 				;	dec xcur
+    73 3836 98			h3	tya
+    74 3837 38				sec
+    75 3838 E9 01			sbc #1
+    76 383A 29 03			and #3
+    77 383C CD E4 37			cmp xind
+    78 383F D0 06			bne h4
+    79 3841 8C E4 37			sty xind
+    80 				;	inc xcur
+    81 3844 20 2E 34			jsr cursor_inc_X
+    82 3847 68			h4	pla
+    83 3848 29 05			and #vand
+    84 					; and here we check up-down move (V)
+    85 384A A0 03			ldy #3
+    86 384C D9 B8 37		v1	cmp vtab,y
+    87 384F F0 03			beq v2
+    88 3851 88				dey
+    89 3852 D0 F8			bne v1
+    90 3854 98			v2	tya
+    91 3855 18				clc
+    92 3856 69 01			adc #1
+    93 3858 29 03			and #3
+    94 385A CD E5 37			cmp yind
+    95 385D D0 09			bne v3
+    96 385F 8C E5 37			sty yind
+    97 3862 20 57 34			jsr cursor_dec_Y
+    98 3865 4C 79 38			jmp v4
+    99 				;	dec ycur
+   100 3868 98			v3	tya
+   101 3869 38				sec
+   102 386A E9 01			sbc #1
+   103 386C 29 03			and #3
+   104 386E CD E5 37			cmp yind
+   105 3871 D0 06			bne v4
+   106 3873 8C E5 37			sty yind
+   107 				;	inc ycur
+   108 3876 20 3E 34			jsr cursor_inc_Y
+   109 3879 60			v4	rts
+   110 					.ENDL ;update
+   111
+   112 = 00C6			MOD_LEN	equ *-MOUSE
+   113 					.ENDL ; MOUSE
+   181 387A				icl 'keyboard.asx'
+Source: keyboard.asx
+     1 				* Keyboard handling
+     2 387A			KB .LOCAL
+     3
+     4 387A 00			pressed	dta 0 ; any key pressed?
+     5 387B 00			key		dta 0 ; not ascii code!
+     6 387C 00			delay	dta 0 ; how long is this key pressed
+     7 387D 0F			joymask	dta 15 ; imitates joy movements
+     8
+     9 387E			init
+    10 					; reset default key map
+    11 387E A9 FF			lda #$ff
+    12 3880 8D 41 50			sta KEYTABLE_END
+    13 3883 60				rts
+    14
+    15 3884			update
+    16 3884 20 C1 38			jsr _update
+    17
+    18 						ift 0
+    19 					lda key
+    20 					ldx <MOD_screen+40
+    21 					ldy >MOD_screen+40
+    22 					jsr write_dec
+    23
+    24 					lda delay
+    25 					ldx <MOD_screen+50
+    26 					ldy >MOD_screen+50
+    27 					jsr write_dec
+    28 						eif
+    29
+    30 					; clear joymask
+    31 3887 A9 0F 8D 7D 38		mva #$0f KB.joymask
+    32
+    33 388C AD 7A 38			lda pressed
+    34 388F F0 2F			beq kbu_exit
+    35
+    36 					; and now, parse KEYTABLE
+    37 3891 A0 00			ldy #0
+    38 3893 B9 00 50		kbu	lda keytable,y
+    39 3896 C9 FF			cmp #$ff
+    40 3898 F0 26			beq kbu_exit
+    41 389A CD 7B 38			cmp key
+    42 389D D0 1A			bne kbu_cont
+    43 389F AD 7C 38			lda delay
+    44 38A2 39 01 50			and keytable+1,y
+    45 38A5 D0 12			bne kbu_cont
+    46 38A7 B9 02 50			lda keytable+2,y
+    47 38AA 8D B7 38			sta kbu_jump+1
+    48 38AD B9 03 50			lda keytable+3,y
+    49 38B0 8D B8 38			sta kbu_jump+2
+    50 38B3 B9 04 50			lda keytable+4,y
+    51 38B6 4C B6 38		kbu_jump	jmp *
+    52 38B9 98			kbu_cont	tya
+    53 38BA 18				clc
+    54 38BB 69 05			adc #5
+    55 38BD A8				tay
+    56 38BE D0 D3			bne kbu
+    57 38C0			kbu_exit
+    58 38C0 60				rts
+    59
+    60 38C1			_update
+    61 38C1 AD 0F D2			lda SKSTAT
+    62 38C4 29 08			and #8
+    63 38C6 4A 4A 4A		:3	lsr @
+    64 38C9 49 01			eor #1
+    65 38CB 0D 4D 32			ora cursor_pressed
+    66 38CE 8D 4D 32			sta cursor_pressed
+    67
+    68 				;	lda KBCODE
+    69 				;	ldx <MOD_screen+48
+    70 				;	ldy >MOD_screen+48
+    71 				;	jsr write_dec
+    72
+    73 38D1 AD 0F D2			lda SKSTAT
+    74 38D4 29 04			and #4
+    75 38D6 4A 4A		:2	lsr @
+    76 38D8 49 01			eor #1
+    77 38DA 8D 7A 38			sta pressed
+    78 38DD F0 15			beq _kb_no_key
+    79 38DF AD 09 D2			lda KBCODE
+    80 38E2 CD 7B 38			cmp key
+    81 38E5 F0 09			beq _kb_same_key
+    82
+    83 38E7 8D 7B 38			sta key
+    84 38EA A9 00			lda #0
+    85 38EC 8D 7C 38			sta delay
+    86 38EF 60				rts
+    87
+    88 38F0			_kb_same_key
+    89 38F0 EE 7C 38			inc delay
+    90 38F3 60				rts
+    91
+    92 38F4			_kb_no_key
+    93 38F4 A9 FF			lda #$ff
+    94 38F6 8D 7B 38			sta key
+    95 38F9 A9 00			lda #0
+    96 38FB 8D 7C 38			sta delay
+    97 38FE 60				rts
+    98 				* ****************************************************************************
+    99 38FF			joymask_update
+   100 38FF 8D 7D 38			sta KB.joymask
+   101 3902 60				rts
+   102 				* ****************************************************************************
+   103 				* adds set of keys to KEYTABLE, X/Y lo/hi address of the new table
+   104 3903			extend_keytable
+   105 3903 86 E2			stx zer0
+   106 3905 84 E3			sty zer0+1
+   107 3907 A2 00			ldx #0
+   108 3909 BD 00 50		_ket0	lda Keytable,x
+   109 390C C9 FF			cmp #$ff
+   110 390E F0 0A			beq _ket1
+   111 3910 E8 E8 E8 E8 E8	:5	inx
+   112 3915 D0 F2			bne _ket0
+   113 3917 20 E4 36			jsr ERROR ;
+   114 391A A0 00		_ket1	ldy #0
+   115 391C B1 E2		_ket2	lda (zer0),y
+   116 391E 9D 00 50			sta keytable,x
+   117 3921 C9 FF			cmp #$ff
+   118 3923 F0 13			beq _ket_exit
+   119 3925 C8				iny
+   120 3926 E8				inx
+   121 3927 A9 04			lda #4
+   122 3929 85 F0			sta zerHlp
+   123 392B			_ket3
+   124 392B B1 E2			lda (zer0),y
+   125 392D 9D 00 50			sta keytable,x
+   126 3930 E8				inx
+   127 3931 C8				iny
+   128 3932 C6 F0			dec zerHlp
+   129 3934 D0 F5			bne _ket3
+   130 3936 F0 E4			beq _ket2
+   131 3938			_ket_exit
+   132 3938 60				rts
+   133
+   134 				* ****************************************************************************
+   135 = 3939			KB_return	equ *
+   136
+   137 3939				org KB_KEYTABLE
+   138 5000			KEYTABLE
+   139 					; cursor movement
+   140 5000-5041> 0E 00 FF 38 + 	dta KEYCODE_UP,0,a(joymask_update),%1110
+   141 5005 0F 00 FF 38 0D		dta KEYCODE_DOWN,0,a(joymask_update),%1101
+   142 500A 06 00 FF 38 0B		dta KEYCODE_LEFT,0,a(joymask_update),%1011
+   143 500F 07 00 FF 38 07		dta KEYCODE_RIGHT,0,a(joymask_update),%0111
+   144
+   145 					; cursor management
+   146 5014 01 03 84 34 00		dta KEYCODE_J,3,a(cursor_dec_w),0
+   147 5019 00 03 60 34 00		dta KEYCODE_L,3,a(cursor_inc_w),0
+   148 501E 0D 03 BE 34 00		dta KEYCODE_I,3,a(cursor_dec_h),0
+   149 5023 05 03 9A 34 00		dta KEYCODE_K,3,a(cursor_inc_h),0
+   150 5028 12 07 75 36 00		dta KEYCODE_C,7,a(cursor_switch),0
+   151 					; pick color
+   152 502D 0A FF 19 41 00		dta KEYCODE_P,255,a(MOD_pick_color),0
+   153 					; zoom
+   154 5032 17 FF 2A 3A 00		dta KEYCODE_Z,255,a(ZOOM.zoom_switch),0
+   155 					; undo/redo
+   156 5037 0B 07 30 3F 00		dta KEYCODE_U,7,a(UNDO.do_undo), 0
+   157 503C 2B 07 FA 3F 00		dta KEYCODE_Y,7,a(UNDO.do_redo), 0
+   158
+   159 = 5041			KEYTABLE_END	equ *
+   160 5041 FF				dta $ff
+   161
+   162 5042				org KB_return
+   163
+   164 = 00BF			MOD_LEN	equ *-KB
+   165 					.ENDL ; KB
+   182 3939				icl 'zoom.asx'
+Source: zoom.asx
+     1 				* ZOOM handling
+     2 3939			ZOOM	.LOCAL
+     3
+     4 3939-3E14> 00		state		dta 0
+     5 393A 00			ZOOM_x		dta 0
+     6 393B 00			ZOOM_y		dta 0
+     7 393C 00			ZOOM_top_y	dta 0
+     8
+     9 393D 00			ZOOM_old_y	dta 0
+    10 393E 00			ZOOM_old_x	dta 0
+    11 393F 00			ZOOM_old_top_y	dta 0
+    12
+    13 3940 00 00		zoomhlp	dta 0,0
+    14
+    15 3942			pages
+    16 3942 C0 C1 C2 C3 C4 C5 + 	dta $c0,$c1,$c2,$c3,$c4,$c5,$c6,$c7,$c8,$c9,$ca,$cb,$cc,$cd,$ce,$cf
+    17 3952 E0 E1 E2 E3 E4 E5 + 	dta $e0,$e1,$e2,$e3,$e4,$e5,$e6,$e7,$e8,$e9,$ea,$eb,$ec,$ed,$ee,$ef
+    18 3962 F0 F1 F2 F3 F4 F5 + 	dta $f0,$f1,$f2,$f3,$f4,$f5,$f6,$f7,$f8,$f9,$fa,$fb,$fc,$fd,$fe
+    19
+    20 3971			init	.LOCAL
+    21 				; init zoom_lines
+    22 3971 A2 00			ldx #0
+    23 3973 A0 00			ldy #0
+    24 3975 BD 42 39		lp	lda pages,x
+    25 3978 99 00 52			sta zoom_lineadr,y
+    26 397B E8				inx
+    27 397C EC 36 41			cpx MOD_zoom_h
+    28 397F D0 02			bne *+4
+    29 3981 A2 00			ldx #0
+    30 3983 C8				iny
+    31 3984 D0 EF			bne lp
+    32 3986 60				rts
+    33 					.ENDL ; rts
+    34
+    35 				; A - window size, X - max size, Y - cur value
+    36 3987			_zoom_magic
+    37 3987 8D 41 39			sta zoomHlp+1
+    38 398A 4A				lsr @
+    39 398B 8D 40 39			sta zoomHlp
+    40 398E 8A				txa
+    41 398F 38				sec
+    42 3990 ED 41 39			sbc zoomHlp+1
+    43 3993 8D 41 39			sta zoomHlp+1
+    44
+    45 3996 98				tya
+    46 3997 38				sec
+    47 3998 ED 40 39			sbc zoomHlp
+    48 399B B0 02			bcs *+4
+    49 399D A9 00			lda #0
+    50 399F CD 41 39			cmp zoomHlp+1
+    51 39A2 90 03			bcc *+5
+    52 39A4 AD 41 39			lda zoomHlp+1
+    53 39A7 60				rts
+    54
+    55 39A8			update	.LOCAL
+    56 39A8 AD 39 39			lda state
+    57 39AB F0 6F			beq ex
+    58
+    59 39AD AD 35 41			lda :mod_zoom_w
+    60 39B0 AE 31 41			ldx :mod_max_x
+    61 39B3 AC 49 32			ldy :cursor_x
+    62 39B6 20 87 39			jsr _zoom_magic
+    63 39B9 8D 3A 39			sta zoom_x
+    64
+    65 39BC AD 36 41			lda :mod_zoom_h
+    66 39BF AE 32 41			ldx :mod_max_y
+    67 39C2 AC 4A 32			ldy :cursor_y
+    68 39C5 20 87 39			jsr _zoom_magic
+    69 39C8 8D 3B 39			sta zoom_y
+    70
+    71 39CB AD 3D 39			lda zoom_old_y
+    72 39CE CD 3B 39			cmp zoom_y
+    73 39D1 D0 0A			bne new_Y
+    74 39D3			same_Y
+    75 39D3 AD 3E 39			lda zoom_old_x
+    76 39D6 CD 3A 39			cmp zoom_x
+    77 39D9 D0 17			bne go_xy
+    78 39DB F0 18			beq done_xy	; X,Y the same
+    79 39DD			new_Y	; Y has changed, either went up or down
+    80 39DD 90 09			bcc Y_down
+    81 39DF			Y_up ; Y went UP
+    82 39DF AD 3B 39			lda zoom_y
+    83 39E2 20 AD 3A			jsr zul_add
+    84 39E5 4C F2 39			jmp go_xy
+    85 39E8			Y_down ; Y went down
+    86 39E8 AC 3B 39			ldy zoom_y
+    87 39EB 18				clc
+    88 39EC 6D 36 41			adc :MOD_zoom_h
+    89 39EF 20 AD 3A			jsr zul_add
+    90 39F2			go_xy
+    91 				;	mva #$ff $d01a
+    92 39F2 20 25 41			jsr :MOD_zoom_update
+    93 				;	mva #$88 $d01a
+    94
+    95 39F5			done_xy
+    96 					; save settings as old
+    97 39F5 AD 3A 39 8D 3E 39		mva zoom_x zoom_old_x
+    98 39FB AD 3B 39 8D 3D 39		mva zoom_y zoom_old_y
+    99
+   100 3A01 AD 3A 41			lda :mod_zoom_top_h
+   101 3A04 AE 32 41			ldx :mod_max_y
+   102 3A07 AC 4A 32			ldy :cursor_y
+   103 3A0A 20 87 39			jsr _zoom_magic
+   104 3A0D 8D 3C 39			sta zoom_top_y
+   105 3A10 CD 3F 39			cmp zoom_old_top_y
+   106
+   107 3A13			go_top
+   108 3A13 20 2B 41			jsr :MOD_zoom_update_top
+   109 3A16			done_top
+   110 3A16 AD 3C 39 8D 3F 39		mva zoom_top_y zoom_old_top_y
+   111 3A1C 60			ex	rts
+   112 					.ENDL
+   113
+   114 3A1D			zoom_status_update
+   115 3A1D A9 0E			lda #"."
+   116 3A1F AC 39 39			ldy state
+   117 3A22 F0 02			beq *+4
+   118 3A24 A9 0B			lda #"+"
+   119 3A26 8D F6 30			sta DL.status+22
+   120 3A29 60				rts
+   121
+   122 3A2A			zoom_switch
+   123 3A2A AD 39 39			lda state
+   124 3A2D F0 0F			beq zoom_on
+   125 3A2F			zoom_off
+   126 3A2F CE 39 39			dec state
+   127 3A32 A9 00 8D 3C 39		mva #0 zoom_top_y
+   128 3A37 20 22 41			jsr MOD_disable_zoom
+   129 3A3A 20 1D 3A			jsr zoom_status_update
+   130 3A3D 60				rts
+   131
+   132 3A3E			zoom_on .LOCAL
+   133 3A3E EE 39 39			inc state
+   134
+   135 				; force cursor size 1
+   136 3A41 A9 01			lda #1
+   137 3A43 8D 4C 32			sta :cursor_w
+   138 3A46 8D 4B 32			sta :cursor_h
+   139 				; force zoom update
+   140 3A49 A9 FF			lda #-1
+   141 3A4B 8D 3E 39			sta zoom_old_x
+   142 3A4E 8D 3D 39			sta zoom_old_y
+   143 3A51 8D 3F 39			sta zoom_old_top_y
+   144
+   145 3A54 20 A8 39			jsr update
+   146
+   147 				; redraw all lines
+   148 3A57 A0 00			ldy #0
+   149 3A59 8C 65 3A		loo	sty oy+1
+   150 3A5C 98				tya
+   151 3A5D 18				clc
+   152 3A5E 6D 3B 39			adc zoom_Y
+   153 3A61 20 AD 3A			jsr zul_add
+   154 3A64 A0 00		oy	ldy #0
+   155 3A66 C8				iny
+   156 3A67 CC 36 41			cpy MOD_zoom_h
+   157 3A6A D0 ED			bne loo
+   158
+   159 3A6C 20 1F 41			jsr :MOD_enable_zoom
+   160 3A6F 20 1D 3A			jsr zoom_status_update
+   161 3A72 60				rts
+   162 					.ENDL ; zoom_on
+   163
+   164 				* Zoom update lines management
+   165 3A73 00			zul_cur	dta 0
+   166 3A74 00			zul_cnt	dta 0
+   167 3A75			zul_tab
+   168 3A75 00 00 00 00 00 00 + :50		dta	0
+   169 3AA7			zul_reset
+   170 3AA7 A9 00 8D 74 3A		mva #0 zul_cnt
+   171 3AAC 60				rts
+   172 3AAD			zul_add
+   173 3AAD AC 74 3A			ldy zul_cnt
+   174 3AB0 C0 32			cpy #50
+   175 3AB2 D0 03			bne *+5
+   176 3AB4 20 E4 36			jsr error
+   177 3AB7 99 75 3A			sta zul_tab,y
+   178 3ABA C8				iny
+   179 3ABB 8C 74 3A			sty zul_cnt
+   180 3ABE 60				rts
+   181 3ABF			zul_apply .LOCAL
+   182 3ABF AD 74 3A			lda zul_cnt
+   183 3AC2 F0 14			beq ex
+   184 3AC4 A2 00			ldx #0
+   185 3AC6 8E 73 3A		lp	stx zul_cur
+   186 3AC9 BC 75 3A			ldy zul_tab,x
+   187 3ACC 20 28 41			jsr :MOD_zoom_update_line
+   188 3ACF AE 73 3A			ldx zul_cur
+   189 3AD2 E8				inx
+   190 3AD3 EC 74 3A			cpx zul_cnt
+   191 3AD6 D0 EE			bne lp
+   192 3AD8			ex
+   193 3AD8 60				rts
+   194 					.ENDL
+   195
+   196
+   197 = 01A0			MOD_LEN	equ *-ZOOM
+   198
+   199 					.ENDL ; LOCAL
+   183 3AD9				icl 'io.asx'
+Source: io.asx
+     1 3AD9			IO	.LOCAL
+     2
+     3 = E456			ciov	equ $e456
+     4
+     5 = 0340			iocb	equ $340
+     6 = 0342			io_com	equ iocb+2
+     7 = 0343			io_sta	equ iocb+3
+     8 = 0344			io_adr	equ iocb+4
+     9 = 0348			io_len	equ iocb+8
+    10 = 034A			io_mod	equ iocb+10
+    11 = 034B			io_aux	equ iocb+11
+    12
+    13 = 0000			chn0	equ $00
+    14 = 0010			chn1	equ $10
+    15
+    16 = 0005			gett	equ 5
+    17 = 0009			putt	equ 9
+    18 = 0007			getb	equ 7
+    19 = 000B			putb	equ 11
+    20
+    21 3AD9 00 00		adr	dta a(0)
+    22 3ADB 00 00		len	dta a(0)
+    23
+    24 				* ****************************************************************************
+    25 = 0078			text_len	equ 120
+    26 3ADD			text
+    27 3ADD 20 20 20 20 20 20 + :text_len	dta c' '
+    28 3B55			get_text
+    29 3B55 A2 00			ldx #chn0
+    30 3B57 A9 05 9D 42 03		mva #gett io_com,x
+    31 3B5C A9 DD 9D 44 03 A9 + 	mwa #text io_adr,x
+    32 3B66 9D 49 03			sta io_len+1,x
+    33 				;	mwa #text_len io_len+1,x
+    34 3B69 20 56 E4			jsr ciov
+    35 				;	jsr error
+    36 3B6C 60				rts
+    37
+    38 				* ****************************************************************************
+    39 				* Message printing, X-hi byte, Y-lo byte
+    40 				;msg_adr	dta a(0)
+    41 				;msg_len	dta a(0)
+    42 3B6D			msg
+    43 3B6D 8A				txa
+    44 3B6E A2 00			ldx #chn0
+    45 3B70 9D 44 03			sta io_adr,x
+    46 3B73 98				tya
+    47 3B74 9D 45 03			sta io_adr+1,x
+    48 				;	mwa msg_len io_len,x
+    49 3B77 A9 78 9D 48 03 A9 + 	mwa #120 io_len,x
+    50 				;	mwa msg_adr io_adr,x
+    51 3B81 A9 09 9D 42 03		mva #IO.putt IO.io_com,x
+    52 3B86 20 56 E4			jsr ciov
+    53 3B89 60				rts
+    54 				* ****************************************************************************
+    55 3B8A 45 6E 74 65 72 20 + fname_msg	dta c'Enter filename:',eol
+    56 3B9A			extension
+    57 3B9A 2E 58 58 58 9B		dta c'.XXX',eol
+    58
+    59 3B9F			enter_filename
+    60 3B9F				ldxy fname_msg
+Macro: LDXY [Source: utils.asx]
+     1 3B9F A2 8A			ldx <FNAME_MSG
+     2 3BA1 A0 3B			ldy >FNAME_MSG
+Source: io.asx
+    61 3BA3 20 6D 3B			jsr msg
+    62 3BA6 20 55 3B			jsr get_text
+    63 3BA9 20 B0 3B			jsr add_extension
+    64 3BAC 20 D0 3B			jsr add_drive
+    65 3BAF 60				rts
+    66
+    67 3BB0			add_extension
+    68 3BB0 A2 00			ldx #0
+    69 3BB2			_at1
+    70 3BB2 BD DD 3A			lda text,x
+    71 3BB5 C9 2E			cmp #'.'
+    72 3BB7 F0 07			beq _atex
+    73 3BB9 C9 9B			cmp #eol
+    74 3BBB F0 04			beq _at2
+    75 3BBD E8				inx
+    76 3BBE D0 F2			bne _at1
+    77 3BC0			_atex
+    78 3BC0 60				rts
+    79 3BC1			_at2
+    80 3BC1 A0 00			ldy #0
+    81 3BC3 B9 9A 3B		at3	lda extension,y
+    82 3BC6 9D DD 3A			sta text,x
+    83 3BC9 E8				inx
+    84 3BCA C8				iny
+    85 3BCB C0 05			cpy #5
+    86 3BCD D0 F4			bne at3
+    87 3BCF 60				rts
+    88
+    89 3BD0			add_drive
+    90 3BD0 A9 3A			lda #':'
+    91 3BD2 CD DE 3A			cmp text+1
+    92 3BD5 F0 26			beq ad_ex
+    93 3BD7 CD DF 3A			cmp text+2
+    94 3BDA F0 21			beq ad_ex
+    95 3BDC A9 3B			lda #';'
+    96 3BDE CD DE 3A			cmp text+1
+    97 3BE1 F0 1A			beq ad_ex
+    98 3BE3 CD DF 3A			cmp text+2
+    99 3BE6 F0 15			beq ad_ex
+   100
+   101 3BE8 A2 75			ldx #text_len-3
+   102 3BEA BD DD 3A		ad_mv	lda text,x
+   103 3BED 9D DF 3A			sta text+2,x
+   104 3BF0 CA				dex
+   105 3BF1 10 F7			bpl ad_mv
+   106
+   107 3BF3 A9 44 8D DD 3A		mva #'D' text
+   108 3BF8 A9 3A 8D DE 3A		mva #':' text+1
+   109
+   110 3BFD 60			ad_ex	rts
+   111 				* ****************************************************************************
+   112
+   113 				* ****************************************************************************
+   114 3BFE 1D 65 72 72 6F 72 + error_msg	dta $1d,c'error $00 !!!',$fd,$fd,eol
+   115
+   116 3C0F			do
+   117 3C0F A2 10			ldx #chn1
+   118 3C11 AD D9 3A 9D 44 03 + 	mwa IO.adr io_adr,x
+   119 3C1D AD DB 3A 9D 48 03 + 	mwa IO.len io_len,x
+   120
+   121 3C29 AD 54 03			lda io_adr+$10
+   122 3C2C				ldxy gr0_mem+2
+Macro: LDXY [Source: utils.asx]
+     1 3C2C A2 02			ldx <GR0_MEM+2
+     2 3C2E A0 5C			ldy >GR0_MEM+2
+Source: io.asx
+   123 3C30 20 BE 36			jsr write_hex
+   124
+   125 3C33 AD 55 03			lda io_adr+$11
+   126 3C36				ldxy gr0_mem
+Macro: LDXY [Source: utils.asx]
+     1 3C36 A2 00			ldx <GR0_MEM
+     2 3C38 A0 5C			ldy >GR0_MEM
+Source: io.asx
+   127 3C3A 20 BE 36			jsr write_hex
+   128
+   129 3C3D AD 58 03			lda io_len+$10
+   130 3C40				ldxy gr0_mem+8
+Macro: LDXY [Source: utils.asx]
+     1 3C40 A2 08			ldx <GR0_MEM+8
+     2 3C42 A0 5C			ldy >GR0_MEM+8
+Source: io.asx
+   131 3C44 20 BE 36			jsr write_hex
+   132
+   133 3C47 AD 59 03			lda io_len+$11
+   134 3C4A				ldxy gr0_mem+6
+Macro: LDXY [Source: utils.asx]
+     1 3C4A A2 06			ldx <GR0_MEM+6
+     2 3C4C A0 5C			ldy >GR0_MEM+6
+Source: io.asx
+   135 3C4E 20 BE 36			jsr write_hex
+   136
+   137 3C51 A2 10			ldx #chn1
+   138
+   139 3C53			mcio
+   140 3C53 20 56 E4			jsr ciov
+   141 3C56 10 15			bpl io_ok
+   142 3C58			io_err
+   143 3C58 98				tya
+   144 3C59				ldxy error_msg+8
+Macro: LDXY [Source: utils.asx]
+     1 3C59 A2 06			ldx <ERROR_MSG+8
+     2 3C5B A0 3C			ldy >ERROR_MSG+8
+Source: io.asx
+   145 3C5D 20 F1 36			jsr phex
+   146 3C60				ldxy error_msg
+Macro: LDXY [Source: utils.asx]
+     1 3C60 A2 FE			ldx <ERROR_MSG
+     2 3C62 A0 3B			ldy >ERROR_MSG
+Source: io.asx
+   147 3C64 20 6D 3B			jsr msg
+   148 3C67 20 F8 F2			jsr $f2f8
+   149 3C6A A0 FF			ldy #255
+   150 3C6C 60				rts
+   151 3C6D			io_ok
+   152 3C6D A0 01			ldy #1
+   153 3C6F 60				rts
+   154
+   155 3C70			open
+   156 3C70 48				pha
+   157 3C71 20 A1 3C			jsr close
+   158 3C74 68				pla
+   159 3C75 AA				tax
+   160 3C76 98				tya
+   161 3C77 30 27			bmi op_ex
+   162 3C79 8A				txa
+   163 3C7A A2 10			ldx #chn1
+   164 3C7C 9D 4A 03			sta io_mod,x
+   165 3C7F A9 03 9D 42 03		mva #3 io_com,x
+   166 3C84 A9 DD 9D 44 03 A9 + 	mwa #text io_adr,x
+   167 				;this seem unnecessary according to drac030
+   168 3C8E A9 80 9D 4B 03		mva #$80 io_aux,x
+   169 3C93 20 53 3C			jsr mcio
+   170 3C96 30 08			bmi op_ex
+   171 3C98 BD 4A 03			lda io_mod,x
+   172 3C9B 09 03			ora #3
+   173 3C9D 9D 42 03			sta io_com,x
+   174 3CA0			op_ex
+   175 3CA0 60				rts
+   176
+   177 3CA1			close
+   178 3CA1 A2 10			ldx #chn1
+   179 3CA3 A9 0C			lda #12
+   180 3CA5 9D 42 03			sta io_com,x
+   181 3CA8 20 53 3C			jsr mcio
+   182 3CAB 60				rts
+   183
+   184 				* ****************************************************************************
+   185 3CAC			ow_msg
+   186 3CAC D3 C1 D6 C9 CE C7 + 	dta c'SAVING *.XXX'*,eol
+   187
+   188 3CB9			or_msg
+   189 3CB9 CC CF C1 C4 C9 CE + 	dta c'LOADING *.XXX'*,eol
+   190
+   191 3CC7			file_open
+   192 3CC7 48				pha
+   193
+   194 3CC8 A6 F0			ldx zerHlp
+   195 3CCA A4 F0			ldy zerHlp
+   196 3CCC 20 9F 3B			jsr enter_filename
+   197
+   198 3CCF				ldxy text
+Macro: LDXY [Source: utils.asx]
+     1 3CCF A2 DD			ldx <TEXT
+     2 3CD1 A0 3A			ldy >TEXT
+Source: io.asx
+   199 3CD3 20 6D 3B			jsr msg
+   200
+   201 3CD6 68				pla
+   202 3CD7 4C 70 3C			jmp open
+   203
+   204 3CDA			open_write
+   205 3CDA 86 F0			stx zerHlp
+   206 3CDC 84 F1			sty zerHlp+1
+   207 3CDE A0 02			ldy #2
+   208 3CE0			owlp
+   209 3CE0 B1 F0			lda (zerHlp),y
+   210 3CE2 99 9B 3B			sta extension+1,y
+   211 3CE5 09 80			ora #$80
+   212 3CE7 99 B5 3C			sta ow_msg+9,y
+   213 3CEA 88				dey
+   214 3CEB 10 F3			bpl owlp
+   215
+   216 3CED				ldxy ow_msg
+Macro: LDXY [Source: utils.asx]
+     1 3CED A2 AC			ldx <OW_MSG
+     2 3CEF A0 3C			ldy >OW_MSG
+Source: io.asx
+   217 3CF1 20 6D 3B			jsr msg
+   218
+   219 3CF4 A9 08			lda #8
+   220 3CF6 4C C7 3C			jmp file_open
+   221
+   222 3CF9			open_read
+   223 3CF9 86 F0			stx zerHlp
+   224 3CFB 84 F1			sty zerHlp+1
+   225 3CFD A0 02			ldy #2
+   226 3CFF			orlp
+   227 3CFF B1 F0			lda (zerHlp),y
+   228 3D01 99 9B 3B			sta extension+1,y
+   229 3D04 09 80			ora #$80
+   230 3D06 99 C3 3C			sta or_msg+10,y
+   231 3D09 88				dey
+   232 3D0A 10 F3			bpl orlp
+   233
+   234 3D0C				ldxy or_msg
+Macro: LDXY [Source: utils.asx]
+     1 3D0C A2 B9			ldx <OR_MSG
+     2 3D0E A0 3C			ldy >OR_MSG
+Source: io.asx
+   235 3D10 20 6D 3B			jsr msg
+   236
+   237 3D13 A9 04			lda #4
+   238 3D15 4C C7 3C			jmp file_open
+   239
+   240 				* ****************************************************************************
+   241 3D18 41 72 65 20 79 6F + confirm_msg dta c'Are you sure?',eol
+   242 3D26			confirm
+   243 3D26				ldxy confirm_msg
+Macro: LDXY [Source: utils.asx]
+     1 3D26 A2 18			ldx <CONFIRM_MSG
+     2 3D28 A0 3D			ldy >CONFIRM_MSG
+Source: io.asx
+   244 3D2A 20 6D 3B			jsr msg
+   245 3D2D 20 F8 F2			jsr $f2f8
+   246 3D30 A0 00			ldy #0
+   247 3D32 C9 59			cmp #'Y'
+   248 3D34 D0 01			bne *+3
+   249 3D36 C8				iny
+   250 3D37 98				tya
+   251 3D38 60				rts
+   252 				* ****************************************************************************
+   253 = 0260			MOD_LEN	equ *-IO
+   254 					.ENDL ; IO
+   255
+   184 3D39				icl 'menu.asx'
+Source: menu.asx
+     1 3D39			MENU	.LOCAL
+     2
+     3 3D39			init
+     4 3D39 A9 FF 8D 05 51		mva #$ff MENUTABLE_END
+     5 3D3E 60				rts
+     6
+     7 3D3F			enter
+     8 3D3F A9 63 8D 30 02 A9 + 	mwa #DL.gr0 $230
+     9 3D49 A9 00 85 58 A9 5C + 	mwa #gr0_mem $58
+    10 3D51 A9 60 85 6A			mva >[gr0_mem+$400] $6a	;set ramtop, so CLS worx
+    11
+    12 3D55 A9 00 8D C6 02		mva #0 $2c6
+    13 3D5A 8D C8 02			sta $2c8
+    14 3D5D A0 07			ldy #7
+    15 3D5F 99 00 D0		_e1	sta $d000,y
+    16 3D62 88				dey
+    17 3D63 10 FA			bpl _e1
+    18
+    19 3D65 A9 0F 8D C5 02		mva #$0f $2c5
+    20 3D6A 8D 17 D0			sta $d017
+    21
+    22 3D6D 20 B2 3D			jsr print
+    23
+    24 3D70 20 76 3D			jsr choose
+    25
+    26 3D73 60				rts
+    27
+    28 3D74 20 9B		chosen_msg	dta c' ',eol
+    29
+    30 3D76			choose
+    31 3D76 20 F8 F2			jsr $f2f8
+    32 3D79 48				pha
+    33 3D7A 8D 74 3D			sta chosen_msg
+    34 3D7D				ldxy chosen_msg IO.msg_adr
+Macro: LDXY [Source: utils.asx]
+     1 3D7D A2 74			ldx <CHOSEN_MSG
+     2 3D7F A0 3D			ldy >CHOSEN_MSG
+Source: menu.asx
+    35 3D81 20 6D 3B			jsr IO.msg
+    36 3D84 68				pla
+    37 3D85 A8				tay
+    38 3D86 A2 00			ldx #0
+    39 3D88			_ch1
+    40 3D88 BD 00 51			lda MENUTABLE,x
+    41 3D8B C9 FF			cmp #$ff
+    42 3D8D F0 1F			beq _chend
+    43 3D8F 98				tya
+    44 3D90 DD 00 51			cmp MENUTABLE,x
+    45 3D93 D0 0F			bne _chnext
+    46 				;found
+    47 3D95 BD 01 51			lda MENUTABLE+1,x
+    48 3D98 8D A2 3D			sta _ch_jmp+1
+    49 3D9B BD 02 51			lda MENUTABLE+2,x
+    50 3D9E 8D A3 3D			sta _ch_jmp+2
+    51 3DA1 4C 74 E4		_ch_jmp jmp $e474 ;)
+    52 3DA4			_chnext
+    53 3DA4 8A				txa
+    54 3DA5 18				clc
+    55 3DA6 69 05			adc #5
+    56 3DA8 AA				tax
+    57 3DA9 D0 DD			bne _ch1
+    58 3DAB 20 E4 36			jsr ERROR
+    59 3DAE			_chend
+    60 3DAE 60				rts
+    61
+    62
+    63 3DAF 4C 74 E4		reset	JMP $E474
+    64
+    65 				; prints menu
+    66 3DB2 A2 00		print	ldx #0
+    67 3DB4 8E C9 3D		_p0	stx _p_oldX+1
+    68 3DB7 BD 00 51			lda MENUTABLE,x
+    69 3DBA C9 FF			cmp #$FF
+    70 3DBC F0 15			beq _pex
+    71 3DBE BC 04 51			ldy MENUTABLE+4,x
+    72 3DC1 BD 03 51			lda MENUTABLE+3,x
+    73 3DC4 AA				tax
+    74 3DC5 20 6D 3B			jsr IO.msg
+    75 3DC8 A9 00		_p_oldX	lda #0
+    76 3DCA 18				clc
+    77 3DCB 69 05			adc #5
+    78 3DCD AA				tax
+    79 3DCE D0 E4			bne _p0
+    80 3DD0 20 E4 36			jsr ERROR
+    81 3DD3 60			_pex	rts
+    82
+    83 				* ****************************************************************************
+    84 				* adds set of options to MENUTABLE, X/Y lo/hi address of the new table
+    85 3DD4			extend_menutable
+    86 3DD4 86 E2			stx zer0
+    87 3DD6 84 E3			sty zer0+1
+    88 3DD8 A2 00			ldx #0
+    89 3DDA BD 00 51		lk	lda MENUTABLE,x
+    90 3DDD C9 FF			cmp #$ff
+    91 3DDF F0 0A			beq fnd
+    92 3DE1 E8 E8 E8 E8 E8	:5	inx
+    93 3DE6 D0 F2			bne lk
+    94 3DE8 20 E4 36			jsr ERROR ;
+    95 3DEB A0 00		fnd	ldy #0
+    96 3DED B1 E2 C8		cpy	lda (zer0),y+				; copy 1st byte
+    97 3DF0 9D 00 51 E8			sta MENUTABLE,x+
+    98 3DF4 C9 FF			cmp #$ff
+    99 3DF6 F0 11			beq ex
+   100 3DF8 A9 04 85 F0			mva #4 zerHlp
+   101 3DFC B1 E2		lp	lda (zer0),y
+   102 3DFE 9D 00 51			sta MENUTABLE,x
+   103 3E01 C8				iny
+   104 3E02 E8				inx
+   105 3E03 C6 F0			dec zerHlp
+   106 3E05 D0 F5			bne lp
+   107 3E07 F0 E4			beq cpy
+   108 3E09			ex
+   109 3E09 60				rts
+   110
+   111 				* ****************************************************************************
+   112
+   113 3E0A 7D 1B 1B 20 2D 20 + reset_msg	dta cls,esc,esc,c' - Exit',eol
+   114
+   115 = 3E15			MENU_return	equ *
+   116
+   117 3E15				org MENU_MENUTABLE
+   118 5100			MENUTABLE
+   119 5100-5105> 1B AF 3D 0A + 	dta esc,a(reset),a(reset_msg)
+   120 5105			MENUTABLE_END
+   121 5105 FF				dta $ff
+   122
+   123 5106				org MENU_return
+   124
+   125
+   126 = 00DC			MOD_LEN	equ *-MENU
+   127 					.ENDL ; MENU
+   185 3E15				icl 'undo.asx'
+Source: undo.asx
+     1 				* UNDO module
+     2 				*
+     3 				* UNDO information is stored from buffer in the following format (per element)
+     4 				*
+     5 				* Single-pixel mode - 4 bytes
+     6 				* 1byte - X position (0..253)
+     7 				* 1byte - old color (we assume every mode fits in 1 byte, true for now)
+     8 				* 1byte - new color
+     9 				* 1byte - Y position (0..253)
+    10 				*
+    11 				* Multi-pixel mode - 4 * N + 4 bytes
+    12 				* 1byte - multi-pixel mode marker (MARK_MULTI)
+    13 				* 1byte - N - number of pixels
+    14 				* 4*N - pixels, each saved as in standard mode.
+    15 				* 1byte - N - number of pixels
+    16 				* 1byte - multi-pixel mode marker (MARK_MULTI)
+    17 				*
+    18 				* This organization allows easy deletion both from the beginning of the list
+    19 				* (when we run out of space) as well as from the end (when we do UNDO)
+    20 				* 
+    21 				* The correct list is ALWAYS finished with MARK_END, 
+    22 				* so we will not do REDO too far.
+    23 3E15			UNDO	.LOCAL
+    24
+    25 = 00FF			MARK_MULTI	equ 255
+    26 = 00FE			MARK_END	equ 254
+    27
+    28 3E15-4A05> 00 00		buffer_beg	dta a(0)	; starts with :undo_buffer
+    29 3E17 00 00		buffer_end	dta a(0)	; starts with :undo_buffer
+    30
+    31 				; saved data for save_pixel call
+    32 3E19 00			pos_x	dta 0
+    33 3E1A 00			pos_y	dta 0
+    34 3E1B 00			old_c	dta 0
+    35 3E1C 00			new_c	dta 0
+    36 3E1D 00			hlp		dta 0
+    37 3E1E 00			cnt		dta 0
+    38 3E1F 00			length	dta 0
+    39 3E20 00			ignore	dta 0	; if set, we're in the (un|re)doing phase
+    40
+    41 3E21			init	
+    42 3E21 A9 00 8D 15 3E A9 + 	mwa #undo_buffer buffer_beg
+    43 3E2B A9 00 8D 17 3E A9 + 	mwa #undo_buffer buffer_end
+    44 3E35 A9 FE 8D 00 28		mva #MARK_END undo_buffer
+    45 3E3A 60				rts
+    46
+    47 				; make sure we have enough space
+    48 3E3B			reserve_memory	.LOCAL
+    49 3E3B AD 1E 3E			lda cnt
+    50 3E3E C9 01			cmp #1
+    51 3E40 F0 07			beq single
+    52 3E42			multi
+    53 3E42 0A				asl @
+    54 3E43 0A				asl @
+    55 3E44 18				clc
+    56 3E45 69 04			adc #4	; cnt * 4 + 4
+    57 3E47 D0 02			bne do
+    58 3E49			single
+    59 3E49 A9 04			lda #4
+    60 3E4B			do
+    61 3E4B 8D 1F 3E			sta length
+    62 					; TODO: here we make sure we have enough space and possibly free some
+    63 					; memory
+    64 3E4E AD 18 3E			lda buffer_end+1
+    65 3E51 C9 2F			cmp >[undo_buffer+undo_length-1]
+    66 3E53 F0 01			beq shift
+    67 					; the last page is all free
+    68 3E55 60				rts
+    69 					; we need to free the first page and shift the data
+    70 3E56			shift
+    71 3E56 AD 15 3E 85 E0 AD + 	mwa buffer_beg zer
+    72 					; keep on freeing segments
+    73 3E60			_loo
+    74 3E60 A0 00			ldy #0
+    75 3E62 A2 04			ldx #4
+    76 3E64 B1 E0			lda (zer),y
+    77 3E66 C9 FF			cmp #MARK_MULTI
+    78 3E68 D0 09			bne free_single
+    79 3E6A C8				iny
+    80 3E6B B1 E0			lda (zer),y
+    81 3E6D 0A				asl @
+    82 3E6E 0A				asl @
+    83 3E6F 18				clc
+    84 3E70 69 04			adc #4
+    85 3E72 AA				tax
+    86 3E73			free_single	
+    87 3E73 8A				txa
+    88 3E74 18				clc
+    89 3E75 65 E0			adc zer
+    90 3E77 85 E0			sta zer
+    91 3E79 90 E5			bcc _loo
+    92 				; now, all segments from the first page are freed, shift memory one page back
+    93 3E7B A5 E0			lda zer
+    94 3E7D 8D 15 3E			sta buffer_beg
+    95 3E80 CE 18 3E			dec buffer_end+1
+    96 3E83 A0 00			ldy #0
+    97 3E85 A2 07			ldx #>[undo_length-1]
+    98 3E87 A9 29 8D 93 3E		mva >[undo_buffer+$100] _src+2
+    99 3E8C A9 28 8D 96 3E		mva >[undo_buffer] _dst+2
+   100 3E91			_mv
+   101 3E91 B9 00 29		_src	lda undo_buffer+$100,y
+   102 3E94 99 00 28		_dst	sta undo_buffer,y
+   103 3E97 88				dey
+   104 3E98 D0 F7			bne _mv
+   105 3E9A EE 93 3E			inc _src+2
+   106 3E9D EE 96 3E			inc _dst+2
+   107 3EA0 CA				dex
+   108 3EA1 D0 EE			bne _mv
+   109 3EA3 60				rts
+   110 					.ENDL  ; reserve_memory
+   111 					
+   112 				; Call before setting a pixel - creates a header for multi-pixel if needed
+   113 3EA4			put_pixel_prelude .LOCAL
+   114 3EA4 AD 20 3E			lda ignore
+   115 3EA7 D0 30			bne ex
+   116 3EA9 AE 4B 32			ldx cursor_h
+   117 3EAC A9 00			lda #0
+   118 3EAE 18			_l	clc
+   119 3EAF 6D 4C 32			adc cursor_w
+   120 3EB2 CA				dex
+   121 3EB3 D0 F9			bne _l
+   122 3EB5 8D 1E 3E			sta cnt
+   123 					
+   124 3EB8 20 3B 3E			jsr reserve_memory
+   125 3EBB AD 17 3E 8D 25 3F + 	mwa buffer_end save_byte+1
+   126
+   127 3EC7 AD 1E 3E			lda cnt
+   128 3ECA C9 01			cmp #1
+   129 3ECC F0 0B			beq done
+   130 3ECE			multi
+   131 3ECE A9 FF			lda #MARK_MULTI
+   132 3ED0 20 24 3F			jsr save_byte
+   133 3ED3 AD 1E 3E			lda cnt
+   134 3ED6 20 24 3F			jsr save_byte
+   135 3ED9			done
+   136 3ED9 60			ex	rts
+   137 					.ENDL  ; put_pixel_prelude
+   138
+   139 				; Call after setting a pixel - creates a tail for multi-pixel if needed
+   140 3EDA			put_pixel_epilogue	.LOCAL
+   141 3EDA AD 20 3E			lda ignore
+   142 3EDD D0 26			bne ex
+   143 3EDF AD 1E 3E			lda cnt
+   144 3EE2 C9 01			cmp #1
+   145 3EE4 F0 0B			beq done
+   146 3EE6			multi
+   147 3EE6 AD 1E 3E			lda cnt
+   148 3EE9 20 24 3F			jsr save_byte
+   149 3EEC A9 FF			lda #MARK_MULTI
+   150 3EEE 20 24 3F			jsr save_byte
+   151 3EF1			done
+   152 3EF1 A9 FE			lda #MARK_END
+   153 3EF3 20 24 3F			jsr save_byte
+   154 3EF6 AD 17 3E			lda buffer_end
+   155 3EF9 18				clc
+   156 3EFA 6D 1F 3E			adc length
+   157 3EFD 8D 17 3E			sta buffer_end
+   158 3F00 90 03			bcc *+5
+   159 3F02 EE 18 3E			inc buffer_end+1
+   160 3F05 60			ex	rts
+   161 					.ENDL  ; put_pixel_save
+   162
+   163 				; Save single-pixel information
+   164 3F06			put_pixel_save	.LOCAL
+   165 3F06 AD 20 3E			lda ignore
+   166 3F09 D0 18			bne ex
+   167 3F0B AD 19 3E			lda pos_x
+   168 3F0E 20 24 3F			jsr save_byte
+   169 3F11 AD 1B 3E			lda old_c
+   170 3F14 20 24 3F			jsr save_byte
+   171 3F17 AD 1C 3E			lda new_c
+   172 3F1A 20 24 3F			jsr save_byte
+   173 3F1D AD 1A 3E			lda pos_y
+   174 3F20 20 24 3F			jsr save_byte
+   175 3F23 60			ex	rts
+   176 					.ENDL  ; put_pixel_save
+   177 					
+   178 3F24 8D 00 28		save_byte	sta undo_buffer
+   179 3F27 EE 25 3F D0 03 EE + 	inw save_byte+1
+   180 3F2F 60				rts
+   181
+   182 				***********************************************************************
+   183 				* UNDO
+   184
+   185 3F30			do_undo	.LOCAL
+   186 3F30 AD 15 3E			lda buffer_beg
+   187 3F33 CD 17 3E			cmp buffer_end
+   188 3F36 D0 09			bne go
+   189 3F38 AD 16 3E			lda buffer_beg+1
+   190 3F3B CD 18 3E			cmp buffer_end+1
+   191 3F3E D0 01			bne go
+   192 				; nothing to undo
+   193 3F40 60				rts
+   194
+   195 3F41			go	
+   196 3F41 20 BC 40			jsr save_old_values
+   197
+   198 3F44 AD 17 3E 85 E0 AD + 	mwa buffer_end zer
+   199 3F4E				decZer zer
+Macro: DECZER [Source: utils.asx]
+     1 3F4E A5 E0			lda ZER
+     2 3F50 C6 E0			dec ZER
+     3 3F52 C9 00			cmp #0
+     4 3F54 D0 02			bne _skip
+     5 3F56 C6 E1			dec ZER+1
+     6 3F58			_skip	
+Source: undo.asx
+   200 3F58 A0 00			ldy #0
+   201 3F5A A2 01			ldx #1
+   202 3F5C B1 E0			lda (zer),y
+   203 3F5E C9 FF			cmp #MARK_MULTI
+   204 3F60 D0 17			bne single
+   205 3F62				decZer zer
+Macro: DECZER [Source: utils.asx]
+     1 3F62 A5 E0			lda ZER
+     2 3F64 C6 E0			dec ZER
+     3 3F66 C9 00			cmp #0
+     4 3F68 D0 02			bne _skip
+     5 3F6A C6 E1			dec ZER+1
+     6 3F6C			_skip	
+Source: undo.asx
+   206 3F6C B1 E0			lda (zer),y
+   207 3F6E AA				tax
+   208 3F6F				decZer zer
+Macro: DECZER [Source: utils.asx]
+     1 3F6F A5 E0			lda ZER
+     2 3F71 C6 E0			dec ZER
+     3 3F73 C9 00			cmp #0
+     4 3F75 D0 02			bne _skip
+     5 3F77 C6 E1			dec ZER+1
+     6 3F79			_skip	
+Source: undo.asx
+   209 3F79			single
+   210 3F79 8E 1D 3E			stx hlp
+   211 3F7C 8E 1E 3E			stx cnt
+   212 3F7F			_lo
+   213 3F7F A0 00			ldy #0
+   214 3F81 B1 E0			lda (zer),y
+   215 3F83 8D 1A 3E			sta pos_y
+   216 3F86 8D 4A 32			sta cursor_y
+   217 3F89				decZer zer  ; skip pos y
+Macro: DECZER [Source: utils.asx]
+     1 3F89 A5 E0			lda ZER
+     2 3F8B C6 E0			dec ZER
+     3 3F8D C9 00			cmp #0
+     4 3F8F D0 02			bne _skip
+     5 3F91 C6 E1			dec ZER+1
+     6 3F93			_skip	
+Source: undo.asx
+   218 3F93				decZer zer  ; skip new color
+Macro: DECZER [Source: utils.asx]
+     1 3F93 A5 E0			lda ZER
+     2 3F95 C6 E0			dec ZER
+     3 3F97 C9 00			cmp #0
+     4 3F99 D0 02			bne _skip
+     5 3F9B C6 E1			dec ZER+1
+     6 3F9D			_skip	
+Source: undo.asx
+   219 3F9D B1 E0			lda (zer),y
+   220 3F9F 8D 1B 3E			sta old_c
+   221 3FA2 20 90 41			jsr MOD_set_color
+   222 3FA5				decZer zer  ; skip old color
+Macro: DECZER [Source: utils.asx]
+     1 3FA5 A5 E0			lda ZER
+     2 3FA7 C6 E0			dec ZER
+     3 3FA9 C9 00			cmp #0
+     4 3FAB D0 02			bne _skip
+     5 3FAD C6 E1			dec ZER+1
+     6 3FAF			_skip	
+Source: undo.asx
+   223 3FAF B1 E0			lda (zer),y
+   224 3FB1 8D 19 3E			sta pos_x
+   225 3FB4 8D 49 32			sta cursor_x
+   226 					
+   227 3FB7 20 9A 40			jsr update_pixel
+   228
+   229 3FBA				decZer zer  ; skip pos x
+Macro: DECZER [Source: utils.asx]
+     1 3FBA A5 E0			lda ZER
+     2 3FBC C6 E0			dec ZER
+     3 3FBE C9 00			cmp #0
+     4 3FC0 D0 02			bne _skip
+     5 3FC2 C6 E1			dec ZER+1
+     6 3FC4			_skip	
+Source: undo.asx
+   230 3FC4 CE 1D 3E			dec hlp
+   231 3FC7 D0 B6			bne _lo
+   232 					
+   233 3FC9 AD 1E 3E			lda cnt
+   234 3FCC C9 01			cmp #1
+   235 3FCE F0 14			beq done
+   236 				; skip multi header
+   237 3FD0				decZer zer
+Macro: DECZER [Source: utils.asx]
+     1 3FD0 A5 E0			lda ZER
+     2 3FD2 C6 E0			dec ZER
+     3 3FD4 C9 00			cmp #0
+     4 3FD6 D0 02			bne _skip
+     5 3FD8 C6 E1			dec ZER+1
+     6 3FDA			_skip	
+Source: undo.asx
+   238 3FDA				decZer zer
+Macro: DECZER [Source: utils.asx]
+     1 3FDA A5 E0			lda ZER
+     2 3FDC C6 E0			dec ZER
+     3 3FDE C9 00			cmp #0
+     4 3FE0 D0 02			bne _skip
+     5 3FE2 C6 E1			dec ZER+1
+     6 3FE4			_skip	
+Source: undo.asx
+   239 3FE4			done
+   240 3FE4				incZer zer
+Macro: INCZER [Source: utils.asx]
+     1 3FE4 E6 E0			inc ZER
+     2 3FE6 A5 E0			lda ZER
+     3 3FE8 D0 02			bne _skip
+     4 3FEA E6 E1			inc ZER+1
+     5 3FEC			_skip	
+Source: undo.asx
+   241 3FEC A5 E0 8D 17 3E A5 + 	mwa zer buffer_end
+   242
+   243 3FF6 20 EA 40			jsr restore_old_values
+   244 3FF9 60				rts
+   245 					.ENDL  ; do_undo
+   246 					
+   247
+   248 				***********************************************************************
+   249 				* REDO
+   250
+   251 3FFA			do_redo	.LOCAL
+   252 3FFA AD 17 3E 85 E0 AD + 	mwa buffer_end zer
+   253 4004 A0 00			ldy #0
+   254 4006 B1 E0			lda (zer),y
+   255 4008 C9 FE			cmp #MARK_END
+   256 400A D0 01			bne go
+   257 				; nothing to redo
+   258 400C 60				rts
+   259
+   260 400D			go	
+   261 400D 20 BC 40			jsr save_old_values
+   262
+   263 4010 A0 00			ldy #0
+   264 4012 A2 01			ldx #1
+   265 4014 B1 E0			lda (zer),y
+   266 4016 C9 FF			cmp #MARK_MULTI
+   267 4018 D0 13			bne single
+   268 401A				incZer zer
+Macro: INCZER [Source: utils.asx]
+     1 401A E6 E0			inc ZER
+     2 401C A5 E0			lda ZER
+     3 401E D0 02			bne _skip
+     4 4020 E6 E1			inc ZER+1
+     5 4022			_skip	
+Source: undo.asx
+   269 4022 B1 E0			lda (zer),y
+   270 4024 AA				tax
+   271 4025				incZer zer
+Macro: INCZER [Source: utils.asx]
+     1 4025 E6 E0			inc ZER
+     2 4027 A5 E0			lda ZER
+     3 4029 D0 02			bne _skip
+     4 402B E6 E1			inc ZER+1
+     5 402D			_skip	
+Source: undo.asx
+   272 402D			single
+   273 402D 8E 1D 3E			stx hlp
+   274 4030 8E 1E 3E			stx cnt
+   275 4033			_lo
+   276 4033 A0 00			ldy #0
+   277 4035 B1 E0			lda (zer),y
+   278 4037 8D 19 3E			sta pos_x
+   279 403A 8D 49 32			sta cursor_x
+   280 403D				incZer zer  ; skip pos x
+Macro: INCZER [Source: utils.asx]
+     1 403D E6 E0			inc ZER
+     2 403F A5 E0			lda ZER
+     3 4041 D0 02			bne _skip
+     4 4043 E6 E1			inc ZER+1
+     5 4045			_skip	
+Source: undo.asx
+   281 4045				incZer zer  ; skip old color
+Macro: INCZER [Source: utils.asx]
+     1 4045 E6 E0			inc ZER
+     2 4047 A5 E0			lda ZER
+     3 4049 D0 02			bne _skip
+     4 404B E6 E1			inc ZER+1
+     5 404D			_skip	
+Source: undo.asx
+   282 404D B1 E0			lda (zer),y
+   283 404F 8D 1C 3E			sta new_c
+   284 4052 20 90 41			jsr MOD_set_color
+   285 4055				incZer zer  ; skip new color 
+Macro: INCZER [Source: utils.asx]
+     1 4055 E6 E0			inc ZER
+     2 4057 A5 E0			lda ZER
+     3 4059 D0 02			bne _skip
+     4 405B E6 E1			inc ZER+1
+     5 405D			_skip	
+Source: undo.asx
+   286 405D B1 E0			lda (zer),y
+   287 405F 8D 1A 3E			sta pos_y
+   288 4062 8D 4A 32			sta cursor_y
+   289 					
+   290 4065 20 9A 40			jsr update_pixel
+   291 					
+   292 4068				incZer zer  ; skip pos y
+Macro: INCZER [Source: utils.asx]
+     1 4068 E6 E0			inc ZER
+     2 406A A5 E0			lda ZER
+     3 406C D0 02			bne _skip
+     4 406E E6 E1			inc ZER+1
+     5 4070			_skip	
+Source: undo.asx
+   293 4070 CE 1D 3E			dec hlp
+   294 4073 D0 BE			bne _lo
+   295 					
+   296 4075 AD 1E 3E			lda cnt
+   297 4078 C9 01			cmp #1
+   298 407A F0 10			beq done
+   299 				; skip multi header
+   300 407C				incZer zer
+Macro: INCZER [Source: utils.asx]
+     1 407C E6 E0			inc ZER
+     2 407E A5 E0			lda ZER
+     3 4080 D0 02			bne _skip
+     4 4082 E6 E1			inc ZER+1
+     5 4084			_skip	
+Source: undo.asx
+   301 4084				incZer zer
+Macro: INCZER [Source: utils.asx]
+     1 4084 E6 E0			inc ZER
+     2 4086 A5 E0			lda ZER
+     3 4088 D0 02			bne _skip
+     4 408A E6 E1			inc ZER+1
+     5 408C			_skip	
+Source: undo.asx
+   302 408C			done
+   303 408C A5 E0 8D 17 3E A5 + 	mwa zer buffer_end
+   304
+   305 4096 20 EA 40			jsr restore_old_values
+   306 4099 60				rts
+   307 					.ENDL  ; do_redo
+   308
+   309 				***********************************************************************
+   310 409A			update_pixel
+   311 409A 20 1C 41			jsr MOD_put_pixel
+   312
+   313 409D AD 39 39			lda ZOOM.state
+   314 40A0 F0 19			beq dont_update_zoom
+   315 40A2 AD 3B 39			lda ZOOM.zoom_y
+   316 40A5 18				clc
+   317 40A6 6D 36 41			adc MOD_zoom_h
+   318 40A9 CD 4A 32			cmp cursor_Y
+   319 40AC 90 0D			bcc dont_update_zoom
+   320 40AE F0 0B			beq dont_update_zoom
+   321 40B0 AD 4A 32			lda cursor_Y
+   322 40B3 CD 3B 39			cmp zoom.zoom_y
+   323 40B6 90 03			bcc dont_update_zoom
+   324 40B8 20 AD 3A			jsr zoom.zul_add
+   325 40BB			dont_update_zoom	
+   326 40BB 60				rts
+   327
+   328
+   329
+   330 40BC			save_old_values
+   331 40BC AD 49 32 8D 0E 41		mva cursor_x cx
+   332 40C2 AD 4A 32 8D 0F 41		mva cursor_y cy
+   333 40C8 AD 4B 32 8D 10 41		mva cursor_h ch
+   334 40CE AD 4C 32 8D 11 41		mva cursor_w cw
+   335 40D4 20 8D 41			jsr MOD_get_color
+   336 40D7 8D 12 41			sta col
+   337 					
+   338 40DA A9 01 8D 20 3E		mva #1 ignore	
+   339 40DF A9 01 8D 4B 32		mva #1 cursor_h
+   340 40E4 A9 01 8D 4C 32		mva #1 cursor_w
+   341 40E9 60				rts
+   342 					
+   343 40EA			restore_old_values
+   344 40EA A9 00 8D 20 3E		mva #0 ignore
+   345
+   346 40EF AD 0E 41 8D 49 32		mva cx cursor_x
+   347 40F5 AD 0F 41 8D 4A 32		mva cy cursor_y
+   348 40FB AD 10 41 8D 4B 32		mva ch cursor_h
+   349 4101 AD 11 41 8D 4C 32		mva cw cursor_w
+   350 4107 AD 12 41			lda col
+   351 410A 20 90 41			jsr MOD_set_color
+   352 410D 60				rts
+   353
+   354 410E 00			cx	dta 0
+   355 410F 00			cy	dta 0
+   356 4110 00			ch	dta 0
+   357 4111 00			cw	dta 0
+   358 4112 00			col	dta 0
+   359
+   360 = 02FE			UNDO_LEN	equ *-UNDO
+   361 					.ENDL	; UNDO
+   186 					
+   187 = 0000			INCLUDE_PICTURE	equ 0
+   188
+   189 						ift !GFX_MODE
+   190 				;GFX_MODE	equ 1	; MIC
+   191 				;GFX_MODE	equ 2	; INP
+   192 				;GFX_MODE	equ 3	; CIN
+   193 				;GFX_MODE	equ 4	; HIP
+   194 				GFX_MODE	equ 5	; TIP
+   195 						eif
+   196 						
+   197 						ift GFX_MODE=1
+   198 					icl 'mod_mic.asx'
+   199 						eli GFX_MODE=2
+   200 					icl 'mod_inp.asx'
+   201 						eli GFX_MODE=3
+   202 					icl 'mod_cin.asx'
+   203 						eli GFX_MODE=4
+   204 4113				icl 'mod_hip.asx'
+Source: mod_hip.asx
+     1 				*******************************************************************************
+     2 				* External
+     3 = 4113			MOD_MOD		equ *
+     4
+     5 4113 4C 27 42		MOD_init		jmp HIP.init
+     6 4116 4C A0 41		MOD_vbl			jmp HIP.vbl
+     7 4119 4C 0F 45		MOD_pick_color	jmp HIP.pick_color
+     8 411C 4C 4E 45		MOD_put_pixel	jmp HIP.put_pixel
+     9 411F 4C A4 46		MOD_enable_zoom		jmp HIP.enable_zoom
+    10 4122 4C A5 46		MOD_disable_zoom	jmp HIP.disable_zoom
+    11 4125 4C 7C 46		MOD_zoom_update		jmp HIP.zoom_update
+    12 				; updates a single zoomed line. Y=line number
+    13 4128 4C E5 46		MOD_zoom_update_line	jmp HIP.zoom_update_line
+    14 				; updates upper part
+    15 412B 4C 62 47		MOD_zoom_update_top		jmp HIP.zoom_update_top
+    16
+    17 412E 13			MOD_pmY			dta 19 ; in scanlines, Y position of the first line
+    18 412F 01			MOD_pixel_w		dta 1 ; can be 1,2 or 4
+    19 4130 01			MOD_pixel_h		dta 1 ; - anything
+    20
+    21 4131 A0			MOD_max_x		dta 160
+    22 4132 C8			MOD_max_y		dta 200
+    23
+    24 4133 04			MOD_max_cursor_w	dta 4 ; for performance
+    25 4134 08			MOD_max_cursor_h	dta 8
+    26
+    27 4135 50			MOD_zoom_w			dta 80 ; in mode pixels
+    28 4136 2F			MOD_zoom_h			dta HIP.zoomlines ; in mode pixels
+    29 4137 7D			MOD_zoom_pmY		dta 219-[2*HIP.zoomlines] ; in scanlines, Y position of the first line in zoom
+    30 4138 02			MOD_zoom_pixel_w	dta 2 ; in 15 pixels
+    31 4139 02			MOD_zoom_pixel_h	dta 2 ; in scanlines
+    32 413A 66			MOD_zoom_top_h		dta 200-4-[2*HIP.zoomlines] ; lines from main panel visible
+    33
+    34 = 413B			MOD_screen	equ *
+    35 413B 22 32 29 1A 0E 0E + 	dta d'BRI:.. TONE:..                     ::HIP'
+    36 4163 6B 65 79 73 1A 31 + 	dta d'keys:QW   AS        JLIK PCZ UY         '
+    37
+    38 418B 00			MOD_curcolor_X	dta 0  ; in 15 pixels, from 0
+    39 418C 08			MOD_curcolor_W	dta 8  ; in 15 pixels
+    40
+    41 				; returns the mode color as a byte (used in UNDO)
+    42 418D 4C 9C 41		MOD_get_color	jmp HIP.get_color
+    43 				; sets the mode colors as a byte (used in UNDO)
+    44 4190 4C 96 41		MOD_set_color	jmp HIP.set_color
+    45
+    46 = 0080			MOD_MOD_LEN	equ *-MOD_MOD
+    47
+    48 				*******************************************************************************
+    49 				* Internal
+    50 4193			HIP			.LOCAL
+    51
+    52 = 002F			zoomlines	equ 47
+    53
+    54 = 8000			pline		equ $8000
+    55 = 8060			scrF1		equ $8060	;GTIA $40
+    56 = 6060			scrF2		equ $6060	;GTIA $80
+    57 = 00E0			SCR_EOR		equ [>scrF1^>scrF2]
+    58
+    59 = B800			dl1_zoom	equ $b800
+    60 = BA00			dl2_zoom	equ $ba00
+    61 = 0002			DLZOOM_EOR	equ [>dl1_zoom^>dl2_zoom]
+    62
+    63 = B000			dl1			equ $b000
+    64 = B400			dl2			equ $b400
+    65 = 0004			DL_EOR		equ [>dl1^>dl2]
+    66
+    67 = A000			loline		equ $a000
+    68 = A100			hiline		equ $a100
+    69 = A200			div4		equ $a200
+    70 = A300			zoomlo_gtia	equ $a300
+    71 = A400			zoomhi_gtia	equ $a400
+    72
+    73 = AA00			dlzoom_fill	equ $aa00
+    74
+    75 				*******************************************************************************
+    76
+    77 4193 00			cur_bri 	dta 0	; values: 00,01,02,...,0f
+    78 4194 00			cur_tone	dta $00 ; values: 00,10,20,...,f0
+    79 4195 0C			hip_hscrol	dta 12
+    80
+    81 4196			set_color	
+    82 4196 29 0F			and #$0f
+    83 4198 8D 93 41			sta cur_bri
+    84 419B 60				rts
+    85 419C			get_color
+    86 419C AD 93 41			lda cur_bri
+    87 419F 60				rts
+    88
+    89 				setc .MACRO ' '
+    90 					lda HIP.cur_tone
+    91 					ora #:1
+    92 					sta :2
+    93 					.ENDM
+    94
+    95 41A0			vbl
+    96 41A0 AD BA 31			lda VBL.frame
+    97 41A3 29 01			and #1
+    98 41A5 A8				tay
+    99 41A6 AA				tax
+   100 41A7 F0 02			beq *+4
+   101 41A9 A9 04			lda #DL_EOR
+   102 41AB 49 B0			eor #>dl1
+   103 41AD 8D 03 D4			sta $d403
+   104 41B0 A9 00 8D 02 D4		mva #0 $d402
+   105 41B5 A9 4C 8D 00 02 A9 + 	mwa #dli_palette $200
+   106
+   107 41BF AD 39 39			lda zoom.state
+   108 41C2 F0 08			beq vbl_nozoom
+   109 41C4 AD BA 31			lda VBL.frame
+   110 41C7 4D 3C 39			eor zoom.zoom_top_Y
+   111 41CA 29 01			and #1
+   112 				;	tay
+   113
+   114 41CC			vbl_nozoom
+   115 41CC B9 42 42			lda _cols,y
+   116 41CF 0D 94 41			ora cur_tone
+   117 41D2 8D 48 42			sta cols
+   118 41D5 B9 43 42			lda _cols+1,y
+   119 41D8 0D 94 41			ora cur_tone
+   120 41DB 8D 49 42			sta cols+1
+   121 41DE B9 45 42			lda _gtias,y
+   122 41E1 8D 4A 42			sta gtias
+   123 41E4 B9 46 42			lda _gtias+1,y
+   124 41E7 8D 4B 42			sta gtias+1
+   125
+   126 41EA A9 00 8D 12 D0		mva #$00 $d012
+   127 41EF A9 55 8D 13 D0		mva #$55 $d013
+   128 41F4 A9 AA 8D 14 D0		mva #$aa $d014
+   129 41F9 A9 FF 8D 15 D0		mva #$ff $d015
+   130
+   131 41FE				HIP.setc $08 $d016
+Macro: HIP.SETC [Source: mod_hip.asx]
+     1 41FE AD 94 41			lda HIP.cur_tone
+     2 4201 09 08			ora #$08
+     3 4203 8D 16 D0			sta $D016
+Source: mod_hip.asx
+   132 4206				HIP.setc $0a $d017
+Macro: HIP.SETC [Source: mod_hip.asx]
+     1 4206 AD 94 41			lda HIP.cur_tone
+     2 4209 09 0A			ora #$0A
+     3 420B 8D 17 D0			sta $D017
+Source: mod_hip.asx
+   133 420E				HIP.setc $0c $d018
+Macro: HIP.SETC [Source: mod_hip.asx]
+     1 420E AD 94 41			lda HIP.cur_tone
+     2 4211 09 0C			ora #$0C
+     3 4213 8D 18 D0			sta $D018
+Source: mod_hip.asx
+   134 4216				HIP.setc $0e $d019
+Macro: HIP.SETC [Source: mod_hip.asx]
+     1 4216 AD 94 41			lda HIP.cur_tone
+     2 4219 09 0E			ora #$0E
+     3 421B 8D 19 D0			sta $D019
+Source: mod_hip.asx
+   135 421E				HIP.setc $00 $d01a
+Macro: HIP.SETC [Source: mod_hip.asx]
+     1 421E AD 94 41			lda HIP.cur_tone
+     2 4221 09 00			ora #$00
+     3 4223 8D 1A D0			sta $D01A
+Source: mod_hip.asx
+   136
+   137 4226 60				rts
+   138
+   139 4227			init
+   140 4227 20 E6 42			jsr create_DL
+   141 422A 20 23 46			jsr create_tabs
+   142 				;	jsr update_status
+   143 422D 20 02 45			jsr upd_bri
+   144 4230				ldxy HIP_KEYTABLE
+Macro: LDXY [Source: utils.asx]
+     1 4230 A2 08			ldx <HIP_KEYTABLE
+     2 4232 A0 48			ldy >HIP_KEYTABLE
+Source: mod_hip.asx
+   145 4234 20 03 39			jsr KB.extend_keytable
+   146 4237				ldxy HIP_MENUTABLE
+Macro: LDXY [Source: utils.asx]
+     1 4237 A2 00			ldx <HIP_MENUTABLE
+     2 4239 A0 49			ldy >HIP_MENUTABLE
+Source: mod_hip.asx
+   147 423B 20 D4 3D			jsr MENU.extend_menutable
+   148
+   149 423E 20 BF 43			jsr prp_dlzoom_fill
+   150
+   151 				;	jsr conv87
+   152 				;	jsr conv2spr
+   153
+   154 4241 60				rts
+   155
+   156 4242 00 0E 00		_cols	dta $00,$0e,$00
+   157 4245 41 81 41		_gtias	dta $41,$81,$41
+   158 4248 00 00		cols	dta 0,0
+   159 424A 00 00		gtias	dta 0,0
+   160
+   161 424C			dli_palette	.LOCAL
+   162 424C				phaxy
+Macro: PHAXY [Source: utils.asx]
+     1 424C 48				pha
+     2 424D 8A				txa
+     3 424E 48				pha
+Source: mod_hip.asx
+     2 424F 98				tya
+     3 4250 48				pha
+Source: mod_hip.asx
+   163 4251 AD 95 41 8D 04 D4		mva hip_hscrol :HSCROL
+   164 4257 8D 0A D4			sta $d40a
+   165 				;	sta $d40a
+   166
+   167 425A A9 41			lda #$41
+   168 425C 8D 1B D0			sta $d01b
+   169
+   170 425F A2 08			ldx #8
+   171 4261 8D 0A D4		_dp	sta $d40a
+   172 4264 CA				dex
+   173 4265 D0 FA			bne _dp
+   174
+   175 4267				HIP.setc $00 $d012
+Macro: HIP.SETC [Source: mod_hip.asx]
+     1 4267 AD 94 41			lda HIP.cur_tone
+     2 426A 09 00			ora #$00
+     3 426C 8D 12 D0			sta $D012
+Source: mod_hip.asx
+   176 426F				HIP.setc $02 $d013
+Macro: HIP.SETC [Source: mod_hip.asx]
+     1 426F AD 94 41			lda HIP.cur_tone
+     2 4272 09 02			ora #$02
+     3 4274 8D 13 D0			sta $D013
+Source: mod_hip.asx
+   177 4277				HIP.setc $04 $d014
+Macro: HIP.SETC [Source: mod_hip.asx]
+     1 4277 AD 94 41			lda HIP.cur_tone
+     2 427A 09 04			ora #$04
+     3 427C 8D 14 D0			sta $D014
+Source: mod_hip.asx
+   178 427F				HIP.setc $06 $d015
+Macro: HIP.SETC [Source: mod_hip.asx]
+     1 427F AD 94 41			lda HIP.cur_tone
+     2 4282 09 06			ora #$06
+     3 4284 8D 15 D0			sta $D015
+Source: mod_hip.asx
+   179
+   180 4287 A9 AF 8D 00 02 A9 + 	mwa #dli_core $200 ; switch DLI
+   181 4291 AD 4A 42 8D 1B D0		mva gtias $d01b
+   182
+   183 4297 A0 6E			ldy #$6e
+   184 4299 AD 39 39			lda zoom.state
+   185 429C F0 02			beq *+4
+   186 429E A0 3D			ldy #$6e-2-zoomlines
+   187 42A0 8C B4 42			sty dli_core.maxline+1
+   188
+   189 42A3 AD 4B 42			lda gtias+1
+   190 42A6 8D 1B D0			sta $d01b
+   191 					
+   192 42A9				plaxy
+Macro: PLAXY [Source: utils.asx]
+     1 42A9 68				pla
+     2 42AA A8				tay
+     1 42AB 68				pla
+     2 42AC AA				tax
+     3 42AD 68				pla
+Source: mod_hip.asx
+Source: mod_hip.asx
+   193 42AE 40				rti
+   194 					.ENDL
+   195
+   196 42AF			dli_core	.LOCAL
+   197 42AF 48				pha
+   198 42B0 AD 0B D4			lda $d40b
+   199 42B3 C9 6E		maxline	cmp #$6e
+   200 42B5 B0 14			bcs blah
+   201
+   202 42B7 AD 4A 42			lda gtias
+   203 42BA 8D 0A D4			sta $d40a
+   204 42BD 8D 1B D0			sta $d01b
+   205
+   206 42C0 AD 4B 42			lda gtias+1
+   207 42C3 8D 0A D4			sta $d40a
+   208 42C6 8D 1B D0			sta $d01b
+   209
+   210 42C9 68				pla
+   211 42CA 40				rti
+   212 42CB			blah
+   213 42CB C9 6E			cmp #$6e
+   214 42CD 90 04			bcc zoom
+   215 42CF			normal
+   216 42CF 68				pla
+   217 42D0 6C B7 31			jmp (DLI.down_vec)
+   218 42D3			zoom
+   219 42D3 A9 41 8D 1B D0		mva #$41 $d01b
+   220 42D8 AD B7 31 8D 00 02 + 	mwa DLI.down_vec $200
+   221 42E4 68				pla
+   222 42E5 40				rti
+   223 					.ENDL
+   224
+   225 42E6			create_DL
+   226 42E6 A9 60 85 E4 A9 80 + 	mwa #scrF1 zer1
+   227 42EE A9 60 85 E6 85 E7		mwa #scrF2 zer2
+   228 42F4 A9 21 8D A8 43 A9 + 	mwa #dl1_core _mcd1+1
+   229 42FE A9 21 8D B4 43 A9 + 	mwa #dl2_core _mcd2+1
+   230
+   231 4308 A0 64			ldy #100
+   232 430A			_lp
+   233 430A A9 CF			lda #$4f+$80
+   234 430C 20 A4 43			jsr _mcd
+   235 430F A5 E4			lda zer1
+   236 4311 20 A4 43			jsr _mcd
+   237 4314 A5 E5			lda zer1+1
+   238 4316 20 B3 43			jsr _mcd2
+   239 4319 49 E0			eor #SCR_EOR
+   240 431B 20 A7 43			jsr _mcd1
+   241
+   242 431E				addToZer zer1 40
+Macro: ADDTOZER [Source: utils.asx]
+     1 431E A5 E4			lda ZER1
+     2 4320 18				clc
+     3 4321 69 28			adc #40
+     4 4323 85 E4			sta ZER1
+     5 4325 90 02			bcc *+4
+     6 4327 E6 E5			inc ZER1+1
+Source: mod_hip.asx
+   243
+   244 4329 A9 4F			lda #$4f+$00
+   245 432B 20 A4 43			jsr _mcd
+   246 432E A5 E4			lda zer1
+   247 4330 20 A4 43			jsr _mcd
+   248 4333 A5 E5			lda zer1+1
+   249 4335 20 A7 43			jsr _mcd1
+   250 4338 49 E0			eor #SCR_EOR
+   251 433A 20 B3 43			jsr _mcd2
+   252
+   253 433D				addToZer zer1 40
+Macro: ADDTOZER [Source: utils.asx]
+     1 433D A5 E4			lda ZER1
+     2 433F 18				clc
+     3 4340 69 28			adc #40
+     4 4342 85 E4			sta ZER1
+     5 4344 90 02			bcc *+4
+     6 4346 E6 E5			inc ZER1+1
+Source: mod_hip.asx
+   254
+   255 4348 88				dey
+   256 4349 D0 BF			bne _lp
+   257
+   258 					; return to DL_return
+   259 434B A9 01			lda #$01
+   260 434D 20 A4 43			jsr _mcd
+   261 4350 A9 1D			lda <dl1_return
+   262 4352 20 A7 43			jsr _mcd1
+   263 4355 A9 B0			lda >dl1_return
+   264 4357 20 A7 43			jsr _mcd1
+   265 435A A9 1D			lda <dl2_return
+   266 435C 20 B3 43			jsr _mcd2
+   267 435F A9 B4			lda >dl2_return
+   268 4361 20 B3 43			jsr _mcd2
+   269
+   270 					; create DL_zoom
+   271 4364 A9 00 8D A8 43 A9 + 	mwa #dl1_zoom _mcd1+1
+   272 436E A9 00 8D B4 43 A9 + 	mwa #dl2_zoom _mcd2+1
+   273 4378 A9 A0			lda #$20+$80
+   274 437A 20 A4 43			jsr _mcd
+   275 437D A0 5E			ldy #[2*zoomlines]
+   276 437F			cdl1
+   277 437F A9 5F			lda #$5f+$00
+   278 4381 20 A4 43			jsr _mcd
+   279 4384 A9 00			lda #0
+   280 4386 20 A4 43			jsr _mcd
+   281 4389 20 A4 43			jsr _mcd
+   282 438C 88				dey
+   283 438D D0 F0			bne cdl1
+   284 438F A9 01			lda #$01
+   285 4391 20 A4 43			jsr _mcd
+   286 4394 A9 1D			lda <dl1_return
+   287 4396 20 A4 43			jsr _mcd
+   288 4399 A9 B0			lda >dl1_return
+   289 439B 20 A7 43			jsr _mcd1
+   290 439E A9 B4			lda >dl2_return
+   291 43A0 20 B3 43			jsr _mcd2
+   292 43A3 60				rts
+   293 43A4 20 B3 43		_mcd	jsr _mcd2
+   294 43A7 8D 21 B0		_mcd1	sta dl1_core
+   295 43AA EE A8 43 D0 03 EE + 	inw _mcd1+1
+   296 43B2 60				rts
+   297 43B3 8D 21 B4		_mcd2	sta dl2_core
+   298 43B6 EE B4 43 D0 03 EE + 	inw _mcd2+1
+   299 43BE 60				rts
+   300
+   301 43BF			prp_dlzoom_fill .LOCAL
+   302 43BF A9 00 8D D4 44 A9 + 	mwa #dlzoom_fill wr+1
+   303 				; first, fill lo byte
+   304 43C9 A2 2F			ldx #[zoomlines]
+   305 43CB A9 02 85 E4 A9 B8 + 	mwa #DL1_zoom+2 zer1
+   306 43D3			lo1
+   307 43D3 A9 8D			lda #{sta DL1_zoom+2}
+   308 43D5 20 D3 44			jsr wr
+   309 43D8 A5 E4			lda zer1
+   310 43DA 20 D3 44			jsr wr
+   311 43DD 8A				txa
+   312 43DE 29 01			and #1
+   313 43E0 F0 02			beq *+4
+   314 43E2 A9 02			lda #DLZOOM_EOR
+   315 43E4 45 E5			eor zer1+1
+   316 43E6 20 D3 44			jsr wr
+   317 43E9				addtozer zer1 3
+Macro: ADDTOZER [Source: utils.asx]
+     1 43E9 A5 E4			lda ZER1
+     2 43EB 18				clc
+     3 43EC 69 03			adc #3
+     4 43EE 85 E4			sta ZER1
+     5 43F0 90 02			bcc *+4
+     6 43F2 E6 E5			inc ZER1+1
+Source: mod_hip.asx
+   318 43F4 A9 8D			lda #{sta DL1_zoom+2}
+   319 43F6 20 D3 44			jsr wr
+   320 43F9 A5 E4			lda zer1
+   321 43FB 20 D3 44			jsr wr
+   322 43FE 8A				txa
+   323 43FF 29 01			and #1
+   324 4401 F0 02			beq *+4
+   325 4403 A9 02			lda #DLZOOM_EOR
+   326 4405 45 E5			eor zer1+1
+   327 4407 20 D3 44			jsr wr
+   328 440A				addtozer zer1 3
+Macro: ADDTOZER [Source: utils.asx]
+     1 440A A5 E4			lda ZER1
+     2 440C 18				clc
+     3 440D 69 03			adc #3
+     4 440F 85 E4			sta ZER1
+     5 4411 90 02			bcc *+4
+     6 4413 E6 E5			inc ZER1+1
+Source: mod_hip.asx
+   329 4415 CA				dex
+   330 4416 D0 BB			bne lo1
+   331 4418 A9 49			lda #{eor #$80}
+   332 441A 20 D3 44			jsr wr
+   333 441D A9 80			lda #$80
+   334 441F 20 D3 44			jsr wr
+   335 4422 A2 2F			ldx #[zoomlines]
+   336 4424 A9 02 85 E4 A9 BA + 	mwa #DL2_zoom+2 zer1
+   337 442C A9 8D		lo2	lda #{sta DL1_zoom+2}
+   338 442E 20 D3 44			jsr wr
+   339 4431 A5 E4			lda zer1
+   340 4433 20 D3 44			jsr wr
+   341 4436 8A				txa
+   342 4437 29 01			and #1
+   343 4439 F0 02			beq *+4
+   344 443B A9 02			lda #DLZOOM_EOR
+   345 443D 45 E5			eor zer1+1
+   346 443F 20 D3 44			jsr wr
+   347 4442				addtozer zer1 3
+Macro: ADDTOZER [Source: utils.asx]
+     1 4442 A5 E4			lda ZER1
+     2 4444 18				clc
+     3 4445 69 03			adc #3
+     4 4447 85 E4			sta ZER1
+     5 4449 90 02			bcc *+4
+     6 444B E6 E5			inc ZER1+1
+Source: mod_hip.asx
+   348 444D A9 8D			lda #{sta DL2_zoom+2}
+   349 444F 20 D3 44			jsr wr
+   350 4452 A5 E4			lda zer1
+   351 4454 20 D3 44			jsr wr
+   352 4457 8A				txa
+   353 4458 29 01			and #1
+   354 445A F0 02			beq *+4
+   355 445C A9 02			lda #DLZOOM_EOR
+   356 445E 45 E5			eor zer1+1
+   357 4460 20 D3 44			jsr wr
+   358 4463				addtozer zer1 3
+Macro: ADDTOZER [Source: utils.asx]
+     1 4463 A5 E4			lda ZER1
+     2 4465 18				clc
+     3 4466 69 03			adc #3
+     4 4468 85 E4			sta ZER1
+     5 446A 90 02			bcc *+4
+     6 446C E6 E5			inc ZER1+1
+Source: mod_hip.asx
+   359 446E CA				dex
+   360 446F D0 BB			bne lo2
+   361 				; then, fill hi byte
+   362 4471 A2 00			ldx #0
+   363 4473 A9 03 85 E4 A9 B8 + 	mwa #DL1_zoom+3 zer1
+   364 447B A9 03 85 E6 A9 BA + 	mwa #DL2_zoom+3 zer2
+   365 4483			hloop ;)
+   366 4483 8A				txa
+   367 4484 4A				lsr @
+   368 4485 B0 0F			bcs no_lda
+   369 4487 A9 BD			lda #{lda zoom_lineadr,X}
+   370 4489 20 D3 44			jsr wr
+   371 448C 8A				txa
+   372 448D 4A				lsr @
+   373 448E 20 D3 44			jsr wr
+   374 4491 A9 52			lda >zoom_lineadr
+   375 4493 20 D3 44			jsr wr
+   376 4496			no_lda
+   377 4496 A9 8D			lda #{sta DL1_zoom}
+   378 4498 20 D3 44			jsr wr
+   379 449B A5 E4			lda zer1
+   380 449D 20 D3 44			jsr wr
+   381 44A0 A5 E5			lda zer1+1
+   382 44A2 20 D3 44			jsr wr
+   383 44A5				addtozer zer1 3
+Macro: ADDTOZER [Source: utils.asx]
+     1 44A5 A5 E4			lda ZER1
+     2 44A7 18				clc
+     3 44A8 69 03			adc #3
+     4 44AA 85 E4			sta ZER1
+     5 44AC 90 02			bcc *+4
+     6 44AE E6 E5			inc ZER1+1
+Source: mod_hip.asx
+   384 44B0 A9 8D			lda #{sta DL2_zoom}
+   385 44B2 20 D3 44			jsr wr
+   386 44B5 A5 E6			lda zer2
+   387 44B7 20 D3 44			jsr wr
+   388 44BA A5 E7			lda zer2+1
+   389 44BC 20 D3 44			jsr wr
+   390 44BF				addtozer zer2 3
+Macro: ADDTOZER [Source: utils.asx]
+     1 44BF A5 E6			lda ZER2
+     2 44C1 18				clc
+     3 44C2 69 03			adc #3
+     4 44C4 85 E6			sta ZER2
+     5 44C6 90 02			bcc *+4
+     6 44C8 E6 E7			inc ZER2+1
+Source: mod_hip.asx
+   391 44CA E6 F0			inc zerHlp
+   392 44CC E8				inx
+   393 44CD E0 5E			cpx #[2*zoomlines]
+   394 44CF D0 B2			bne hloop
+   395 				; and exit
+   396 44D1 A9 60			lda #{rts}
+   397 44D3 8D 00 AA		wr	sta dlzoom_fill
+   398 44D6 EE D4 44 D0 03 EE + 	inw wr+1
+   399 44DE 60				rts
+   400 					.ENDL
+   401
+   402
+   403 				* ****************************************************************************
+   404 				* Palette management
+   405 44DF 08 18 20 28 30 38 + colorpos dta 8,24,32,40,48,56,64,72,80,88,96,104,112,120,128,144
+   406
+   407 44EF			chg_tone
+   408 44EF 18				clc
+   409 44F0 6D 94 41			adc cur_tone
+   410 44F3 8D 94 41			sta cur_tone
+   411 44F6 4C 66 46			jmp update_status
+   412 44F9			chg_bri
+   413 44F9 18				clc
+   414 44FA 6D 93 41			adc cur_bri
+   415 44FD 29 0F			and #$0f
+   416 44FF 8D 93 41			sta cur_bri
+   417 4502			upd_bri
+   418 4502 AC 93 41			ldy cur_bri
+   419 4505 B9 DF 44			lda colorpos,y
+   420 4508 8D 8B 41			sta MOD_curcolor_x
+   421 450B 20 66 46			jsr update_status
+   422 450E 60				rts
+   423
+   424 				* ****************************************************************************
+   425 450F			pick_color	.LOCAL
+   426 450F AC 4A 32			ldy cursor_y
+   427 4512 B9 00 A0 85 E4		mva loline,y zer1
+   428 4517 B9 00 A1 85 E5		mva hiline,y zer1+1
+   429
+   430 451C AD 49 32			lda cursor_x
+   431 451F 4A				lsr @
+   432 4520 A8				tay
+   433 4521 90 16			bcc GR9
+   434 4523			GRA
+   435 4523 A5 E5			lda zer1+1
+   436 4525 49 E0			eor #SCR_EOR
+   437 4527 85 E5			sta zer1+1
+   438 4529 98				tya
+   439 452A 4A				lsr @
+   440 452B A8				tay
+   441 452C B1 E4			lda (zer1),y
+   442 452E B0 04			bcs GRA_lo
+   443 4530			GRA_hi
+   444 4530 4A 4A 4A 4A		:4	lsr @
+   445 4534			GRA_lo
+   446 4534 29 07			and #$07
+   447 4536 0A				asl @
+   448 4537 90 0D			bcc taken ;!
+   449 4539			GR9
+   450 4539 98				tya
+   451 453A 4A				lsr @
+   452 453B A8				tay
+   453 453C B1 E4			lda (zer1),y
+   454 453E B0 04			bcs GR9_lo
+   455 4540			GR9_hi
+   456 4540 4A 4A 4A 4A		:4	lsr @
+   457 4544			GR9_lo
+   458 4544 29 0F			and #$0f
+   459 4546			taken
+   460 4546 8D 93 41			sta cur_bri
+   461 4549 4C 02 45			jmp upd_bri
+   462 					.ENDL
+   463 				* ****************************************************************************
+   464 454C 00			pp_cntY	dta 0
+   465 454D 00			pp_cntX	dta 0
+   466
+   467 454E			put_pixel .LOCAL
+   468 454E 20 A4 3E			jsr UNDO.put_pixel_prelude
+   469
+   470 4551 AD 4B 32 8D 4C 45		mva cursor_h pp_cntY
+   471
+   472 4557 AC 4A 32			ldy cursor_y
+   473 455A 8C 1A 3E			sty UNDO.pos_y
+   474 455D B9 00 A0			lda loline,y
+   475 4560 85 E4			sta zer1
+   476 4562 85 E6			sta zer2
+   477 4564 B9 00 A1			lda hiline,y
+   478 4567 85 E5			sta zer1+1
+   479 4569 49 E0			eor #SCR_EOR
+   480 456B 85 E7			sta zer2+1
+   481 456D			loopY
+   482 456D A9 00 8D 4D 45		mva #0 pp_cntX
+   483 4572			loopx
+   484 4572 AD 49 32			lda cursor_x
+   485 4575 18				clc
+   486 4576 6D 4D 45			adc pp_cntX
+   487 4579 AA				tax
+   488 457A 8E 19 3E			stx UNDO.pos_x
+   489 457D BC 00 A2			ldy div4,x
+   490
+   491 4580 4A				lsr @
+   492 4581 90 3B			bcc GR9
+   493 4583			GR10
+   494 4583 4A				lsr @
+   495 4584 B0 1F			bcs GR10_lo
+   496 4586			GR10_hi
+   497 4586 B1 E6			lda (zer2),y		; save brightness
+   498 4588 4A 4A 4A 4A		:4	lsr @
+   499 458C 0A				asl @
+   500 458D 8D 1B 3E			sta UNDO.old_c
+   501 4590 B1 E6			lda (zer2),y		; put brightness
+   502 4592 29 0F			and #$0f
+   503 4594 85 F0			sta zerHlp
+   504 4596 AD 93 41			lda cur_bri
+   505 4599 4A				lsr @
+   506 459A 0A 0A 0A 0A		:4	asl @
+   507 459E 05 F0			ora zerHlp
+   508 45A0 91 E6			sta (zer2),y
+   509 45A2 4C EE 45			jmp cont
+   510 45A5			GR10_lo					
+   511 45A5 B1 E6			lda (zer2),y		; save brightness
+   512 45A7 0A				asl @
+   513 45A8 29 0F			and #$0f
+   514 45AA 8D 1B 3E			sta UNDO.old_c
+   515 45AD B1 E6			lda (zer2),y		; put brightness
+   516 45AF 29 F0			and #$f0
+   517 45B1 85 F0			sta zerHlp
+   518 45B3 AD 93 41			lda cur_bri
+   519 45B6 4A				lsr @
+   520 45B7 05 F0			ora zerHlp
+   521 45B9 91 E6			sta (zer2),y
+   522 45BB 4C EE 45			jmp cont
+   523 45BE			GR9
+   524 45BE 4A				lsr @
+   525 45BF B0 1D			bcs GR9_lo
+   526 45C1			GR9_hi
+   527 45C1 B1 E4			lda (zer1),y		; save brightness
+   528 45C3 4A 4A 4A 4A		:4	lsr @
+   529 45C7 8D 1B 3E			sta UNDO.old_c		
+   530 45CA B1 E4			lda (zer1),y		; put_brightness
+   531 45CC 29 0F			and #$0f
+   532 45CE 85 F0			sta zerHlp
+   533 45D0 AD 93 41			lda cur_bri
+   534 45D3 0A 0A 0A 0A		:4	asl @
+   535 45D7 05 F0			ora zerHlp
+   536 45D9 91 E4			sta (zer1),y
+   537 45DB 4C EE 45			jmp cont
+   538 45DE			GR9_lo
+   539 45DE B1 E4			lda (zer1),y		; save brightness
+   540 45E0 29 0F			and #$0f
+   541 45E2 8D 1B 3E			sta UNDO.old_c
+   542 45E5 B1 E4			lda (zer1),y		; put brightness
+   543 45E7 29 F0			and #$f0
+   544 45E9 0D 93 41			ora cur_bri
+   545 45EC 91 E4			sta (zer1),y
+   546 45EE			cont
+   547
+   548 45EE AD 93 41			lda cur_bri
+   549 45F1 8D 1C 3E			sta UNDO.new_c
+   550 45F4 20 06 3F			jsr UNDO.put_pixel_save
+   551
+   552 45F7 EE 4D 45			inc pp_cntX
+   553 45FA AD 4D 45			lda pp_cntX
+   554 45FD CD 4C 32			cmp cursor_W
+   555 4600 F0 03 4C 72 45		jne loopX
+   556
+   557 4605 A5 E4			lda zer1
+   558 4607 18				clc
+   559 4608 69 28			adc #40
+   560 460A 85 E4			sta zer1
+   561 460C 85 E6			sta zer2
+   562 460E 90 04			bcc *+6
+   563 4610 E6 E5			inc zer1+1
+   564 4612 E6 E7			inc zer2+1
+   565
+   566 4614 EE 1A 3E			inc UNDO.pos_y
+   567 4617 CE 4C 45			dec pp_cntY
+   568 461A F0 03 4C 6D 45		jne loopY
+   569 					
+   570 461F 20 DA 3E			jsr UNDO.put_pixel_epilogue
+   571
+   572 4622 60				rts
+   573 					.ENDL ; put_pixel
+   574
+   575 				* ****************************************************************************
+   576 4623			create_tabs	.LOCAL
+   577 4623 A9 60 85 E2 A9 80 + 	mwa #scrF1 zer0
+   578 462B A0 00			ldy #0
+   579 462D 98			_lp	tya
+   580 462E 4A				lsr @
+   581 462F 4A				lsr @
+   582 4630 99 00 A2			sta div4,y
+   583 4633 A5 E2			lda zer0
+   584 4635 99 00 A0			sta loline,y
+   585 4638 18				clc
+   586 4639 69 28			adc #40
+   587 463B 85 E2			sta zer0
+   588 463D A5 E3			lda zer0+1
+   589 463F 99 00 A1			sta hiline,y
+   590 4642 69 00			adc #0
+   591 4644 85 E3			sta zer0+1
+   592
+   593 4646 98				tya
+   594 4647 29 0F			and #$0f
+   595 4649 85 F0			sta zerHlp
+   596 464B 0A 0A 0A 0A		:4	asl @
+   597 464F 05 F0			ora zerHlp
+   598 4651 99 00 A3			sta zoomlo_gtia,y
+   599 4654 98				tya
+   600 4655 29 F0			and #$f0
+   601 4657 85 F0			sta zerHlp
+   602 4659 4A 4A 4A 4A		:4	lsr @
+   603 465D 05 F0			ora zerHlp
+   604 465F 99 00 A4			sta zoomhi_gtia,y
+   605
+   606 4662 C8				iny
+   607 4663 D0 C8			bne _lp
+   608 4665 60				rts
+   609 					.ENDL ; create_tabs
+   610 				* ****************************************************************************
+   611 4666			update_status
+   612 4666 AD 93 41			lda cur_bri
+   613 4669				ldxy MOD_SCREEN+4
+Macro: LDXY [Source: utils.asx]
+     1 4669 A2 3F			ldx <MOD_SCREEN+4
+     2 466B A0 41			ldy >MOD_SCREEN+4
+Source: mod_hip.asx
+   614 466D 20 BE 36			jsr write_hex
+   615 4670 AD 94 41			lda cur_tone
+   616 4673				ldxy MOD_SCREEN+12
+Macro: LDXY [Source: utils.asx]
+     1 4673 A2 47			ldx <MOD_SCREEN+12
+     2 4675 A0 41			ldy >MOD_SCREEN+12
+Source: mod_hip.asx
+   617 4677 20 BE 36			jsr write_hex
+   618 467A 60				rts
+   619
+   620 				* ****************************************************************************
+   621 				* zoom handling
+   622 				* ****************************************************************************
+   623 467B 00			zoom_lastY	dta 0
+   624
+   625 467C			zoom_update	.LOCAL
+   626 467C A9 02 85 E8 A9 B8 + 	mwa #dl1_zoom+2 zer3
+   627 4684 A9 02 85 EA A9 BA + 	mwa #dl2_zoom+2 zer4
+   628 468C AD 3A 39			lda ZOOM.zoom_X
+   629 468F 4A				lsr @
+   630 4690 A8				tay
+   631 4691 A9 0C			lda #12
+   632 4693 90 02			bcc *+4
+   633 4695 A9 0A			lda #10
+   634 4697 8D 04 D4			sta :HSCROL
+   635 469A 8D 95 41			sta hip_hscrol
+   636
+   637 469D 98				tya
+   638 469E AE 3B 39			ldx ZOOM.zoom_Y
+   639 46A1 4C 00 AA			jmp dlzoom_fill
+   640 					.ENDL
+   641
+   642 46A4			enable_zoom
+   643 46A4 60				rts
+   644
+   645 46A5			disable_zoom
+   646 46A5 20 CA 47			jsr fix_lastY
+   647
+   648 					; fix last line
+   649 46A8 A9 79 85 E4 A9 B2 + 	mwa #[dl1_core+600] zer1
+   650 46B0 A9 79 85 E6 A9 B6 + 	mwa #[dl2_core+600] zer2
+   651 46B8 A0 00			ldy #0
+   652 46BA A9 01			lda #$01
+   653 46BC 91 E4			sta (zer1),y
+   654 46BE 91 E6 C8			sta (zer2),y+
+   655 46C1 A9 1D			lda <dl1_return
+   656 46C3 91 E4			sta (zer1),y
+   657 46C5 91 E6 C8			sta (zer2),y+
+   658 46C8 A9 B0			lda >dl1_return
+   659 46CA 91 E4			sta (zer1),y
+   660 46CC A9 B4			lda >dl2_return
+   661 46CE 91 E6			sta (zer2),y
+   662
+   663 					; restore main DL
+   664 46D0 A9 21 8D 1B B0 A9 + 	mwa #dl1_core DL1_jsr
+   665 46DA A9 21 8D 1B B4 A9 + 	mwa #dl2_core DL2_jsr
+   666 46E4 60				rts
+   667
+   668 				; Y - lineno
+   669 46E5			zoom_update_line	.LOCAL
+   670 46E5 B9 00 52			lda zoom_lineadr,y
+   671 46E8 8D 1D 47			sta dst1+2
+   672 46EB 8D 24 47			sta dst2+2
+   673 46EE 8D 38 47			sta dst3+2
+   674 46F1 8D 4E 47			sta dst4+2
+   675 46F4 B9 00 A0			lda loline,y
+   676 46F7 8D 15 47			sta src+1
+   677 46FA 8D 2A 47			sta src2+1
+   678 46FD B9 00 A1			lda hiline,y
+   679 4700 8D 16 47			sta src+2
+   680 4703 49 E0			eor #SCR_EOR
+   681 4705 8D 2B 47			sta src2+2
+   682 4708 A9 00 8D 61 47		mva #0 nib
+   683 470D A2 27			ldx #39
+   684 470F A0 4F			ldy #79
+   685 4711			loop
+   686 4711 8E 60 47			stx xval
+   687 4714 BD 60 80		src		lda scrF1,x
+   688 4717 AA				tax
+   689 4718 BD 00 A3			lda zoomlo_gtia,x
+   690 471B 99 81 C0 88		dst1	sta $c081,y-
+   691 471F BD 00 A4			lda zoomhi_gtia,x
+   692 4722 99 81 C0 C8		dst2	sta $c081,y+
+   693
+   694 4726 AE 60 47			ldx xval
+   695 4729 BD 60 60		src2	lda scrF2,x
+   696 472C AA				tax
+   697 472D BD 00 A3			lda zoomlo_gtia,x
+   698 4730 29 F0			and #$f0
+   699 4732 0A				asl @
+   700 4733 0D 61 47			ora nib
+   701 4736 99 02 C0 88		dst3	sta $c002,y-
+   702 473A BD 00 A3			lda zoomlo_gtia,x
+   703 473D 0A				asl @
+   704 473E 29 0F			and #$0f
+   705 4740 8D 61 47			sta nib
+   706 4743 BD 00 A4			lda zoomhi_gtia,x
+   707 4746 0A				asl @
+   708 4747 29 F0			and #$f0
+   709 4749 0D 61 47			ora nib
+   710 474C 99 02 C0 88		dst4	sta $c002,y-
+   711 4750 BD 00 A4			lda zoomhi_gtia,x
+   712 4753 0A				asl @
+   713 4754 29 0F			and #$0f
+   714 4756 8D 61 47			sta nib
+   715 4759 AE 60 47			ldx xval
+   716 475C CA				dex
+   717 475D 10 B2			bpl loop
+   718 475F 60				rts
+   719
+   720 4760 00			xval	dta 0
+   721 4761 00			nib		dta 0
+   722 					.ENDL
+   723
+   724 4762			zoom_update_top
+   725 					;fix previous last line
+   726 4762 20 CA 47			jsr fix_lasty
+   727
+   728 					;set new first line
+   729 4765 AC 3C 39			ldy ZOOM.zoom_top_y
+   730 4768 20 AE 47			jsr calc_dl_pos
+   731 476B A5 E2			lda zer0
+   732 476D 8D 1B B0			sta dl1_jsr
+   733 4770 8D 1B B4			sta dl2_jsr
+   734 4773 A5 E3			lda zer0+1
+   735 4775 8D 1C B0			sta dl1_jsr+1
+   736 4778 49 04			eor #DL_EOR
+   737 477A 8D 1C B4			sta dl2_jsr+1
+   738
+   739 					;set new last line
+   740 477D AD 3C 39			lda ZOOM.zoom_top_y
+   741 4780 18				clc
+   742 4781 6D 3A 41			adc MOD_zoom_top_h
+   743 4784 8D 7B 46			sta zoom_lastY
+   744 4787 A8				tay
+   745 4788 20 AE 47			jsr calc_dl_pos
+   746 478B A5 E2 85 E4			mva zer0 zer1
+   747 478F A5 E3			lda zer0+1
+   748 4791 49 04			eor #DL_EOR
+   749 4793 85 E5			sta zer1+1
+   750 4795 A0 00			ldy #0
+   751 4797 A9 01			lda #$01
+   752 4799 91 E2			sta (zer0),y
+   753 479B 91 E4 C8			sta (zer1),y+
+   754 479E A9 00			lda <dl1_zoom
+   755 47A0 91 E2			sta (zer0),y
+   756 47A2 91 E4 C8			sta (zer1),y+
+   757 47A5 A9 B8			lda >dl1_zoom
+   758 47A7 91 E2			sta (zer0),y
+   759 47A9 A9 BA			lda >dl2_zoom
+   760 47AB 91 E4			sta (zer1),y
+   761 47AD 60				rts
+   762
+   763 				; Y - lineno, sets zer0
+   764 47AE			calc_dl_pos
+   765 47AE A9 21 85 E2 A9 B0 + 	mwa #dl1_core zer0
+   766 47B6 8C BF 47			sty cdp_add+1
+   767 47B9 A2 03			ldx #3
+   768 47BB A5 E2		cdp	lda zer0
+   769 47BD 18				clc
+   770 47BE 69 00		cdp_add	adc #0
+   771 47C0 85 E2			sta zer0
+   772 47C2 90 02			bcc *+4
+   773 47C4 E6 E3			inc zer0+1
+   774 47C6 CA				dex
+   775 47C7 D0 F2			bne cdp
+   776 47C9 60				rts
+   777
+   778 47CA			fix_lasty
+   779 47CA AC 7B 46			ldy zoom_lastY
+   780 47CD 20 AE 47			jsr calc_dl_pos
+   781 47D0 A5 E2 85 E4			mva zer0 zer1
+   782 47D4 A5 E3			lda zer0+1
+   783 47D6 49 04			eor #DL_EOR
+   784 47D8 85 E5			sta zer1+1
+   785
+   786 47DA AE 7B 46			ldx zoom_lastY
+   787 47DD A0 00			ldy #0
+   788 47DF 8A				txa
+   789 47E0 29 01			and #1
+   790 47E2 D0 02			bne *+4
+   791 47E4 A9 80			lda #$80
+   792 47E6 09 4F			ora #$4f
+   793 47E8 91 E2			sta (zer0),y
+   794 47EA 91 E4 C8			sta (zer1),y+
+   795 47ED BD 00 A0			lda loline,x
+   796 47F0 91 E2			sta (zer0),y
+   797 47F2 91 E4 C8			sta (zer1),y+
+   798 47F5 8A				txa
+   799 47F6 29 01			and #1
+   800 47F8 49 01			eor #1
+   801 47FA F0 02			beq *+4
+   802 47FC A9 E0			lda #SCR_EOR
+   803 47FE 5D 00 A1			eor hiline,x
+   804 4801 91 E2			sta (zer0),y
+   805 4803 49 E0			eor #SCR_EOR
+   806 4805 91 E4			sta (zer1),y
+   807 4807 60				rts
+   808
+   809 				* ****************************************************************************
+   810 4808			HIP_KEYTABLE
+   811 4808 2F 07 F9 44 FF		dta KEYCODE_Q,7,a(chg_bri),$ff
+   812 480D 2E 07 F9 44 01		dta KEYCODE_W,7,a(chg_bri),$01
+   813
+   814 4812 3F 07 EF 44 F0		dta KEYCODE_A,7,a(chg_tone),$f0
+   815 4817 3E 07 EF 44 10		dta KEYCODE_S,7,a(chg_tone),$10
+   816
+   817 481C FF				dta $ff
+   818
+   819 				* ****************************************************************************
+   820 				* I/O routines
+   821 481D 48 49 50		HIP_ext dta c'HIP'
+   822
+   823 4820			HIP_hdr_1
+   824 4820 FF FF 10 60 4F 7F		dta $ff,$ff,$10,$60,$4f,$7f	;I/O
+   825 4826 FF FF 10 60 4F 7F		dta $ff,$ff,$10,$60,$4f,$7f ;default
+   826 482C			HIP_hdr_2
+   827 482C FF FF 10 80 4F 9F		dta $ff,$ff,$10,$80,$4f,$9f ;I/O
+   828 4832 FF FF 10 80 4F 9F		dta $ff,$ff,$10,$80,$4f,$9f ;default
+   829
+   830 4838			load_hip .LOCAL
+   831 4838				ldxy HIP_ext
+Macro: LDXY [Source: utils.asx]
+     1 4838 A2 1D			ldx <HIP_EXT
+     2 483A A0 48			ldy >HIP_EXT
+Source: mod_hip.asx
+   832 483C 20 F9 3C			jsr IO.open_read
+   833 483F 10 01			bpl ok
+   834 4841 60				rts
+   835 4842 20 6C 48		ok	jsr transfer_hip
+   836 4845 4C E1 49			jmp conv87
+   837 					.ENDL  ; load_hip
+   838
+   839 4848			save_hip .LOCAL
+   840 				; prepare headers
+   841 4848 A0 05			ldy #5
+   842 484A B9 26 48		lp	lda HIP_hdr_1+6,y
+   843 484D 99 20 48			sta HIP_hdr_1,y
+   844 4850 B9 32 48			lda HIP_hdr_2+6,y
+   845 4853 99 2C 48			sta HIP_hdr_2,y
+   846 4856 88				dey
+   847 4857 10 F1			bpl lp
+   848 4859				ldxy HIP_ext
+Macro: LDXY [Source: utils.asx]
+     1 4859 A2 1D			ldx <HIP_EXT
+     2 485B A0 48			ldy >HIP_EXT
+Source: mod_hip.asx
+   849 485D 20 DA 3C			jsr IO.open_write
+   850 4860 10 01			bpl ok
+   851 4862 60				rts
+   852 4863 20 E8 49		ok	jsr conv78
+   853 4866 20 6C 48			jsr transfer_hip
+   854 4869 4C E1 49			jmp conv87
+   855 					.ENDL  ; save_hip
+   856
+   857 486C			transfer_hip .LOCAL
+   858 486C A9 20 8D D9 3A A9 + 	mwa #HIP_hdr_1 IO.adr
+   859 4876 A9 06 8D DB 3A A9 + 	mwa #6 IO.len
+   860 4880 20 0F 3C			jsr IO.do
+   861 4883 30 4C			bmi ex
+   862
+   863 4885 A9 60 8D D9 3A 8D + 	mwa #scrF2 IO.adr
+   864 488D A9 40 8D DB 3A A9 + 	mwa #8000 IO.len
+   865 4897 20 0F 3C			jsr IO.do
+   866 489A 30 35			bmi ex
+   867
+   868 489C A9 2C 8D D9 3A A9 + 	mwa #HIP_hdr_2 IO.adr
+   869 48A6 A9 06 8D DB 3A A9 + 	mwa #6 IO.len
+   870 48B0 20 0F 3C			jsr IO.do
+   871 48B3 30 1C			bmi ex
+   872
+   873 48B5 A9 60 8D D9 3A A9 + 	mwa #scrF1 IO.adr
+   874 48BF A9 40 8D DB 3A A9 + 	mwa #8000 IO.len
+   875 48C9 20 0F 3C			jsr IO.do
+   876 48CC 30 03			bmi ex
+   877
+   878 48CE 20 A1 3C			jsr IO.close
+   879 48D1			ex
+   880 48D1 60				rts
+   881 					.ENDL  ; transfer_hip
+   882
+   883
+   884 48D2			clear .LOCAL
+   885 48D2 20 26 3D			jsr IO.confirm
+   886 48D5 F0 28			beq ex
+   887
+   888 48D7 A9 60 85 E4 A9 80 + 	mwa #scrF1 zer1
+   889 48DF A9 40 85 E6 A9 1F + 	mwa #8000 zer2
+   890 48E7 A9 00			lda #0
+   891 48E9 20 10 37			jsr memset
+   892
+   893 48EC A9 60 85 E4 85 E5		mwa #scrF2 zer1
+   894 48F2 A9 40 85 E6 A9 1F + 	mwa #8000 zer2
+   895 48FA A9 00			lda #0
+   896 48FC 20 10 37			jsr memset
+   897
+   898 48FF 60			ex	rts
+   899 					.ENDL
+   900
+   901 				* ****************************************************************************
+   902 4900			HIP_MENUTABLE
+   903 4900 31 38 48 1A 49		dta '1',a(load_hip),a(load_hip_msg)
+   904 4905 32 48 48 29 49		dta '2',a(save_hip),a(save_hip_msg)
+   905 490A 43 D2 48 38 49		dta 'C',a(clear),a(clear_msg)
+   906 490F 37 E8 49 4A 49		dta '7',a(conv78),a(conv78_msg)
+   907 4914 38 E1 49 6A 49		dta '8',a(conv87),a(conv87_msg)
+   908 4919 FF				dta $ff
+   909
+   910 491A			load_hip_msg
+   911 491A 31 20 2D 20 4C 6F + 	dta c'1 - Load *.HIP',eol
+   912 4929			save_hip_msg
+   913 4929 32 20 2D 20 53 61 + 	dta c'2 - Save *.HIP',eol
+   914 4938			clear_msg
+   915 4938 43 20 2D 20 43 6C + 	dta c'C - Clear picture',eol
+   916 494A			conv78_msg
+   917 494A 37 20 2D 20 43 6F + 	dta c'7 - Convert colors 0..7 to 1..8',eol
+   918 496A			conv87_msg
+   919 496A 38 20 2D 20 43 6F + 	dta c'8 - Convert colors 1..8 to 0..7',eol
+   920 				* ****************************************************************************
+   921 498A			conv_colors .LOCAL
+   922 498A 8E AE 49			stx ad1+1
+   923 498D 8E BA 49			stx ad2+1
+   924 4990 8C AF 49			sty ad1+2
+   925 4993 8C BB 49			sty ad2+2
+   926
+   927 4996 A2 00			ldx #0
+   928 4998 86 F1		_l1	stx zerHlp+1
+   929 499A BD 00 A0 85 E4		mva loline,x zer1
+   930 499F BD 00 A1			lda hiline,x
+   931 49A2 49 E0			eor #SCR_EOR
+   932 49A4 85 E5			sta	zer1+1
+   933 49A6 A0 27			ldy #39
+   934 49A8 B1 E4		_l2	lda (zer1),y
+   935 49AA 29 0F			and #$0f
+   936 49AC AA				tax
+   937 49AD BD CF 49		ad1	lda _27,x
+   938 49B0 85 F0			sta zerHlp
+   939 49B2 B1 E4			lda (zer1),y
+   940 49B4 4A 4A 4A 4A		:4	lsr @
+   941 49B8 AA				tax
+   942 49B9 BD CF 49		ad2	lda _27,x
+   943 49BC 0A 0A 0A 0A		:4	asl @
+   944 49C0 05 F0			ora zerHlp
+   945 49C2 91 E4			sta (zer1),y
+   946 49C4 88				dey
+   947 49C5 10 E1			bpl _l2
+   948 49C7 A6 F1			ldx zerHlp+1
+   949 49C9 E8				inx
+   950 49CA E0 C8			cpx #200
+   951 49CC D0 CA			bne _l1
+   952 49CE 60				rts
+   953 					.ENDL
+   954 				* Convert old HIP mode (colors 1..8) to the proper one (colors 0..7)
+   955 49CF 00 00 01 02 03 04 + _27	dta 0,0,1,2,3,4,5,6,7
+   956 49D8 01 02 03 04 05 06 + _28 dta 1,2,3,4,5,6,7,8,8
+   957 49E1			conv87
+   958 49E1				ldxy _27
+Macro: LDXY [Source: utils.asx]
+     1 49E1 A2 CF			ldx <_27
+     2 49E3 A0 49			ldy >_27
+Source: mod_hip.asx
+   959 49E5 4C 8A 49			jmp conv_colors
+   960 49E8			conv78
+   961 49E8				ldxy _28
+Macro: LDXY [Source: utils.asx]
+     1 49E8 A2 D8			ldx <_28
+     2 49EA A0 49			ldy >_28
+Source: mod_hip.asx
+   962 49EC 4C 8A 49			jmp conv_colors
+   963
+   964
+   965
+   966 				; Converts colors 0,1,2,3,4,5,6,7 into 0,2,4,6,1,3,5,7
+   967 49EF 00 02 04 06 01 03 + _2nrm	dta 0,2,4,6,1,3,5,7
+   968 49F7 00 04 01 05 02 06 + _2spr	dta 0,4,1,5,2,6,3,7
+   969 49FF			conv2spr
+   970 49FF				ldxy _2spr
+Macro: LDXY [Source: utils.asx]
+     1 49FF A2 F7			ldx <_2SPR
+     2 4A01 A0 49			ldy >_2SPR
+Source: mod_hip.asx
+   971 4A03 4C 8A 49			jmp conv_colors
+   972 				* ****************************************************************************
+   973 = 4A06			HIP_return	equ *
+   974
+   975 						ift INCLUDE_PICTURE
+   976 					org scrF1 ;gtia40
+   977 					ins 'hip/imagine.hip',8012,8000
+   978 				;	ins 'tip/SURPRICE.TIP',0009,4000
+   979 				;	ins 'tip/RESTING.TIP',0009,4000
+   980
+   981 					org scrF2 ;gtia80
+   982 					ins 'hip/imagine.hip',6,8000
+   983 				;	ins 'tip/SURPRICE.TIP',4009,4000
+   984 				;	ins 'tip/RESTING.TIP',4769,4000
+   985 						eif
+   986 						
+   987 4A06				org pline
+   988 8000-8027> 00 00 00 00		dta $00,$00,$00,$00
+   989 8004 00 00 11 11 22 22 + 	dta $00,$00,$11,$11,$22,$22,$33,$33
+   990 800C 44 44 55 55 66 66 + 	dta $44,$44,$55,$55,$66,$66,$77,$77
+   991 8014 88 88 99 99 AA AA + 	dta $88,$88,$99,$99,$aa,$aa,$bb,$bb
+   992 801C CC CC DD DD EE EE + 	dta $cc,$cc,$dd,$dd,$ee,$ee,$ff,$ff
+   993 8024 FF FF FF FF			dta $ff,$ff,$ff,$ff
+   994
+   995 8028				org dl1
+   996 B000-B020> 80			dta $80
+   997 				;	dta $00
+   998 B001 4F 00 80 4F 00 80 + :8	dta $4f,a(pline)
+   999 B019 00				dta $00
+  1000 = B01B			DL1_jsr	equ *+1
+  1001 B01A 01 21 B0			dta $01,a(dl1_core)
+  1002 B01D			DL1_return
+  1003 B01D 00				dta $00
+  1004 B01E 81 08 31			dta $81,a(DL.down)
+  1005
+  1006 = B021			dl1_core	equ *
+  1007
+  1008 B021				org dl2
+  1009 B400-B420> 80			dta $80
+  1010 				;	dta	$00
+  1011 B401 4F 00 80 4F 00 80 + :8	dta $4f,a(pline)
+  1012 B419 00				dta $00
+  1013 = B41B			DL2_jsr	equ *+1
+  1014 B41A 01 21 B4			dta $01,a(dl2_core)
+  1015 B41D			DL2_return
+  1016 B41D 00				dta $00
+  1017 B41E 81 08 31			dta $81,a(DL.down)
+  1018
+  1019 = B421			dl2_core	equ *
+  1020
+  1021 B421				org HIP_return
+  1022
+  1023 = 0873			MOD_LEN	equ *-HIP
+  1024 					.ENDL ; HIP
+  1025
+   205 						eli GFX_MODE=5
+   206 					icl 'mod_tip.asx'
+   207 						els
+   208 					.PRINT 'Unspecified mode'
+   209 					ert 1;
+   210 						eif
+   211
+   212 				*******************************************************************************
+   213 4A06			main_vbl
+   214 4A06-4A06> 60			rts
+   215 				*******************************************************************************
+   216 					.PRINT 'End: '
+   216 				End: 
+   217 					.PRINT *
+   217 				$4A07
+   218 					ert [*>prog_max]
+   219
+   220 02E0-02E1> 00 30			run start
+   221 				;	INI start
