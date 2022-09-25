@@ -1,0 +1,66 @@
+// last changes: 13.01.2008
+
+/*************************************************************************
+  @BANK_ADD
+
+  makro realizuje przelaczanie banku pamieci rozszerzonej dla L-MB, N-MB, R-MB
+
+  mozliwe jest podanie dodatkowego parametru okreslajacego adres asemblacji
+  po zakonczeniu przelaczania banku, jesli parametr nie zostanie podany to domyslnym
+  adresem bedzie adres $4000 (LMB, NMB) lub $8000 (RMB)
+
+  Example:
+  	  @ADD_BANK 'L',$7F00    ; LMB -> org $7f00
+  	  @ADD_BANK 'N',$5000    ; NMB -> org $5000
+  	  @ADD_BANK 'N'          ; NMB -> org $4000
+  	  @ADD_BANK 'R',$A080    ; RMB -> org $a080
+  	  @ADD_BANK 'R'          ; RMB -> org $8000
+
+*************************************************************************/
+
+
+.macro @BANK_ADD
+
+ ift (@PROC_ADD_BANK>$3FFF) .and (@PROC_ADD_BANK<$8000)
+  ert 'Address @PROC_ADD_BANK inside <$4000..$7FFF> area'
+ eif
+
+
+// RMB
+ ift :1='R'
+
+   ift :0>1
+     org :2
+   els
+     org $8000
+   eif
+
+   ift (*>$3FFF) .and (*<$8000)
+     ert 'Code address inside <$4000..$7FFF> area'
+   eif
+
+  .exit
+ eif
+
+
+// LMB, NMB
+
+ org @PROC_ADD_BANK
+
+ lda @TAB_MEM_BANKS+(=*)
+ sta $d301
+ rts
+
+ ini @PROC_ADD_BANK
+
+ ift :0>1
+   org :2
+ els
+   org $4000
+ eif
+
+ ift (*<$4000) .or (*>$7FFF)
+   ert 'Code address outside <$4000..$7FFF> area'
+ eif
+
+.endm

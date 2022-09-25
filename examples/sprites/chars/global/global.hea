@@ -1,0 +1,135 @@
+
+// zmiana po³o¿enia zmiennych na stronie zerowej lub zmiana szerokoœci/wysokoœci ekranu
+// wymaga ponownej asemblacji wszystkich modu³ów
+
+COLLISION_DETECTION = 0		; mo¿na zrezygnowaæ z detekcji kolizji i realizowaæ j¹ we w³asnym zakresie
+
+hposp0	= $D000
+hposp1	= $D001
+hposp2	= $D002
+hposp3	= $D003
+hposm0	= $D004
+hposm1	= $D005
+hposm2	= $D006
+hposm3	= $D007
+sizep0	= $D008
+sizep1	= $D009
+sizep2	= $D00A
+sizep3	= $D00B
+sizem	= $D00C
+
+colpm0	= $D012
+colpm1	= $D013
+colpm2	= $D014
+colpm3	= $D015
+color0	= $D016
+color1	= $D017
+color2	= $D018
+color3	= $D019
+colbak	= $D01A
+gtictl	= $D01B
+
+chbase	= $D409
+
+
+@sw	= 32		; szerokoœæ ekranu
+@sh	= 26		; wysokoœæ ekranu
+
+
+	ert @sh>28	; maksymalna wysokoœæ ekranu wynosi 28 wierszy
+
+
+	org $c000
+
+B2fnt0	.ds $400	; zestawy znaków dla BUFOR #2
+B2fnt1	.ds $400
+B2fnt2	.ds $400
+B2fnt3	.ds $400
+
+	org $d800
+
+B3fnt0	.ds $400	; zestawy znaków dla BUFOR #3
+B3fnt1	.ds $400
+B3fnt2	.ds $400
+B3fnt3	.ds $400
+
+	ift @sw==32
+B2scr	.ds $400	; dane obrazu dla BUFOR #2 (ulega modyfikacji podczas nak³adania duchów)
+B1scr	.ds $400	; dane obrazu dla BUFOR #1 (ten obszar jest kopiowany do BUFOR #2, BUFOR #3)
+B3scr	.ds $400	; dane obrazu dla BUFOR #3 (ulega modyfikacji podczas nak³adania duchów)
+	eli @sw==40
+B2scr	.ds $500	; dane obrazu dla BUFOR #2 (ulega modyfikacji podczas nak³adania duchow)
+B1scr	.ds $600	; dane obrazu dla BUFOR #1 (ten obszar jest kopiowany do BUFOR #2, BUFOR #3)
+B3scr	.ds $500	; dane obrazu dla BUFOR #3 (ulega modyfikacji podczas nak³adania duchów)
+	eli @sw==48
+B2scr	.ds $600	; dane obrazu dla BUFOR #2 (ulega modyfikacji podczas nak³adania duchow)
+B1scr	.ds $600	; dane obrazu dla BUFOR #1 (ten obszar jest kopiowany do BUFOR #2, BUFOR #3)
+B3scr	.ds $600	; dane obrazu dla BUFOR #3 (ulega modyfikacji podczas nak³adania duchów)
+	els
+	ert 'improper screen width'
+	eif
+
+B2Clr	.ds $100
+B3Clr	.ds $100
+
+
+	ift COLLISION_DETECTION
+COLISx	.ds $100	; tablice pomagaj¹ce w detekcji kolizji
+COLISy	.ds $100
+COLIS	.ds $100	; tablica pomocnicza do identyfikacji ducha z którym nast¹pi³a kolizja
+	eif
+
+//
+// tutaj mo¿na wstawiæ swoje tablice
+//
+
+B2ClrIdx .ds 1
+B3ClrIdx .ds 1
+
+
+free_mem = *		; wolny obszar do wykorzystania
+
+
+zpage	= $0000		; od tego adresu bêdziemy wykorzystywaæ stronê zerowa
+
+
+@zpvar	.struct
+	lda	.byte
+	src	.word
+	and	.byte
+	msk	.word
+	ora	.byte
+	shp	.word
+	sta	.byte
+	dst	.word
+	.ends
+
+
+; SRC -> adresy znaków które zostan¹ odczytane i poddane modyfikacji
+; MSK -> maska kszta³tu ducha dla operacji AND
+; SHP -> maska z kszta³tem ducha dla operacji OR (maska i ksza³t nie s¹ wzglêdem siebie "symetryczne")
+; DST -> adresy znaków docelowych, tutaj zostanie zapisany wynik operacji LDA:AND:ORA
+
+
+	org zpage	; deklaracja zmiennych na stronie zerowej
+
+free	.ds 1		; tylko do odczytu (zapisywaæ mo¿e tylko "silnik")
+bank	.ds 1		; tylko do odczytu (zapisywaæ mo¿e tylko "silnik")
+posx	.ds 1		; tylko do odczytu (zapisywaæ mo¿e tylko "silnik")
+posy	.ds 1		; tylko do odczytu (zapisywaæ mo¿e tylko "silnik")
+oldX	.ds 1		; tylko do odczytu (zapisywaæ mo¿e tylko "silnik")
+type	.ds 1		; tylko do odczytu (zapisywaæ mo¿e tylko "silnik")
+height	.ds 1		; tylko do odczytu (zapisywaæ mo¿e tylko "silnik")
+isSiz3	.ds 1		; tylko do odczytu (zapisywaæ mo¿e tylko "silnik")
+
+
+SHAPEZP			; tutaj umieœcimy procedurê tworz¹c¹ ducha SHAPEZP
+zp	dta @zpvar [15]
+	.ds 1	; dey
+	.ds 2	; smi
+shpJMP	.ds 3	; jmp shapeZP
+	.ds 1	; rts		koniec procedury SHAPEZP
+
+freeZP
+
+	ert *>$ff
