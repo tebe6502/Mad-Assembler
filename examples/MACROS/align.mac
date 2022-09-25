@@ -1,0 +1,21 @@
+/*
+ Align the current PC to an N byte boundry.
+*/
+
+.macro align
+
+ ift :0>0
+
+  ift (*/:1)*:1<>*
+   org (*/:1)*:1+:1
+  eif
+
+ els
+
+  ift <* > 0
+   org >[*+$100]*$100
+  eif
+
+ eif
+
+.endm

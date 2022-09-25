@@ -1,0 +1,38 @@
+
+/**************************************************************************
+  @EXIT
+
+  makro realizujace wyjscie z procedury .PROC wykorzystujacej stos 
+  programowy MADS-a
+
+  parametrem :1 jest liczba bajtow odlozonych na stosie programowym,
+  o ta wartosc zmniejszany jest licznik stosu programowego @STACK_POINTER
+
+  zawartosc rejestrow A,X,Y zostaje zachowana, wiec mozna za ich pomoca
+  zwracac jakies informacje z procedur
+
+***************************************************************************/
+
+.macro @EXIT
+
+ ift :1<>0
+
+  ift :1=1
+   dec @stack_pointer
+
+  eli :1=2
+   dec @stack_pointer
+   dec @stack_pointer
+
+  els
+   pha
+   lda @stack_pointer
+   sub #:1
+   sta @stack_pointer
+   pla
+
+  eif
+
+ eif
+
+.endm

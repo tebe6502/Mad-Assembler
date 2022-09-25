@@ -1,0 +1,45 @@
+
+/*************************************************************************************************
+  @PULL_2.MAC
+  
+  krotsza wersja @PULL.MAC, tutaj wiekszosc makr zastapiona zostala procedura, ktorej
+  zrodlo znajduje sie w katalogu ../EXAMPLES/PROCEDURES/@PULL_PROC.ASM
+
+  wykorzystana jest tylko jedna deklaracja makra @PULL oraz procedura @PULL_PROC
+  realizujaca zdjecie parametrow ze stosu programowego i zapisanie pod adresem @PROC_VARS_ADR
+
+  Obsluguje tylko 2 sposoby wywolania makra @PULL, z parametrem: 'I' lub 'J'
+
+  @PULL 'I'
+  makro z parametrem 'I' wywolywane jest na poczatku kazdej procedury .PROC z zadeklarowanymi
+  parametrami, zdejmuje ze stosu programowego parametry i zapisuje od adresu @PROC_VARS_ADR
+  nie jest tutaj potrzebne zachowanie zawartosci rejestrow A,X,Y dlatego pomijamy wywolanie
+  procedury zachowujacej wartosci rejestrow A,X,Y @PULL_PROC.SavReg
+
+  @PULL 'J'
+  makro z parametrem 'J' wywolywane jest po powrocie z procedury wywolanej z ciala innej
+  procedury, realizuje przywrocenie starych wartosci parametrow w ciele procedury
+  tutaj musimy zapamietac zawartosc rejestrow A,X,Y bo moga one byc uzyte do zwrocenia
+  wyniku dzialania procedury, wywolujemy dodatkowo procedure @PULL_PROC.SavReg
+
+*************************************************************************************************/
+
+.macro @PULL
+
+// @PULL 'I'
+ ift :1='I'
+  lda #:2
+  jsr @PULL_PROC
+
+// @PULL 'J'
+ eli :1='J'
+  jsr @PULL_PROC.SavReg
+
+  lda #:2
+  jsr @PULL_PROC
+
+ eif
+
+.endm
+
+

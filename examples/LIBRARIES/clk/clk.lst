@@ -1,0 +1,165 @@
+mads 2.0.5 build 8 (2 Aug 16)
+Source: D:\!Delphi\mads\examples\LIBRARIES\clk\clk.asm
+     1
+     2 					icl 'atari.hea'
+Source: d:\!atari\macro\atari.hea
+   231 					opt l+
+     3 					icl 'global.asm'
+Source: D:\!Delphi\mads\examples\LIBRARIES\clk\global.asm
+     1
+     2 = 00D0			ptr0	= $D0		; temporary bytes
+     3 = 00D2			ptr1	= $D2		; temporary bytes
+     4
+     5 = 00D4			fr0	= $D4		; float reg 0
+     6 = 00E0			fr1	= $E0		; float reg 1
+     7 = 00FC			flptr	= $FC		; pointer to a fp num
+     8 = 00F2			cix	= $F2		; index          
+     9 = 00F3			inbuff	= $F3		; pointer to ascii num
+    10 = 0580			lbuff	= $580
+    11
+    12 = DA44			zfr0	= $DA44		; fr0 = 0
+    13 = DD89			fld0r	= $DD89		; (X:Y) -> fr0
+    14 = DD98			fld1r	= $DD98		; (X:Y) -> fr1
+    15 = DDA7			fst0r	= $DDA7		; fr0 -> (X:Y)
+    16 = DDAB			fst0p	= $DDAB		; fr0 -> (FLPTR)
+    17
+    18 = D800			afp	= $D800		; ascii -> float
+    19 = D9AA			ifp	= $D9AA		; int in fr0 -> float in fr0
+    20 = D9D2			fpi	= $D9D2		; float in fr0 -> int in fr0
+    21 = D8E6			fasc	= $D8E6		; fr0 -> (inbuff)
+    22 = DA66			fadd	= $DA66		; fr0 + fr1  -> fr0
+    23 = DA60			fsub	= $DA60		; fr0 - fr1  -> fr0
+    24 = DADB			fmul	= $DADB		; fr0 * fr1  -> fr0
+    25 = DB28			fdiv	= $DB28		; fr0 / fr1  -> fr0
+    26 = DDC0			fexp	= $DDC0		; e ^ fr0    -> fr0
+    27 = DDCC			fexp10	= $DDCC		; 10 ^ fr0   -> fr0
+    28 = DECD			fln	= $DECD		; ln(fr0)    -> fr0
+    29 = DED1			flog10	= $DED1		; log10(fr0) -> fr0
+     4
+     5 					org $2000
+     6
+     7 FFFF> 2000-20C4> 20 0E + main	jsr test
+     8
+     9 2003 20 D2 20			jsr printf			; wypisujemy wynik na ekran
+    10 2006 40 9B 00			.he '@' 9b 0
+    11 2009 CC 20			.wo clkmfp
+    12
+    13 200B 4C 0B 20			jmp *
+    14
+    15 200E BA			test	tsx
+    16 200F 8E C7 20			stx	data.stk
+    17
+    18 2012 A2 01			ldx	#$01
+    19 2014 BD 22 02		v0	lda	vvblki,x
+    20 2017 9D C5 20			sta	data.vbl,x
+    21 201A CA				dex
+    22 201B 10 F7			bpl	v0
+    23
+    24 201D 78				sei
+    25
+    26 201E 20 A8 20			jsr	_vbs
+    27
+    28 2021 A2 44			ldx	#<stop2
+    29 2023 A0 20			ldy	#>stop2
+    30
+    31 2025 AD 0B D4		bogo2	lda	vcount
+    32 2028 C9 70			cmp	#112
+    33 202A D0 F9			bne	bogo2
+    34
+    35 202C 8E 22 02			stx	vvblki
+    36 202F 8C 23 02			sty	vvblki+1
+    37
+    38 2032 A9 00			lda	#$00
+    39 2034 AA				tax
+    40 2035 A8				tay
+    41
+    42 2036 8D 0A D4			sta	wsync
+    43
+    44 2039 C8			loop2	iny
+    45 203A D0 FD			bne	loop2
+    46 203C E8				inx
+    47 203D D0 FA			bne	loop2
+    48 203F 18				clc
+    49 2040 69 01			adc	#$01
+    50 2042 D0 F5			bne	loop2
+    51
+    52 2044			stop2
+    53 2044 68				pla
+    54 2045 8D C8 20			sta	clkm
+    55 2048 68				pla
+    56 2049 8D C9 20			sta	clkm+1
+    57 204C 68				pla
+    58 204D 8D CA 20			sta	clkm+2
+    59 2050 85 D4			sta	fr0
+    60
+    61 2052 AE C7 20			ldx	data.stk
+    62 2055 9A				txs
+    63
+    64 2056 20 9B 20			jsr	_rstvb
+    65
+    66 2059 A9 00			lda	#$00
+    67 205B 85 D5			sta	fr0+1
+    68 205D 20 AA D9			jsr	ifp
+    69 2060 20 AF 20			jsr	fmov01
+    70 2063 A2 B9			ldx	#<data.m
+    71 2065 A0 20			ldy	#>data.m
+    72 2067 20 89 DD			jsr	fld0r
+    73 206A 20 DB DA			jsr	fmul
+    74 206D 20 AF 20			jsr	fmov01
+    75
+    76 2070 AD C8 20			lda	clkm
+    77 2073 85 D4			sta	fr0
+    78 2075 AD C9 20			lda	clkm+1
+    79 2078 85 D5			sta	fr0+1
+    80
+    81 207A 20 AA D9			jsr	ifp
+    82 207D 20 66 DA			jsr	fadd
+    83
+    84 2080 A2 BF			ldx	#<data.d
+    85 2082 A0 20			ldy	#>data.d
+    86 2084 20 98 DD			jsr	fld1r
+    87 2087 20 28 DB			jsr	fdiv
+    88 208A A2 CC			ldx	#<clkmfp
+    89 208C A0 20			ldy	#>clkmfp
+    90 208E 20 A7 DD			jsr	fst0r
+    91
+    92 2091 20 D2 D9			jsr	fpi
+    93 2094 A6 D4			ldx	fr0
+    94 2096 8E CB 20			stx	clkmul
+    95
+    96 2099 58				cli
+    97 209A 60				rts
+    98
+    99 209B A2 01		_rstvb	ldx	#$01
+   100 209D BD C5 20		v2	lda	data.vbl,x
+   101 20A0 9D 22 02			sta	vvblki,x
+   102 20A3 CA				dex
+   103 20A4 10 F7			bpl	v2
+   104 20A6 58				cli
+   105 20A7 60				rts
+   106
+   107 20A8 A5 14 C5 14 F0 FC	_vbs	lda:cmp:req rtclok+2
+   108 20AE 60				rts
+   109
+   110 20AF A2 05		fmov01	ldx #5
+   111 20B1 B5 D4		fmv	lda fr0,x
+   112 20B3 95 E0			sta fr1,x
+   113 20B5 CA				dex
+   114 20B6 10 F9			bpl fmv
+   115 20B8 60				rts
+   116 				;
+   117 20B9			.local	data
+   118 20B9 42 06 55 36 00 00	m	.fl	65536
+   119 20BF 41 04 87 00 00 00	d	.fl	487
+   120 = 20C5			vbl	.ds	2
+   121 = 20C7			stk	.ds	1
+   122 				.endl
+   123
+   124 = 20C8			clkm	.ds	3
+   125 = 20CB			clkmul	.ds	1	;wynik
+   126 = 20CC			clkmfp	.ds	6
+   127
+   128
+   129 20D2-2189> 18 68 69 01 + 	.link '..\stdio\lib\printf.obx'
+   130
+   131 02E0-02E1> 00 20			run main
