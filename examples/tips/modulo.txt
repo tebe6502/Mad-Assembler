@@ -1,0 +1,22 @@
+
+Software - Math - Fast Mod
+There is a technique for quickly calculating mod which makes use of the fact that, for example:
+
+(256 * HI + LO) mod 255 = (255 * HI + HI + LO) mod 255
+
+The first term (on the right side) can be discarded since it is a multiple of 255, leaving:
+
+(HI + LO) mod 255
+
+The modulus 255 yields a very short and fast implementation:
+
+CLC
+LDA LO
+ADC HI
+ADC #1
+SBC #0
+
+The HI+LO sum is a 9 bit number from $000 to $1FE inclusive (accumulator and carry), so the ADC #1 performs a second HI+LO calculation. 
+By also adding 1, it leaves the carry set if the second HI+LO = 255. When the carry is clear, the addition of 1 must be undone, 
+and the SBC #0 does just that, leaving a result from $00 to $FE inclusive.
+

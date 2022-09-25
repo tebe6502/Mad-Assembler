@@ -1,0 +1,11 @@
+http://www.atari.org.pl/forum/viewtopic.php?id=12109
+
+Seban:
+
+Tak samo przy wykorzystaniu faktu i¿ operacje typu INC, DEC s¹ operacjami Read-Modify-Write, gdy chcia³em
+zablokowaæ przerwania NMI stosowa³em INC $d40e, a gdy chcia³em odblokowaæ NMI to po prostu DEC $d40e
+
+
+Fox:
+
+Dla kompletu: LSR $d40e w³¹cza samo VBLKI.

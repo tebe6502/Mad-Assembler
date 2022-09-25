@@ -1,0 +1,138 @@
+https://wiki.superfamicom.org/16-bit-multiplication-and-division
+
+
+16-bit multiplication and division
+?? EDIT
+This is just a few generic routines for 16-bit multiplication and division. Multiplicands are in {temp} and {temp2}, while the high and low word of the product is in {temp3} and {temp4}. For Division, the result is stored in {temp4} and {temp3} is just used as a scratchpad register. Routines expect registers to be in 16-bit mode before and after. Contents of A/X/Y are destroyed so push/pull registers before and after if needed.
+
+unsigned_16x16_multiplication:
+stz {temp4}			//high word of product needs to be cleared
+sep #$10
+ldx {temp}
+stx $4202
+ldy {temp2}
+sty $4203			//set up 1st multiply
+ldx {temp2}+1
+clc
+lda $4216			//load $4216 for 1st multiply
+stx $4203			//start 2nd multiply
+sta.w {temp3}
+lda $4216			//read $4216 from 2nd multiply
+ldx {temp}+1
+stx $4202			//set up 3rd multiply
+sty $4203			//y still contains temp2
+adc.w {temp3}+1
+adc $4216			//add 3rd product
+sta {temp3}+1
+ldy {temp2}+1
+sty $4203			//set up 4th multiply
+lda {temp4}			//carry bit to last byte of product
+bcc +
+adc #$00ff
++;
+adc $4216			//add 4th product
+sta {temp4}			//final store
+rep #$10
+rts
+
+signed_16x16_multiplication:
+stz {temp4}			//high word of product needs to be cleared
+sep #$10
+ldx {temp}
+stx $4202
+ldy {temp2}
+sty $4203			//set up 1st multiply
+ldx {temp2}+1
+clc
+lda $4216			//load $4216 for 1st multiply
+stx $4203			//start 2nd multiply
+sta.w {temp3}
+lda $4216			//read $4216 from 2nd multiply
+ldx {temp}+1
+stx $4202			//set up 3rd multiply
+sty $4203			//y still contains temp2
+adc.w {temp3}+1
+adc $4216			//add 3rd product
+sta {temp3}+1
+ldy {temp2}+1
+sty $4203			//set up 4th multiply
+lda {temp4}			//carry bit to last byte of product
+bcc +
+adc #$00ff
++;
+adc $4216			//add 4th product
+cpx #$80
+bcc +
+sbc {temp2}
++;
+cpy #$80
+bcc +
+sbc {temp}
++;
+sta {temp4}			//final store
+rep #$10
+rts
+
+
+
+divide_by_16_bit:
+lda {temp}
+sta {temp3}
+stz {temp4}
+lda {temp2}
+bne +
+sec
+rts		//set carry to indicate divide by zero error
++;
+cmp #$0100
+bcc divided_by_8_bit
+-;
+lsr
+adc #$0000
+lsr {temp3}
+cmp #$0100
+bcs -
+ldx {temp3}
+stx $4204
+sep #$20
+sta $4206
+nop #7
+lda $4214
+sta {temp4}
+sta $4202
+lda {temp2}
+sta $4203
+lda {temp2}+1
+nop
+ldx $4216
+sta $4203
+stx {temp3}
+lda {temp3}+1
+clc
+adc $4216
+xba
+lda {temp3}
+rep #$20
+sta {temp3}
+lda {temp}
+sec
+sbc {temp3}
+-;
+cmp {temp2}
+bcc +
+sbc {temp2}
+inc {temp4}
+bra -
++;
+clc			//clear carry to indicate valid answer
+rts
+divide_by_8_bit:
+ldx {temp3}
+stx $4204
+sep #$20
+sta $4206
+nop #5
+rep #$21		//clear carry to indicate valid answer
+lda $4214
+sta {temp4}
+rts

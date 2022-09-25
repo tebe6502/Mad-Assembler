@@ -1,0 +1,9 @@
+
+; range 15..80
+
+	lda variable
+
+	clc						; clear carry for add
+	adc #$FF-80					; make m = $FF
+	adc #80-15+1					; carry set if in range n to m
+	bcs

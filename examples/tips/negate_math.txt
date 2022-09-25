@@ -1,0 +1,22 @@
+
+(hlp) = (hlp) - A
+-----------------------------
+
+	eor #$ff
+	sec
+	adc hlp
+	sta hlp
+	scs
+	dec hlp+1
+
+
+(hlp) = (hlp) - A - 1
+-----------------------------
+
+	eor #$ff
+	clc
+	adc hlp
+	sta hlp
+	scs
+	dec hlp+1
+

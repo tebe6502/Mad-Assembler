@@ -1,0 +1,15 @@
+.proc   neg_AX
+
+        clc
+        eor     #$FF
+        adc     #1
+        pha
+        txa
+        eor     #$FF
+        adc     #0
+        tax
+        pla
+        rts
+
+.endproc
+

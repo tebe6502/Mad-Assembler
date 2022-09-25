@@ -1,0 +1,86 @@
+
+Multiplication by 3
+-------------------
+
+        LDA NUM       ;Start with RESULT = 2*NUM
+        ASL A
+        STA RESULT
+        LDA NUM+1
+        ROL A
+        STA RESULT+1
+        CLC
+        LDA NUM
+        ADC RESULT
+        STA RESULT
+        LDA NUM+1
+        ADC RESULT+1
+        STA RESULT+1  ;RESULT = 3*NUM
+
+
+
+Multiply by 10 using the fact that 10x = 8x + 2x (or, factoring out a 2, 10x = 2(4x + x))
+-----------------------------------------------------------------------------------------
+
+        LDA NUM       ;Start with RESULT = NUM
+        STA RESULT
+        LDA NUM+1
+        STA RESULT+1
+        ASL RESULT
+        ROL RESULT+1  ;RESULT = 2*NUM
+        ASL RESULT
+        ROL RESULT+1  ;RESULT = 4*NUM
+        CLC
+        LDA NUM
+        ADC RESULT
+        STA RESULT
+        LDA NUM+1
+        ADC RESULT+1
+        STA RESULT+1  ;RESULT = 5*NUM
+        ASL RESULT
+        ROL RESULT+1  ;RESULT = 10*NUM
+
+
+
+
+
++ mul 96
+
+http://www.atari.org.pl/forum/viewtopic.php?id=15598
+
+
+        lsr
+        ror
+        sta res+1
+        ror
+        tax
+        and #%11000000
+        sta res
+        ror
+        adc res
+        sta res
+        txa
+        and #%00011111
+        adc res+1
+        and #%01111111
+        sta res+1
+
+ 36 cykli
+
+To skoro argument le¿y w [0..95] to da siê to jeszcze uproœciæ:
+
+        sta res
+        asl
+        adc res
+        ror
+        ror
+        ror
+        tax
+        and #%00111111
+        sta res+1
+        txa
+        ror
+        and #%11100000
+        sta res
+
+ 30 cykli
+

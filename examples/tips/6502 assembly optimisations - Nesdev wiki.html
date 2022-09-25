@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="client-nojs">
+<head>
+<meta charset="UTF-8" />
+<title>6502 assembly optimisations - Nesdev wiki</title>
+<meta name="generator" content="MediaWiki 1.24.1" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="search" type="application/opensearchdescription+xml" href="/w/opensearch_desc.php" title="Nesdev wiki (en)" />
+<link rel="EditURI" type="application/rsd+xml" href="http://wiki.nesdev.com/w/api.php?action=rsd" />
+<link rel="alternate" hreflang="x-default" href="/w/index.php/6502_assembly_optimisations" />
+<link rel="alternate" type="application/atom+xml" title="Nesdev wiki Atom feed" href="/w/index.php?title=Special:RecentChanges&amp;feed=atom" />
+<link rel="stylesheet" href="http://wiki.nesdev.com/w/load.php?debug=false&amp;lang=en&amp;modules=ext.rtlcite%7Cmediawiki.legacy.commonPrint%2Cshared%7Cmediawiki.skinning.content.externallinks%7Cmediawiki.skinning.interface%7Cmediawiki.ui.button%7Cskins.monobook.styles&amp;only=styles&amp;skin=monobook&amp;*" />
+<!--[if IE 6]><link rel="stylesheet" href="/w/skins/MonoBook/IE60Fixes.css?303" media="screen" /><![endif]-->
+<!--[if IE 7]><link rel="stylesheet" href="/w/skins/MonoBook/IE70Fixes.css?303" media="screen" /><![endif]--><meta name="ResourceLoaderDynamicStyles" content="" />
+<link rel="stylesheet" href="http://wiki.nesdev.com/w/load.php?debug=false&amp;lang=en&amp;modules=site&amp;only=styles&amp;skin=monobook&amp;*" />
+<style>a:lang(ar),a:lang(kk-arab),a:lang(mzn),a:lang(ps),a:lang(ur){text-decoration:none}
+/* cache key: nesdev_wiki-mw1_:resourceloader:filter:minify-css:7:ba03c1c8aa3cba8f8e9fa81c9cae44f5 */</style>
+<script src="http://wiki.nesdev.com/w/load.php?debug=false&amp;lang=en&amp;modules=startup&amp;only=scripts&amp;skin=monobook&amp;*"></script>
+<script>if(window.mw){
+mw.config.set({"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"6502_assembly_optimisations","wgTitle":"6502 assembly optimisations","wgCurRevisionId":9016,"wgRevisionId":9016,"wgArticleId":763,"wgIsArticle":true,"wgIsRedirect":false,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":[],"wgBreakFrames":false,"wgPageContentLanguage":"en","wgPageContentModel":"wikitext","wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"dmy","wgMonthNames":["","January","February","March","April","May","June","July","August","September","October","November","December"],"wgMonthNamesShort":["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"wgRelevantPageName":"6502_assembly_optimisations","wgIsProbablyEditable":false,"wgRestrictionEdit":[],"wgRestrictionMove":[]});
+}</script><script>if(window.mw){
+mw.loader.implement("user.options",function($,jQuery){mw.user.options.set({"ccmeonemails":0,"cols":80,"date":"default","diffonly":0,"disablemail":0,"editfont":"default","editondblclick":0,"editsectiononrightclick":0,"enotifminoredits":0,"enotifrevealaddr":0,"enotifusertalkpages":1,"enotifwatchlistpages":1,"extendwatchlist":0,"fancysig":0,"forceeditsummary":0,"gender":"unknown","hideminor":0,"hidepatrolled":0,"imagesize":2,"math":1,"minordefault":0,"newpageshidepatrolled":0,"nickname":"","norollbackdiff":0,"numberheadings":0,"previewonfirst":0,"previewontop":1,"rcdays":7,"rclimit":50,"rows":25,"showhiddencats":0,"shownumberswatching":1,"showtoolbar":1,"skin":"monobook","stubthreshold":0,"thumbsize":5,"underline":2,"uselivepreview":0,"usenewrc":0,"watchcreations":1,"watchdefault":1,"watchdeletion":0,"watchlistdays":3,"watchlisthideanons":0,"watchlisthidebots":0,"watchlisthideliu":0,"watchlisthideminor":0,"watchlisthideown":0,"watchlisthidepatrolled":0,"watchmoves":0,"watchrollback":0,
+"wllimit":250,"useeditwarning":1,"prefershttps":1,"language":"en","variant-gan":"gan","variant-iu":"iu","variant-kk":"kk","variant-ku":"ku","variant-shi":"shi","variant-sr":"sr","variant-tg":"tg","variant-uz":"uz","variant-zh":"zh","searchNs0":true,"searchNs1":false,"searchNs2":false,"searchNs3":false,"searchNs4":false,"searchNs5":false,"searchNs6":false,"searchNs7":false,"searchNs8":false,"searchNs9":false,"searchNs10":false,"searchNs11":false,"searchNs12":false,"searchNs13":false,"searchNs14":false,"searchNs15":false,"variant":"en"});},{},{});mw.loader.implement("user.tokens",function($,jQuery){mw.user.tokens.set({"editToken":"+\\","patrolToken":"+\\","watchToken":"+\\"});},{},{});
+/* cache key: nesdev_wiki-mw1_:resourceloader:filter:minify-js:7:ab52f6eb1652fbc58fa39bdfdc3926f5 */
+}</script>
+<script>if(window.mw){
+mw.loader.load(["mediawiki.page.startup","mediawiki.legacy.wikibits","mediawiki.legacy.ajax"]);
+}</script>
+</head>
+<body class="mediawiki ltr sitedir-ltr ns-0 ns-subject page-6502_assembly_optimisations skin-monobook action-view">
+<div id="globalWrapper">
+		<div id="column-content">
+			<div id="content" class="mw-body" role="main">
+				<a id="top"></a>
+				
+				<h1 id="firstHeading" class="firstHeading" lang="en"><span dir="auto">6502 assembly optimisations</span></h1>
+
+				<div id="bodyContent" class="mw-body-content">
+					<div id="siteSub">From Nesdev wiki</div>
+					<div id="contentSub"></div>
+										<div id="jump-to-nav" class="mw-jump">Jump to: <a href="#column-one">navigation</a>, <a href="#searchInput">search</a></div>
+
+					<!-- start content -->
+					<div id="mw-content-text" lang="en" dir="ltr" class="mw-content-ltr"><p>This page is about optimisations that are possible in assembly language, or various things one programmer has to keep in mind to make his code as optimal as possible.
+</p><p>There is two major kind of optimisations: Optimisation for speed (code executes in fewer cycles) and optimisation for size (the code takes fewer bytes).
+</p><p>There is also some other kinds of optimisations, such as constant-executing-time optimisation (code execute in a constant number of cycle no matter what it has to do), or RAM usage optimisation (use as few variables as possible).
+Because those optimisations have more to do with the algorithm than with its implementation in assembly, only speed and size optimisations will be discussed in this article.
+</p>
+<div id="toc" class="toc"><div id="toctitle"><h2>Contents</h2></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Optimise_both_speed_and_size_of_the_code"><span class="tocnumber">1</span> <span class="toctext">Optimise both speed and size of the code</span></a>
+<ul>
+<li class="toclevel-2 tocsection-2"><a href="#Avoid_a_jsr_.2B_rts_chain"><span class="tocnumber">1.1</span> <span class="toctext">Avoid a jsr + rts chain</span></a></li>
+<li class="toclevel-2 tocsection-3"><a href="#Split_word_tables_in_high_and_low_components"><span class="tocnumber">1.2</span> <span class="toctext">Split word tables in high and low components</span></a></li>
+<li class="toclevel-2 tocsection-4"><a href="#Use_Jump_tables_with_RTS_instruction_instead_of_JMP_indirect_instruction"><span class="tocnumber">1.3</span> <span class="toctext">Use Jump tables with RTS instruction instead of JMP indirect instruction</span></a></li>
+<li class="toclevel-2 tocsection-5"><a href="#Use_a_macro_instead_of_a_subroutine_which_is_only_called_once"><span class="tocnumber">1.4</span> <span class="toctext">Use a macro instead of a subroutine which is only called once</span></a></li>
+<li class="toclevel-2 tocsection-6"><a href="#Arithmetic_shift_right"><span class="tocnumber">1.5</span> <span class="toctext">Arithmetic shift right</span></a></li>
+<li class="toclevel-2 tocsection-7"><a href="#Easily_test_2_upper_bits_of_a_variable"><span class="tocnumber">1.6</span> <span class="toctext">Easily test 2 upper bits of a variable</span></a></li>
+<li class="toclevel-2 tocsection-8"><a href="#Negating_a_value_without_temporaries"><span class="tocnumber">1.7</span> <span class="toctext">Negating a value without temporaries</span></a></li>
+<li class="toclevel-2 tocsection-9"><a href="#Avoiding_the_need_for_CLC.2FSEC_with_ADC.2FSBC"><span class="tocnumber">1.8</span> <span class="toctext">Avoiding the need for CLC/SEC with ADC/SBC</span></a></li>
+<li class="toclevel-2 tocsection-10"><a href="#Test_bits_in_decreasing_order"><span class="tocnumber">1.9</span> <span class="toctext">Test bits in decreasing order</span></a></li>
+<li class="toclevel-2 tocsection-11"><a href="#Test_bits_in_increasing_order"><span class="tocnumber">1.10</span> <span class="toctext">Test bits in increasing order</span></a></li>
+<li class="toclevel-2 tocsection-12"><a href="#Test_bits_without_destroying_the_accumulator"><span class="tocnumber">1.11</span> <span class="toctext">Test bits without destroying the accumulator</span></a></li>
+<li class="toclevel-2 tocsection-13"><a href="#Use_opposite_rotate_instead_of_a_great_number_of_shifts"><span class="tocnumber">1.12</span> <span class="toctext">Use opposite rotate instead of a great number of shifts</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-14"><a href="#Optimise_speed_at_the_expense_of_size"><span class="tocnumber">2</span> <span class="toctext">Optimise speed at the expense of size</span></a>
+<ul>
+<li class="toclevel-2 tocsection-15"><a href="#Use_identity_look-up_table_instead_of_temp_variable"><span class="tocnumber">2.1</span> <span class="toctext">Use identity look-up table instead of temp variable</span></a></li>
+<li class="toclevel-2 tocsection-16"><a href="#Use_look-up_table_to_shift_left_4_times"><span class="tocnumber">2.2</span> <span class="toctext">Use look-up table to shift left 4 times</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-17"><a href="#Optimise_code_size_at_the_expense_of_cycles"><span class="tocnumber">3</span> <span class="toctext">Optimise code size at the expense of cycles</span></a>
+<ul>
+<li class="toclevel-2 tocsection-18"><a href="#Use_the_stack_instead_of_a_temp_variable"><span class="tocnumber">3.1</span> <span class="toctext">Use the stack instead of a temp variable</span></a></li>
+<li class="toclevel-2 tocsection-19"><a href="#Use_an_.22intelligent.22_argument_system"><span class="tocnumber">3.2</span> <span class="toctext">Use an "intelligent" argument system</span></a></li>
+<li class="toclevel-2 tocsection-20"><a href="#Using_relative_branch_instruction_instead_of_absolute"><span class="tocnumber">3.3</span> <span class="toctext">Using relative branch instruction instead of absolute</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-21"><a href="#See_also"><span class="tocnumber">4</span> <span class="toctext">See also</span></a></li>
+<li class="toclevel-1 tocsection-22"><a href="#Notes"><span class="tocnumber">5</span> <span class="toctext">Notes</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Optimise_both_speed_and_size_of_the_code">Optimise both speed and size of the code</span></h2>
+<h3><span class="mw-headline" id="Avoid_a_jsr_.2B_rts_chain">Avoid a jsr + rts chain</span></h3>
+<p><span id="Tail_call"></span>A <a href="http://en.wikipedia.org/wiki/tail_call" class="extiw" title="wikipedia:tail call">tail call</a> occurs when a subroutine finishes by calling another subroutine. This can be optimised into a JMP instruction:
+</p>
+<pre>
+MySubroutine
+  lda Foo
+  sta Bar
+  jsr SomeRandomRoutine
+  rts
+</pre>
+<p>becomes&#160;:
+</p>
+<pre>
+MySubroutine
+  lda Foo
+  sta Bar
+  jmp SomeRandomRoutine
+</pre>
+<p>Savings&#160;: 9 cycles, 1 byte
+</p>
+<h3><span class="mw-headline" id="Split_word_tables_in_high_and_low_components">Split word tables in high and low components</span></h3>
+<p>This optimisation is not human friendly, makes the source code much bigger, but still makes the compiled<sup id="cite_ref-compile_pedantry_1-0" class="reference"><a href="#cite_note-compile_pedantry-1">[1]</a></sup> size smaller and faster:
+</p>
+<pre>
+Example
+  lda FooBar
+  asl A
+  tax
+  lda PointerTable,X
+  sta Temp
+  lda PointerTable+1,X
+  sta Temp+1
+  ....
+
+PointerTable
+  .dw Pointer1, Pointer2, ....
+</pre>
+<p>Becomes&#160;:
+</p>
+<pre>
+Example
+  ldx FooBar
+  lda PointerTableL,X
+  sta Temp
+  lda PointerTableH,X
+  sta Temp+1
+  ....
+
+PointerTableL
+  .byt &lt;Pointer1, &lt;Pointer2, ....
+
+PointerTableH
+  .byt &gt;Pointer1, &gt;Pointer2, ....
+</pre>
+<p>Some assemblers may have a way to implement a macro to automatically make the table coded like this (Unofficial MagicKit Assembler is one such program).
+</p><p>Savings&#160;: 2 bytes, 4 cycles
+</p>
+<h3><span class="mw-headline" id="Use_Jump_tables_with_RTS_instruction_instead_of_JMP_indirect_instruction">Use Jump tables with RTS instruction instead of JMP indirect instruction</span></h3>
+<p><span id="RTS_Trick"></span>The so-called <a href="/w/index.php/RTS_Trick" title="RTS Trick">RTS Trick</a> is a method of implementing jump tables by pushing a subroutine's entry point to the stack.
+</p>
+<pre>
+; This:
+
+  ldx JumpEntry
+  lda PointerTableL,X
+  sta Temp
+  lda PointerTableH,X
+  sta Temp+1
+  jmp [Temp]
+
+; becomes this:
+
+  ldx JumpEntry
+  lda PointerTableH,X
+  pha
+  lda PointerTableL,X
+  pha
+  rts
+</pre>
+<p>Note that PointerTable entries must point to one byte <i>before</i> the intended target when the RTS trick is used, because RTS will add 1 to the offset.
+</p><p>Savings&#160;: 4 bytes, 1 cycle.
+</p><p>To squeeze slightly more, it's possible to combine this with the tail call optimization:
+</p>
+<pre>
+; This:
+
+  jsr SomeOtherFunction &#160;; MUST NOT modify JumpEntry
+  ldx JumpEntry
+  lda PointerTableH,X
+  pha
+  lda PointerTableL,X
+  pha
+  rts
+
+; Becomes this:
+
+  ldx JumpEntry
+  lda PointerTableH,X
+  pha
+  lda PointerTableL,X
+  pha
+  jmp SomeOtherFunction
+</pre>
+<p>Here, the CPU runs SomeOtherFunction, then returns to the function from the jump table, then returns to what called this dispatcher.
+</p>
+<h3><span class="mw-headline" id="Use_a_macro_instead_of_a_subroutine_which_is_only_called_once">Use a macro instead of a subroutine which is only called once</span></h3>
+<p>What is the point to call a subroutine if you only call it at a single place?
+It would be more optimal to just insert the code where the subroutine is called.
+However this makes the code less structured and harder to understand.
+<a href="http://en.wikipedia.org/wiki/Inline_expansion" class="extiw" title="wikipedia:Inline expansion">Inline expansion</a> of a subroutine into another subroutine can be done with a macro.
+One drawback is that if the subroutine is called in a loop, it may require some JMPing to work around the 128-byte limit on branch length.
+</p><p>How macros are used depends on the assembler so no code examples will be placed here to avoid further confusion.
+In C, the <code>static inline</code> keyword acts as a hint to expand a function as a macro.
+</p><p>Savings&#160;: 4 bytes, 12 cycles.
+</p>
+<h3><span class="mw-headline" id="Arithmetic_shift_right">Arithmetic shift right</span></h3>
+<p>Compact way to divide a variable by 2 but keep its sign:
+</p>
+<pre>
+   cmp #$80
+   ror A
+</pre>
+<h3><span class="mw-headline" id="Easily_test_2_upper_bits_of_a_variable">Easily test 2 upper bits of a variable</span></h3>
+<pre>
+    lda FooBar
+    asl A        &#160;;C = b7, N = b6
+</pre>
+<p>Alternative:
+</p>
+<pre>
+    bit Foobar   &#160;;N = b7, V = b6, regardless of the value of A.
+</pre>
+<p>This can be e.g. used to poll the sprite-0-hit flag in $2002.
+</p>
+<h3><span class="mw-headline" id="Negating_a_value_without_temporaries">Negating a value without temporaries</span></h3>
+<pre>
+   eor #$FF
+   clc
+   adc #1
+</pre>
+<h3><span class="mw-headline" id="Avoiding_the_need_for_CLC.2FSEC_with_ADC.2FSBC">Avoiding the need for CLC/SEC with ADC/SBC</span></h3>
+<p>If you are using ADC #imm, and you know your carry is already cleared,
+you do not need to do CLC. However, if you <i>know</i> that carry is <i>set</i>
+(for example, your code is located in a branch that is only ever entered with a BCS instruction),
+you can still avoid using CLC by just doing ADC #(value-1).
+The <code>PLOT</code> subroutine in the Apple II Monitor uses this.
+</p><p>Similarly for SBC #imm: If you know <i>know</i> that carry is <i>clear</i>,
+you can still avoid using SEC by just doing SBC #(value+1).
+</p>
+<h3><span class="mw-headline" id="Test_bits_in_decreasing_order">Test bits in decreasing order</span></h3>
+<pre>
+   lda foobar 
+   bmi bit7_set 
+   cmp #$40 &#160;; we know that bit 7 wasn't set 
+   bcs bit6_set 
+   cmp #$20 
+   bcs bit5_set 
+            &#160;; and so on
+</pre>
+<p>Or if you do not need to preserve the value of A:
+</p>
+<pre>
+   lda foobar 
+   asl
+   bcs bit7_set 
+   asl
+   bcs bit6_set 
+   asl
+   bcs bit5_set 
+            &#160;; and so on
+</pre>
+<p>This saves one byte per comparison, but 2 cycles more are used because of the extra ASL.
+</p>
+<h3><span class="mw-headline" id="Test_bits_in_increasing_order">Test bits in increasing order</span></h3>
+<pre>
+   lda foobar 
+   lsr
+   bcs bit0_set
+   lsr
+   bcs bit1_set
+   lsr
+   bcs bit2_set
+            &#160;; and so on
+</pre>
+<p>Note: This does not preserve the value of A.
+</p>
+<h3><span class="mw-headline" id="Test_bits_without_destroying_the_accumulator">Test bits without destroying the accumulator</span></h3>
+<p>The AND instruction can be used to test bits, but this destroy the value in the accumulator.
+The BIT can do this but it has no immediate adressing mode.
+A way to do it is to look for an opcode that has the bits you want to test, and use bit $xxxx on this opcode.
+</p>
+<pre>
+Example
+   lda foobar
+   and #$30
+   beq bits_clear
+   lda foobar
+   ....
+
+bits_clear
+   lda foobar
+   .....
+</pre>
+<p>becomes&#160;:
+</p>
+<pre>
+Example
+   lda foobar
+   bit _bmi_instruction&#160;;equivalent to and #$30 but preserves A
+   beq bits_clear
+   ....
+
+bits_clear
+   .....
+
+anywhere_in_the_code
+    ....
+_bmi_instruction   &#160;;The BMI opcode = $30
+    bmi somewhere
+</pre>
+<p>Savings&#160;: 2 cycles, 3 bytes
+</p>
+<h3><span class="mw-headline" id="Use_opposite_rotate_instead_of_a_great_number_of_shifts">Use opposite rotate instead of a great number of shifts</span></h3>
+<p>To retrieve the 3 highest bits of a value in the low positions, you might be tempted to do 5 LSRs in a row. However, if you do not need the 5 top bits to be cleared, this is more efficient:
+</p>
+<pre>
+  lda value  &#160;; got: 76543210 c
+  rol        &#160;; got: 6543210c 7
+  rol        &#160;; got: 543210c7 6 
+  rol        &#160;; got: 43210c76 5
+  rol        &#160;; got: 3210c765 4
+ &#160;; Only care about these ^^^
+</pre>
+<p>It works the same for replacing 5 ASLs with 4 RORs.
+</p><p>To replace 6 ASLs you can use 3 RORs:
+</p>
+<pre>
+  lda value  &#160;; got: 76453210 c
+  ror        &#160;; got: c7654321 0
+  ror        &#160;; got: 0c765432 1
+  ror        &#160;; got: 10c76543 2
+  and #$C0   &#160;; got: 10------
+</pre>
+<h2><span class="mw-headline" id="Optimise_speed_at_the_expense_of_size">Optimise speed at the expense of size</span></h2>
+<p>Those optimisations will make code faster to execute, but use more ROM. Therefore, it is useful in NMI routines and other things that need to run fast.
+</p>
+<h3><span class="mw-headline" id="Use_identity_look-up_table_instead_of_temp_variable">Use identity look-up table instead of temp variable</span></h3>
+<pre>
+Example
+    ldx Foo
+    lda Bar
+    stx Temp
+    clc
+    adc Temp   &#160;;A = Foo + Bar
+</pre>
+<p>becomes&#160;:
+</p>
+<pre>
+Example
+    ldx Foo
+    lda Bar
+    clc
+    adc Identity,X   &#160;;A = Foo + Bar
+
+Identity
+    .byt $00, $01, $02, $03, .....
+</pre>
+<p>If your program is very large, it is possible that this way uses slightly less ROM; also, it might save one byte of RAM in some circumstances.
+</p><p>Savings&#160;: 2 cycles
+</p>
+<h3><span class="mw-headline" id="Use_look-up_table_to_shift_left_4_times">Use look-up table to shift left 4 times</span></h3>
+<p>Provided that the high nibble is already cleared, you can shift left by 4 by making a multiplication look-up table.
+</p>
+<pre>
+Example:
+  lda rownum
+  asl A
+  asl A
+  asl A
+  asl A
+  rts
+</pre>
+<p>becomes
+</p>
+<pre>
+Example:
+  ldx rownum
+  lda times_sixteen,x
+  rts
+
+times_sixteen:
+  .byt $00, $10, $20, $30, $40, $50, $60, $70
+  .byt $80, $90, $A0, $B0, $C0, $D0, $E0, $F0
+</pre>
+<p>In very large programs, this might save some ROM space. However, it will use up the X register, so it might not be ideal.
+</p><p>Savings: 4 cycles
+</p>
+<h2><span class="mw-headline" id="Optimise_code_size_at_the_expense_of_cycles">Optimise code size at the expense of cycles</span></h2>
+<p>Those optimisations will produce code that is smaller but takes more cycles to execute. Therefore, it can be used in the parts of the program that do not have to be fast.
+</p>
+<h3><span class="mw-headline" id="Use_the_stack_instead_of_a_temp_variable">Use the stack instead of a temp variable</span></h3>
+<pre>
+Example
+   lda Foo
+   sta Temp
+   lda Bar
+   ....
+   ....
+   lda Temp  &#160;;Restores Foo
+   .....
+</pre>
+<p>becomes:
+</p>
+<pre>
+Example
+   lda Foo
+   pha
+   lda Bar
+   ....
+   ....
+   pla  &#160;;Restores Foo
+   .....
+</pre>
+<p>Savings&#160;: 2 bytes.
+</p>
+<h3><span class="mw-headline" id="Use_an_.22intelligent.22_argument_system">Use an "intelligent" argument system</span></h3>
+<p>Each time a routine needs multiple bytes of arguments (&gt;3) it's hard to code it without wasting a lot of bytes.
+</p>
+<pre>
+Example
+   lda Argument1
+   sta Temp
+   lda Argument2
+   ldx Argument3
+   ldy Argument4
+   jsr RoutineWhichNeeds4Args
+   .....
+</pre>
+<p>Becomes something like:
+</p>
+<pre>
+Example
+   jsr PassArguments
+   .dw RoutineWhichNeeds4Args
+   .db Argument1, Argument2, Argument3, Argument4
+   .db $00
+   ....
+
+PassArguments
+   pla 
+   tay 
+   pla 
+   pha                   &#160;; put the high byte back 
+   sta pointer+1 
+   ldx #$00 
+   beq SKIP 
+LOOP 
+   sta parameters,x 
+   inx 
+SKIP 
+   iny                   &#160;; pointing one short first pass here fixes that 
+   lda (pointer),y 
+   bne LOOP      
+   iny 
+   lda (pointer),y 
+   beq LOOP
+
+   dey                   &#160;; fix the return address guess we can't return to a 
+                        &#160;;  break        
+   tya 
+   pha 
+   jmp (parameters)
+</pre>
+<p>Syscalls in Apple ProDOS<sup id="cite_ref-2" class="reference"><a href="#cite_note-2">[2]</a></sup> and FDS BIOS work this way.
+</p><p>Savings&#160;: Complicated to estimate - only saves bytes if the trick is used fairly often across the program, in order to compensate for the size of the PassArguments routine.
+</p>
+<h3><span class="mw-headline" id="Using_relative_branch_instruction_instead_of_absolute">Using relative branch instruction instead of absolute</span></h3>
+<p>If the state of one of the processor flags is already known at this point and the branch target is not too far away, then you can use a condition branch instruction.
+</p><p>Savings&#160;: 1 byte.
+</p>
+<h2><span class="mw-headline" id="See_also">See also</span></h2>
+<ul><li><a href="/w/index.php/Synthetic_instructions" title="Synthetic instructions">Synthetic instructions</a></li></ul>
+<h2><span class="mw-headline" id="Notes">Notes</span></h2>
+<ol class="references">
+<li id="cite_note-compile_pedantry-1"><span class="mw-cite-backlink"><a href="#cite_ref-compile_pedantry_1-0">↑</a></span> <span class="reference-text">Pedants may complain that "compile" is incorrect terminology for "translate a program written in assembly language into object code". But it is the most familiar term meaning "translate a program, no matter the language, into object code", and the same issues apply to code generators within a compiler that targets the 6502 as to programs written in 6502 assembly language.</span>
+</li>
+<li id="cite_note-2"><span class="mw-cite-backlink"><a href="#cite_ref-2">↑</a></span> <span class="reference-text"><i>ProDOS 8 Technical Reference Manual</i></span>
+</li>
+</ol>
+
+<!-- 
+NewPP limit report
+CPU time usage: 0.122 seconds
+Real time usage: 0.126 seconds
+Preprocessor visited node count: 358/1000000
+Preprocessor generated node count: 758/1000000
+Post‐expand include size: 0/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 3/40
+Expensive parser function count: 0/100
+-->
+
+<!-- Saved in parser cache with key nesdev_wiki-mw1_:pcache:idhash:763-0!*!0!!en!*!* and timestamp 20150402231629 and revision id 9016
+ -->
+</div><div class="printfooter">
+Retrieved from "<a dir="ltr" href="http://wiki.nesdev.com/w/index.php?title=6502_assembly_optimisations&amp;oldid=9016">http://wiki.nesdev.com/w/index.php?title=6502_assembly_optimisations&amp;oldid=9016</a>"</div>
+					<div id='catlinks' class='catlinks catlinks-allhidden'></div>					<!-- end content -->
+										<div class="visualClear"></div>
+				</div>
+			</div>
+		</div>
+		<div id="column-one">
+			<h2>Navigation menu</h2>
+					<div id="p-cactions" class="portlet" role="navigation">
+			<h3>Views</h3>
+
+			<div class="pBody">
+				<ul>
+				<li id="ca-nstab-main" class="selected"><a href="/w/index.php/6502_assembly_optimisations" title="View the content page [c]" accesskey="c">Page</a></li>
+				<li id="ca-talk"><a href="/w/index.php/Talk:6502_assembly_optimisations" title="Discussion about the content page [t]" accesskey="t">Discussion</a></li>
+				<li id="ca-viewsource"><a href="/w/index.php?title=6502_assembly_optimisations&amp;action=edit" title="This page is protected.&#10;You can view its source [e]" accesskey="e">View source</a></li>
+				<li id="ca-history"><a href="/w/index.php?title=6502_assembly_optimisations&amp;action=history" rel="archives" title="Past revisions of this page [h]" accesskey="h">History</a></li>
+				</ul>
+							</div>
+		</div>
+				<div class="portlet" id="p-personal" role="navigation">
+				<h3>Personal tools</h3>
+
+				<div class="pBody">
+					<ul>
+													<li id="pt-createaccount"><a href="/w/index.php?title=Special:UserLogin&amp;returnto=6502+assembly+optimisations&amp;type=signup">Create account</a></li>
+													<li id="pt-login"><a href="/w/index.php?title=Special:UserLogin&amp;returnto=6502+assembly+optimisations" title="You are encouraged to log in; however, it is not mandatory [o]" accesskey="o">Log in</a></li>
+											</ul>
+				</div>
+			</div>
+			<div class="portlet" id="p-logo" role="banner">
+				<a href="/w/index.php/Nesdev_Wiki" style="background-image: url(/w/resources/assets/NESdevWikiLogo7.png);" title="Visit the main page"></a>
+			</div>
+				<div class="generated-sidebar portlet" id="p-navigation" role="navigation">
+		<h3>Navigation</h3>
+		<div class='pBody'>
+							<ul>
+											<li id="n-Nesdev-main-page"><a href="/w/index.php/Nesdev">Nesdev main page</a></li>
+											<li id="n-Wiki-main-page"><a href="/w/index.php/Nesdev_Wiki">Wiki main page</a></li>
+											<li id="n-NES-reference-guide"><a href="/w/index.php/NES_reference_guide">NES reference guide</a></li>
+											<li id="n-Programming-guide"><a href="/w/index.php/Programming_guide">Programming guide</a></li>
+											<li id="n-Projects"><a href="/w/index.php/Projects">Projects</a></li>
+											<li id="n-Offline-HTML-version"><a href="http://wiki.nesdev.com/w/nesdevwiki_2015-03-15.zip" rel="nofollow">Offline HTML version</a></li>
+											<li id="n-NESdev-BBS"><a href="http://forums.nesdev.com/" rel="nofollow">NESdev BBS</a></li>
+											<li id="n-.23NESdev"><a href="/w/index.php/NESdev_IRC_channel">#NESdev</a></li>
+											<li id="n-recentchanges"><a href="/w/index.php/Special:RecentChanges" title="A list of recent changes in the wiki [r]" accesskey="r">Recent changes</a></li>
+									</ul>
+					</div>
+		</div>
+			<div id="p-search" class="portlet" role="search">
+			<h3><label for="searchInput">Search</label></h3>
+
+			<div id="searchBody" class="pBody">
+				<form action="/w/index.php" id="searchform">
+					<input type='hidden' name="title" value="Special:Search"/>
+					<input type="search" name="search" placeholder="Search" title="Search Nesdev wiki [f]" accesskey="f" id="searchInput" />
+					<input type="submit" name="go" value="Go" title="Go to a page with this exact name if exists" id="searchGoButton" class="searchButton" />&#160;
+						<input type="submit" name="fulltext" value="Search" title="Search the pages for this text" id="mw-searchButton" class="searchButton" />
+				</form>
+
+							</div>
+		</div>
+			<div class="portlet" id="p-tb" role="navigation">
+			<h3>Tools</h3>
+
+			<div class="pBody">
+				<ul>
+											<li id="t-whatlinkshere"><a href="/w/index.php/Special:WhatLinksHere/6502_assembly_optimisations" title="A list of all wiki pages that link here [j]" accesskey="j">What links here</a></li>
+											<li id="t-recentchangeslinked"><a href="/w/index.php/Special:RecentChangesLinked/6502_assembly_optimisations" title="Recent changes in pages linked from this page [k]" accesskey="k">Related changes</a></li>
+											<li id="t-specialpages"><a href="/w/index.php/Special:SpecialPages" title="A list of all special pages [q]" accesskey="q">Special pages</a></li>
+											<li id="t-print"><a href="/w/index.php?title=6502_assembly_optimisations&amp;printable=yes" rel="alternate" title="Printable version of this page [p]" accesskey="p">Printable version</a></li>
+											<li id="t-permalink"><a href="/w/index.php?title=6502_assembly_optimisations&amp;oldid=9016" title="Permanent link to this revision of the page">Permanent link</a></li>
+											<li id="t-info"><a href="/w/index.php?title=6502_assembly_optimisations&amp;action=info">Page information</a></li>
+									</ul>
+							</div>
+		</div>
+			</div><!-- end of the left (by default at least) column -->
+		<div class="visualClear"></div>
+					<div id="footer" role="contentinfo">
+						<div id="f-poweredbyico">
+									<a href="//www.mediawiki.org/"><img src="/w/resources/assets/poweredby_mediawiki_88x31.png" alt="Powered by MediaWiki" width="88" height="31" /></a>
+							</div>
+					<ul id="f-list">
+									<li id="lastmod"> This page was last modified on 10 September 2014, at 22:07.</li>
+									<li id="viewcount">This page has been accessed 11,645 times.</li>
+									<li id="privacy"><a href="/w/index.php/Nesdev_wiki:Privacy_policy" title="Nesdev wiki:Privacy policy">Privacy policy</a></li>
+									<li id="about"><a href="/w/index.php/Nesdev_wiki:About" title="Nesdev wiki:About">About Nesdev wiki</a></li>
+									<li id="disclaimer"><a href="/w/index.php/Nesdev_wiki:General_disclaimer" title="Nesdev wiki:General disclaimer">Disclaimers</a></li>
+							</ul>
+		</div>
+		</div>
+		<script>/*<![CDATA[*/window.jQuery && jQuery.ready();/*]]>*/</script><script>if(window.mw){
+mw.loader.state({"site":"loading","user":"ready","user.groups":"ready"});
+}</script>
+<script>if(window.mw){
+mw.loader.load(["ext.cite","mediawiki.toc","mediawiki.action.view.postEdit","mediawiki.user","mediawiki.hidpi","mediawiki.page.ready","mediawiki.searchSuggest"],null,true);
+}</script>
+<script>if(window.mw){
+document.write("\u003Cscript src=\"http://wiki.nesdev.com/w/load.php?debug=false\u0026amp;lang=en\u0026amp;modules=site\u0026amp;only=scripts\u0026amp;skin=monobook\u0026amp;*\"\u003E\u003C/script\u003E");
+}</script>
+<script>if(window.mw){
+mw.config.set({"wgBackendResponseTime":245});
+}</script></body></html>

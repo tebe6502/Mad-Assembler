@@ -1,0 +1,342 @@
+6502 Tips and Techniques
+
+
+Cycle neutral branching by Michael J. Mahon
+-------------------------------------------
+
+I've found it useful to devise macros to do certain conditional operations in constant time.
+For example, "increment Y if carry set" (with A volatile) is:
+
+BCS *+3	  ; Branch to INY
+LDA $C8	  ; $C8 = INY
+
+If Carry is set, the branch takes 3 cycles and the INY 2.
+If Carry is clear, the branch takes 2 cycles and the LDA 3. 
+
+So this CINY macro always takes 5 cycles.
+
+
+
+Loop n times
+------------
+
+Using X or Y as counter
+
+	ldx	#n
+loop	...
+	dex
+	bne	loop
+
+Using A as counter
+
+	lda	#n
+	sec
+loop	...
+	adc	#-2
+	bne	loop
+
+
+Iterate through table
+---------------------
+
+Forwards
+
+	ldx	#256 - size
+loop	lda	table + size - 256,x
+	...
+	inx
+	bne	loop
+
+Backwards
+
+	ldx	#size
+loop	lda	table - 1,x
+	...
+	dex
+	bne	loop
+
+
+Branch Always
+-------------
+
+Only the NMOS 6502 lacks a branch always instruction; other 6502 variants
+allow BRA.
+
+	clv		; overflow flag is rarely used
+	bvc	dest
+
+After a load immediate, the zero flag is always known:
+
+	lda	#0
+	beq	dest	; always branches
+	
+	ldx	#123
+	bne	dest	; always branches
+
+A single byte can be skipped by overlapping instructions:
+
+sub1	sei
+	db	$C9	; cmp #immediate
+sub2	cli
+	...
+
+
+Cycle Delays
+------------
+
+	nop		; 2 cycles
+	lda	0	; 3 cycles
+	pha		; 7 cycles
+	pla
+	
+A single cycle can be selectively inserted based on a condition:
+
+	bne	next	; zero: 2 cycles, non-zero: 3 cycles
+next
+
+If the stack isn't being used, pha and pla achieve the most delay for a single
+byte:
+
+	pha		; 3 cycles
+	pla		; 4 cycles
+
+
+Jump indirect using stack
+-------------------------
+
+An indirect address can be pushed on the stack and then jumped to by
+returning. Since the address is on the stack, no temporary locations have to
+be assigned for the destination address and the code is re-entrant. Normal
+return increments the address, but rti doesn't:
+
+	lda	#$12	; push high byte first
+	pha
+	lda	#$34
+	pha
+	php
+	rti		; jumps to $1234
+
+
+BIT #immediate for NMOS 6502
+----------------------------
+
+Again, this applies only to the NMOS 6502 which lacks this addressing mode.
+Set up 8 constants in zero page, one for each bit, i.e. $01, $02, $04, $08,
+$10, $20, $40, $80. Then BIT zero-page can be used to test a particular bit.
+
+
+Combining shift register and counter
+------------------------------------
+
+An 8-bit shift register for loading 8 bits of data can be combined with a 1-8
+iteration counter:
+
+	lda	#$80	; 8 iterations ($40 = 7 iter, $20 = 6, etc.)
+	sta	temp
+loop	lda	port	; input data is in bit 0
+	lsr	a
+	ror	temp	; carry contains bit shifted out of temp
+	bcc	loop
+
+
+Using S as fast index register
+------------------------------
+
+The stack register (S) can be used as an extra index register for going
+through a small buffer more rapidly than possible with X and Y. It might be
+useful where a buffer of needs to be quickly read to or written from some
+output device. The data is simply pushed on the stack, then popped off the
+stack. Both operations are faster than using an index register, and leave both
+index registers free for other use.
+
+This example quickly outputs a buffer of 0-terminated data to a memory-mapped
+device outside of zero-page. Each byte takes 11 cycles to read from the buffer
+and output:
+
+	lda	#0	; 0 terminator
+	pha
+	...		; push data on stack
+	
+	jmp	next
+read	sta	port	; write to device
+next	pla
+	bne	read
+
+This example quickly reads data from a device and stops when it receives 0.
+Each byte takes 10 cycles to input and write to the buffer: 
+
+	tsx		; save current stack pointer
+	stx	end
+	
+write	lda	port	; read from device
+	pha
+	bne	write
+	
+read	pla
+	...		; use data
+	tsx
+	cpx	end
+	bne	read
+
+By putting the buffer at the bottom of page 1, S can be used as both a counter
+and index for a write buffer. Each byte takes 12 cycles to input and write to
+the buffer:
+
+	tsx		; save stack
+	stx	stack
+	
+	ldx	#size
+	txs
+	
+loop	lda	port
+	pha
+	tsx
+	bne	loop
+
+	...		; use data
+	
+	ldx	stack	; restore stack
+	tsx
+
+By putting the buffer at the top of page 1, S can be used as both a counter
+and index for a read buffer. The normal stack would need to be placed lower in
+page 1 to coexist with this scheme. Each byte takes 13 cycles to read from the
+buffer and output:
+
+	ldx	#0	; init stack
+	txs
+	
+	...		; push data on stack
+	
+loop	pla
+	sta	port
+	tsx
+	bne	loop
+
+
+
+Typical 16-bit increment
+------------------------
+Overflow (incrementing to $0000) sets the Z flag is set (i.e. BEQ branches).
+
+;
+      INC NUML
+      BNE LABEL
+      INC NUMH
+LABEL
+
+
+Typical 16-bit decrement
+------------------------
+;
+      LDA NUML
+      BNE LABEL
+      DEC NUMH
+LABEL DEC NUML
+
+
+16-bit decrement, test for zero
+-------------------------------
+;
+      LDA NUML
+      BNE LABEL
+      LDA NUMH
+      BEQ ZERO ; branch when NUM = $0000 (NUM is not decremented in that case)
+      DEC NUMH
+LABEL DEC NUML
+
+
+Add 255
+-------
+;
+      LDA NUML
+      BEQ LABEL
+      INC NUMH
+LABEL DEC NUML
+
+
+Subtract 255
+------------
+;
+      INC NUML
+      BEQ LABEL
+      DEC NUMH
+LABEL
+
+
+Constant time increment
+-----------------------
+6 cycles
+
+A = high byte, X = low byte
+
+Overflow (incrementing to $0000) sets the carry
+
+CPX #$FF
+INX
+ADC #$00
+
+
+Constant time decrement
+-----------------------
+6 cycles
+
+A = high byte, X = low byte
+
+Underflow (decrementing to $FFFF) clears the carry
+
+CPX #$01
+DEX
+SBC #$00
+
+
+Increment and stop at $00
+-------------------------
+This counts up to $FF then to $00, then stays at $00.
+
+CMP #1
+ADC #0
+One advantage of a CMP before the ADC (and SBC below) is that the accumulator always contains the correct value. If it were an increment, compare, branch, and decrement (to return to the stop value), then it would briefly, but temporarily, not be at the stop value.
+
+
+Decrement and stop at $FF
+-------------------------
+This counts down to $00 then to $FF, then stays at $FF.
+
+CMP #$FF
+SBC #0
+
+
+
+Efficient nybble-swap on 6502 by Garth Wilson 
+---------------------------------------------
+
+David Galloway made this suggestion on the facebook 6502 Programming group, for swapping nybbles.
+$36 becomes $63, $A1 becomes $1A, etc.. It takes only 8 bytes and 12 clock cycles, and no variables,
+no stack usage, no look-up table, no X or Y usage. It uses only the accumulator and status register.
+
+        ASL  A
+        ADC  #$80
+        ROL  A
+        ASL  A
+        ADC  #$80
+        ROL  A
+
+Straight-lining it takes only five bytes more than a subroutine call and cuts the execution time in half.
+It could of course be put in a macro. How that is done exactly will depend on your assembler, but might
+go something like:
+
+SWN:    MACRO
+        ASL  A
+        ADC  #$80
+        ROL  A
+        ASL  A
+        ADC  #$80
+        ROL  A
+        ENDM
+ ;-------------
+
+and would be called simply with SWN as if it were an assembly-language mnemonic. You probably won't use it
+many times in a program anyway for the straight-lining to take up appreciable memory, but you might want it
+pretty fast when you do.
+
