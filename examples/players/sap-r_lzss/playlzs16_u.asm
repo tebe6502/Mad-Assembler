@@ -1,4 +1,4 @@
-; code by dmsc, unrolled by tebe (2022-09-12; 2022-09-19; 2022-09-27)
+; code by dmsc, unrolled by tebe (2022-09-12; 2022-09-19; 2022-09-27; 2022-11-06)
 ;
 ; LZSS Compressed SAP player for 16 match bits (Mad Assembler)
 ; ------------------------------------------------------------
@@ -63,8 +63,10 @@ chn_pokey = chn_pokey8-chn_pokey0
     ; Example: here initializes song pointer:
     pla
     sta song_ptr+1
+    sta song_h
     pla
     sta song_ptr
+    sta song_l
 
     lda #0
     sta skctl,y
@@ -128,11 +130,12 @@ lp  lsr bit_data
     dex
     bpl lp
 
+restart
+
+    ldy #3
 
     lda >buffers
     sta cbuf+2
-
-    ldy #3
 
     ; Init all channels:
     ldx #8
@@ -150,18 +153,24 @@ cbuf
     tya
     add song_ptr
     sta song_ptr_l
-    sta song_l
+;    sta song_l
     lda #$00
     adc song_ptr+1
     sta song_ptr_h
-    sta song_h
+;    sta song_h
 
-    lda tmp0: #$00	; restore ZP: SONG_PTR
-    sta song_ptr
+    clc
+
+    ldy tmp0: #$00	; restore ZP: SONG_PTR
     lda tmp1: #$00
+
+reset
+
+    sty song_ptr
     sta song_ptr+1
 
-restart
+    bcs restart
+
     ; Initialize buffer pointer:
 ;    sty bptr
     ldy #1
@@ -305,6 +314,9 @@ chn_bits9
     lda #$00
     adc song_ptr+1
 
+    sty song_ptr_l
+    sta song_ptr_h
+
 ;    dex
 ;    bpl chn_loop        ; Next channel
 
@@ -318,15 +330,12 @@ chn_bits9
 @
     bcc end_loop
 
-    jsr init_song.restart
-
-    ldy song_l: #$00
+    ldy song_l: #$00	; C = 1
     lda song_h: #$00
 
-end_loop
+    jsr init_song.reset
 
-    sty song_ptr_l
-    sta song_ptr_h
+end_loop
 
     lda sng_l: #$00
     sta song_ptr
@@ -339,7 +348,7 @@ end_loop
 bit_data
     dta 0
 
-    dta 0,0,0,0,0,0,0,0,0,0,0		; align to new page
+    dta 0,0,0,0,0,0,0,0		; align to new page
 
     ert <* <> 0
 
