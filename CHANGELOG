@@ -1,3 +1,10 @@
+2022-11-12
+- dodane etykiety automodyfikacji zasięgu globalnego '::', np.
+ 
+.local
+ lda temp:: #$00
+.endl
+
 2022-09-10
 - zastepstwo dla 'org r:address' który nie generuje nowego bloku w pliku
 

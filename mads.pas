@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2022-08-28                                                  *)
+(*  last changes: 2022-11-12                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -5742,7 +5742,7 @@ var j, m, idx, len: integer;
     code, ile, k, byt: byte;
     op, siz: char;
     test, zwieksz, incdec, mvnmvp, pomin, opty, isvar: Boolean;
-    branch_run: Boolean;
+    branch_run, old_run_macro: Boolean;
     tryb: cardinal;
     hlp: int5;
     par: _strArray;
@@ -6937,7 +6937,18 @@ end;
   tmp:=get_lab(i,a,false);
 
   if (tmp <> '') and (a[i] = ':') then begin
-   save_lab(tmp, adres+1, bank, zm);				// etykieta do automodyfikacji kodu
+
+   old_run_macro := run_macro;
+   run_macro     := false;
+
+   if a[i+1] = ':' then begin
+    s_lab(tmp, adres+1, bank, zm, tmp[1]);			// etykieta globalna do automodyfikacji kodu
+
+    inc(i);
+   end else
+    save_lab(tmp, adres+1, bank, zm);      			// etykieta lokalna do automodyfikacji kodu
+
+   run_macro     := old_run_macro;
 
    inc(i);
    omin_spacje(i,a);
