@@ -1,15 +1,15 @@
 MADS=${HOME}/Programs/mads/mads
-CRT=/dev/shm/rainbow.a28
+CAR=/dev/shm/rainbow.a26
 ASM=main.asm
 
 all: compile run
 
 compile:
-	rm -f $(CRT)
-	$(MADS) $(ASM) -x -o:$(CRT)
+	rm -f $(CAR)
+	$(MADS) $(ASM) -x -o:$(CAR)
 
 run:
-	stella $(CRT)
+	stella $(CAR)
 
 save:
-	cp $(CRT) .
+	cp $(CAR) .
