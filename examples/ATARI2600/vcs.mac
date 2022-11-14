@@ -1,0 +1,46 @@
+;-------------------------------------------------------------------------------
+
+/*
+    Stack, TIA and RAM share the same place on ZP
+
+    Standardised start-up code, clears stack, all TIA registers and RAM to 0
+    Sets stack pointer to $FF, and all registers to 0
+    Sets decimal mode off, sets interrupt flag (kind of un-necessary)
+    Use as very first section of code on boot (ie: at reset)
+*/
+.macro INIT_SYSTEM
+    sei
+    cld
+    ldx #$ff
+    txs
+    inx
+    txa
+    sta:rne 0,x+
+.endm
+
+;-------------------------------------------------------------------------------
+
+.macro W_SYNC
+    sta WSYNC
+.endm
+
+;-------------------------------------------------------------------------------
+
+/*
+inline init     { i+ d-     s=x=0xFF    a=0 { zeropage,x=a x-- }!=  }
+inline timwait  { { a=INTIM }!= }
+inline wsync    { WSYNC=a }
+
+// PAL:     0   45  275     312
+// NTSC:    0   37  231     262
+
+// PAL
+inline sync1    { timwait wsync VBLANK=a=2 TIM64T=a=40 }
+inline sync2    { timwait wsync VSYNC=a=2 wsync wsync a=0 wsync VSYNC=a TIM64T=a=54 }
+inline sync3    { timwait wsync VBLANK=a=0 T1024T=a=18 }
+
+// NTSC
+inline sync1  { timwait wsync VBLANK=a=2 TIM64T=a=33 }
+inline sync2  { timwait wsync VSYNC=a=2 wsync wsync a=0 wsync VSYNC=a TIM64T=a=44 }
+inline sync3  { timwait wsync VBLANK=a=0 TIM64T=a=231 }
+*/
