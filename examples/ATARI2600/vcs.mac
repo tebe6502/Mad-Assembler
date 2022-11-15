@@ -1,5 +1,3 @@
-;-------------------------------------------------------------------------------
-
 /*
     Stack, TIA and RAM share the same place on ZP
 
@@ -18,8 +16,32 @@
     sta:rne 0,x+
 .endm
 
-;-------------------------------------------------------------------------------
+/*
+    Inserts the code required for a proper 3 scanline vertical sync sequence
+    Note: Alters the accumulator
+*/
+.macro VERTICAL_SYNC
+    lda #%1110  ; each '1' bits generate a VSYNC ON line (bits 1..3)
+@   sta WSYNC   ; 1st '0' bit resets Vsync, 2nd '0' bit exit loop
+    sta VSYNC
+    lsr
+    bne @-      ; branch until VYSNC has been reset
+.endm
 
+/*
+    Wait specific number of scanelines
+    Note: Alters x register
+*/
+.macro WAIT_X_SCANLINES v
+    ldx #:v         
+@   sta WSYNC   ; accessing WSYNC stops the CPU until next scanline
+    dex
+    bne @-
+.endm
+
+/*
+    Wait for Horizontal Blank
+*/
 .macro W_SYNC
     sta WSYNC
 .endm

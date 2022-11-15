@@ -18,30 +18,18 @@ mainLoop        mva #$88 COLUBK
             :3  W_SYNC
                 mva #0 VSYNC
 
-                ldx #36
-@               W_SYNC
-                dex
-                bne @-
+                WAIT_X_SCANLINES 36
                 mva #0 VBLANK
 
-                ldx #96
-@               W_SYNC
-                dex
-                bne @-
+                WAIT_X_SCANLINES 96
 
                 mva #$f8 COLUBK
 
-                ldx #96
-@               W_SYNC
-                dex
-                bne @-                
+                WAIT_X_SCANLINES 96              
 
                 mva #2 VBLANK
 
-                ldx #30
-@               W_SYNC
-                dex
-                bne @-                
+                WAIT_X_SCANLINES 30               
 
                 jmp mainLoop    ; Go back and do another frame
 
