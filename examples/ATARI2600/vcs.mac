@@ -7,7 +7,7 @@
     Use as very first section of code on boot (ie: at reset)
 */
 .macro INIT_SYSTEM
-    sei
+    sei         ; for some unknown reason, 6509 does't have interrupt pin exposed
     cld
     ldx #$ff
     txs
