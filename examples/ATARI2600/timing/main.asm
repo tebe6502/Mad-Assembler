@@ -44,7 +44,7 @@ mainLoop        VERTICAL_SYNC
                     we're going to use TIA clocks.
                 */
                 lda counter             ; load the counter as horizontal position
-	            and #$7f                ; force range to (0-127)         
+                and #$7f                ; force range to (0-127)         
 
                 /*              
                     We're going to divide the horizontal position by 15.
@@ -53,7 +53,7 @@ mainLoop        VERTICAL_SYNC
                     (15 TIA clocks) per iteration.
                 */
                 W_SYNC                  ; 35th line
-	            sta HMCLR               ; reset the old horizontal position
+                HM_CLR                  ; reset the old horizontal position
 divideLoop      sbc #15                 ; subtract 15
                 bcs divideLoop          ; branch until negative
 
@@ -63,10 +63,7 @@ divideLoop      sbc #15                 ; subtract 15
                     the range -8 to +7.
                 */
                 eor #7
-                asl                     ; HMOVE only uses the top 4 bits, so shift by 4
-                asl
-                asl
-                asl
+            :4  asl                     ; HMOVE only uses the top 4 bits, so shift by 4
                 sta HMP0                ; The fine offset goes into HMP0
 
                 /*
@@ -74,13 +71,13 @@ divideLoop      sbc #15                 ; subtract 15
                     remember is solely based on timing. If you rearrange any of the
                     previous instructions, position 0 won't be exactly on the left side.
                 */
-                sta RESP0
+                RES_P0
 
                 /*                
                     Finally we'll do a WSYNC followed by HMOVE to apply the fine offset.
                 */
                 W_SYNC                  ; 36th line
-                sta HMOVE               ; apply offset
+                H_MOVE                  ; apply offset
 
                 /*
                     We'll see this method again, and it can be made into a subroutine
@@ -109,7 +106,7 @@ lvScan          W_SYNC                  ; wait for next scanline
                     Clear the background color and sprites before overscan
                 */
                 stx COLUBK
-	            stx GRP0
+                stx GRP0
 
                 WAIT_X_SCANLINES 30     ; 30 lines of overscan             
 

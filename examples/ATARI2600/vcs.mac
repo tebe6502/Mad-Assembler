@@ -46,6 +46,69 @@
     sta WSYNC
 .endm
 
+/*
+    Reset Horizontal Sync Counter
+*/
+.macro R_SYNC
+    sta RSYNC
+.endm
+
+/*
+    Reset Player 0
+*/
+.macro RES_P0
+    sta RESP0
+.endm
+
+/*
+    Reset Player 1
+*/
+.macro RES_P1
+    sta RESP1
+.endm
+
+/*
+    Reset Missle 0
+*/
+.macro RES_M0
+    sta RESM0
+.endm
+
+/*
+    Reset Missle 1
+*/
+.macro RES_M1
+    sta RESM1
+.endm
+
+/*
+    Reset Ball
+*/
+.macro RES_BL
+    sta RESBL
+.endm
+
+/*
+    Apply Horizontal Motion
+*/
+.macro H_MOVE
+    sta HMOVE
+.endm
+
+/*
+    Clear Horizontal Move Registers
+*/
+.macro HM_CLR
+    sta HMCLR
+.endm
+
+/*
+    Clear Collision Latche
+*/
+.macro CX_CLR
+    sta CXCLR
+.endm
+
 ;-------------------------------------------------------------------------------
 
 /*
