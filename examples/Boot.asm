@@ -21,10 +21,10 @@ sector_counter	= $80
 
 	org $700
 load_address
-	.word $0001		;Boot sector count Only low byte used
+	.byte $00		
+	.byte $01		;Boot sector count
 	.word load_address
 	.word $ffff		;Relevant when using CASINI only
-
 	lda #$ff		;Basic off
 	sta $d301
 	lda #0			;Loading noise off
@@ -37,12 +37,11 @@ load_address
 	mwa #main_sector1 $30a
 
 	mwa #main_sectors sector_counter
-	sta sector_counter
 
 load	jsr $e453		;load_from_disk
 	bmi error
 
-	adw $304 sectors_size	;Next memory location
+	adw $304 #sectors_size	;Next memory location
 	inw $30a		;Next sector
 	dew sector_counter
 	lda sector_counter
