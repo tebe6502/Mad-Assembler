@@ -24,13 +24,16 @@ wait
     mva #$0f colbak
 
     jsr decode_frame
+    bcs stop			; the song ends if 'C = 1'
+
     jsr play_frame
 
     jmp  wait_frame
 
-ii  lda $d20a
+stop
+    lda $d20a
     sta $d01a
-    jmp ii
+    jmp stop
 
 
 song_data
