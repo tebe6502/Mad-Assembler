@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2022-11-12                                                  *)
+(*  last changes: 2022-12-26                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -595,7 +595,7 @@ var lst, lab, hhh, mmm: textfile;
 
 
 // komunikaty
- mes: array [0..3386] of char=(
+ mes: array [0..3416] of char=(
 {0}  chr(ord('V') + $80),'a','l','u','e',' ','o','u','t',' ','o','f',' ','r','a','n','g','e',
 {1}  chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','I','F',
 {2}  chr(ord('L') + $80),'a','b','e','l',' ',#9,' ','d','e','c','l','a','r','e','d',' ','t','w','i','c','e',
@@ -724,8 +724,9 @@ var lst, lab, hhh, mmm: textfile;
 {125} chr(ord('B') + $80),'r','a','n','c','h',' ','t','o','o',' ','l','o','n','g',',',' ','s','o',' ','l','o','n','g',' ','b','r','a','n','c','h',' ','w','a','s',' ','u','s','e','d',' ',
 {126} chr(ord('B') + $80),'r','a','n','c','h',' ','a','c','r','o','s','s',' ','p','a','g','e',' ','b','o','u','n','d','a','r','y',' ',
 {127} chr(ord('R') + $80),'e','g','i','s','t','e','r',' ','A',' ','i','s',' ','c','h','a','n','g','e','d',
+{128} chr(ord('M') + $80),'e','m','o','r','y',' ','r','a','n','g','e',' ','h','a','s',' ','b','e','e','n',' ','e','x','c','e','e','d','e','d',
 
-{128} chr(ord('S') + $80),
+{129} chr(ord('S') + $80),
      'y','n','t','a','x',':',' ','m','a','d','s',' ','s','o','u','r','c','e',' ','[','s','w','i','t','c','h','e','s',']',#13,#10,
      '-','b',':','a','d','d','r','e','s','s',#9,'G','e','n','e','r','a','t','e',' ','b','i','n','a','r','y',' ','f','i','l','e',' ','a','t',' ','s','p','e','c','i','f','i','c',' ','a','d','d','r','e','s','s',#13,#10,
      '-','b','c',#9,#9,'B','r','a','n','c','h',' ','c','o','n','d','i','t','i','o','n',' ','t','e','s','t',#13,#10,
@@ -747,17 +748,17 @@ var lst, lab, hhh, mmm: textfile;
      '-','v','u',#9,#9,'V','e','r','i','f','y',' ','c','o','d','e',' ','i','n','s','i','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',#13,#10,
      '-','x',#9,#9,'E','x','c','l','u','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',
 
-{129} chr($80),
+{130} chr($80),
 
 // version
 
-{130} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','6',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{131} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','6',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
 const
 
-  mads_version = 130 + 1;
+  mads_version = 131 + 1;
 
   TAB = ^I;            // Char for a TAB
   CR  = ^M;            // Char for a CR
@@ -6621,8 +6622,8 @@ if k in [__cpbcpd..__jskip] then begin
   if (war>0) and (war-127 > 0) then test:=true;
 
 
-  j:=load_lab(tmp, false);
-  if (j>=0) and (war > 0) and (t_lab[j].lop > 0) then test:=true;	// przeciw 'infinite loop'
+  j := load_lab(tmp, false);
+  if (j >= 0) and (war > 0) and (t_lab[j].lop > 0) then test:=true;	// przeciw 'infinite loop'
 
 
   if pass = pass_end then
@@ -6636,6 +6637,9 @@ if k in [__cpbcpd..__jskip] then begin
      if BranchTest then warning(126, lokal_name+tmp);
 
     end;
+
+
+//  if (word(adres) shr 8 <> word(adres + war + 2) shr 8) then test:=true;
 
 
   if not(test) then begin
@@ -9568,6 +9572,9 @@ begin
   save_dst(0);
   save_dst(0);
   save_dst(0);
+
+  inc(adres,6);
+  exit;
  end;
 
  if x >= 1e+98 then blad(old,0);   // przekroczony zakres FP Atari
@@ -9582,6 +9589,7 @@ begin
    save_dst(BCD( (n div 10000) mod 100 ));
    save_dst(BCD( (n div 100) mod 100 ));
    save_dst(BCD( n mod 100 ));
+
    inc(adres,6);             // zapisalismy 6 bajtow
    exit;
   end
@@ -10277,6 +10285,10 @@ var g: file;
 
     label JUMP, LOOP, LOOP2, JUMP_2;
 begin
+
+
+if (adres > $FFFF) and (pass = pass_end) then warning(128);
+
 
 LOOP2:
 
