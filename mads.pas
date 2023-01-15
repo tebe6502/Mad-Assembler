@@ -15753,6 +15753,7 @@ begin
 
           case UpCase(t[_i]) of
            ':': begin
+		 dec(_i);
                  list_mac:=true;
 		 plik_mac:=nowy_plik(plik_mac, _i);
                 end;
