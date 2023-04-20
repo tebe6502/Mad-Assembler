@@ -1,3 +1,6 @@
+2023-04-20
+- dodana dyrektywa .BI generująca dane z zapisu binarnego
+
 2022-12-26
 - poprawnie zapisuje wartość '.FL 0', https://github.com/tebe6502/Mad-Assembler/issues/8
 - dodany komunikat ostrzeżenia w przypadku przekroczenia adresu $FFFF 'Memory range has been exceeded'
