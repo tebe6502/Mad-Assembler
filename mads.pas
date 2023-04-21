@@ -907,7 +907,7 @@ const
   __cbm    = $E7;
   __bi	   = $E8;
 
-  __over   = __cbm;	// koniec kodow dyrektyw
+  __over   = __bi;	// koniec kodow dyrektyw
 
 
 //  __switch = $E9;	// nie oprogramowane
