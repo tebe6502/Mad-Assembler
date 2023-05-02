@@ -1,3 +1,6 @@
+2023-05-02
+- naprawione generowanie kodu dla rozkazu LAX (Z,X)
+
 2023-04-20
 - dodana dyrektywa .BI generująca dane z zapisu binarnego
 

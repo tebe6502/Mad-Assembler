@@ -5,7 +5,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2023-04-21                                                  *)
+(*  last changes: 2023-05-02                                                  *)
 (*----------------------------------------------------------------------------*)
 
 // Free Pascal Compiler http://www.freepascal.org/
@@ -7308,8 +7308,11 @@ end;
   j:=adrMode(op_);		// sprawdz czy dla nowego rozmiaru operandu istnieje tryb adresowania
  end;
 
+
  if (k=116) and (j=4) then code:=$78;	// wyjatek dla DOP #xx     ($80)
  if (k=111) and (j=10) then code:=$87;	// wyjatek dla SHA abs,y   ($9f)
+ if (k=101) and (j=1) then code:=$a3;	// wyjatek dla LAX (zp,x)
+
 
  if (k=11) and (j=11) then		// wyjatek dla JML -> JMP
   if (war shr 16) = (adres shr 16) then begin code:=$4c; j:=10; op_:='~Q' end;
