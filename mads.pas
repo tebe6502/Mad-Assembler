@@ -1,18 +1,19 @@
 (*----------------------------------------------------------------------------*)
 (*  Mad-Assembler v2.1.7 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  https://github.com/tebe6502/Mad-Assembler                                 *)
 (*                                                                            *)
-(*  support 6502, 65816, Sparta DOS X, virtual banks                          *)
+(*  Supports 6502, WDC 65816, Sparta DOS X, virtual banks                     *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last changes: 2023-05-02                                                  *)
+(*  last change: 2023-05-07                                                   *)
 (*----------------------------------------------------------------------------*)
 
-// Free Pascal Compiler http://www.freepascal.org/
-// Compile: fpc -Mdelphi -vh -O3 mads.pas
+//  Compile using Free Pascal Compiler https://www.freepascal.org/
+//  fpc -Mdelphi -vh -O3 mads.pas
 
-// http://atariarea.krap.pl/forum/viewtopic.php?id=8450
-// http://www.atariage.com/forums/topic/179559-mads-knowledge-base/
+// http://www.atari.org.pl/forum/viewtopic.php?id=8450
+// https://forums.atariage.com/topic/179559-mads-knowledge-base/
 
 (*----------------------------------------------------------------------------*)
 
