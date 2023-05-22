@@ -596,7 +596,7 @@ var lst, lab, hhh, mmm: textfile;
 
 
 // komunikaty
- mes: array [0..3416] of char=(
+ mes: array [0..3640] of char=(
 {0}  chr(ord('V') + $80),'a','l','u','e',' ','o','u','t',' ','o','f',' ','r','a','n','g','e',
 {1}  chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','I','F',
 {2}  chr(ord('L') + $80),'a','b','e','l',' ',#9,' ','d','e','c','l','a','r','e','d',' ','t','w','i','c','e',
