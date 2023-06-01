@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2023-05-07                                                   *)
+(*  last change: 2023-06-01                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -12825,7 +12825,7 @@ JUMP:
 (*  .SB [+byte] bytes and/or ASCII                                            *)
 (*  .WO words                                                                 *)
 (*  .HE hex bytes                                                             *)
-(*  .DBYTE
+(*  .DBYTE                                                                    *)
 (*----------------------------------------------------------------------------*)
  __by, __wo, __he, __sb, __cb, __dbyte:
   if {dreloc.use or dreloc.sdx or} struct.use then begin
