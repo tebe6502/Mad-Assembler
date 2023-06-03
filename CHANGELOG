@@ -1,3 +1,9 @@
+2023-06-03
+- dodany znak modyfikacji ciągu znakowego '^', ostatni bajt ulega inwersowi, np:
+
+   dta 'text'^
+   dta "text"^
+
 2023-05-02
 - naprawione generowanie kodu dla rozkazu LAX (Z,X)
 
