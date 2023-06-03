@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2023-06-01                                                   *)
+(*  last change: 2023-06-03                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -4765,7 +4765,7 @@ LOOP:
            value:=true;
          end;
 
-   // odczytaj string ograniczony apostrofami ''
+   // odczytaj string ograniczony apostrofami '',""
    '''','"':
         begin
          if value then blad(old,4);
@@ -5329,6 +5329,12 @@ begin
               war:=0; ciag:=true;
               invers:=byte( test_string(i,a,'B') );
               value:=true;
+
+	      if a[i] = '^' then begin
+	       tmp[length(tmp)] := chr(ord(tmp[length(tmp)]) or $80);
+
+	       inc(i);
+	      end;
 
               if pisz then end_string := end_string + tmp;
              end;
