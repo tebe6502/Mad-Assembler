@@ -5327,6 +5327,13 @@ begin
 
               tmp:=get_string(i,a,old,true);
               war:=0; ciag:=true;
+
+	      if a[i] = '^' then begin
+	       tmp[length(tmp)] := chr(ord(tmp[length(tmp)]) or $80);
+
+	       inc(i);
+	      end;
+
               invers:=byte( test_string(i,a,'B') );
               value:=true;
 
