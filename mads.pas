@@ -9255,8 +9255,12 @@ begin
 
              inc(v, war);
 
-             if yes then save_dst(v);
-             inc(adres);
+             if yes then begin
+	      save_dst(v);
+
+              inc(adres);
+	     end;
+
             end;
 
        'W', 'D':
@@ -9271,7 +9275,7 @@ begin
                save_dst( byte(tmp) );         // lo
               end;
 
-             inc(adres,2);
+             if yes then inc(adres,2);
             end;
 
       end;

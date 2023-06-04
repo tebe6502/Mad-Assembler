@@ -1,3 +1,6 @@
+2023-06-04
+- poprawione generowanie kodu dla .CB, .BY, .WO, .HE, .SB, .DBYTE gdy jest aktywny przełącznik -X (exclude unreferenced procedures)
+
 2023-06-03
 - dodany znak modyfikacji ciągu znakowego '^', ostatni bajt ulega inwersowi, np:
 
