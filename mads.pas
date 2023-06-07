@@ -109,6 +109,7 @@ type
    relocSmb = record
                smb: _typStrSMB;   // 8 znakowy symbol SMB dla systemu SDX
                use: Boolean;      // czy w programie nastapilo odwolanie do symbolu
+	       weak: Boolean;     // czy symbol jest słaby (Weak Symbol)
               end;
 
    extLabel = record
@@ -8088,7 +8089,11 @@ begin
               save_dstW( $fffb );
 
               txt:=t_smb[_doo].smb;
-              for k:=1 to 8 do save_dst( ord(txt[k]) );
+              for k:=1 to 7 do save_dst( ord(txt[k]) );
+	      if t_smb[_doo].weak then
+               save_dst( ord(txt[8]) or $80 )
+              else
+               save_dst( ord(txt[8]) );
 
               save_dstW( $0000 );
 
@@ -13378,6 +13383,12 @@ JUMP:
            if mne.l=__smb then begin   // SMB
 
             txt:=get_smb(i,zm);
+
+	    // jesli za nazwa symbolu lezy znak ^ wtedy markujemy Weak Symbol
+	    if zm[i] = '^' then begin
+             t_smb[smb_idx].weak := true;
+	     inc(i);
+	    end;
 
           // wymuszamy relokowalnosc dla tej etykiety
           // jesli BLOK>1 to zaznaczy jako etykiete relokowalna
