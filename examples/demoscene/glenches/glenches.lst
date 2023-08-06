@@ -1,0 +1,593 @@
+mads 2.1.6 build 66 (7 Jun 23)
+Source: D:\!Delphi\mads\examples\graphics\glenches.asm
+     1 = 3000			xtab	equ $3000
+     2 = 3200			ztab	equ $3200
+     3 = 3400			bitmask	equ $3400
+     4 = 3500			sqrtab	equ $3500
+     5 = 3700			ledge	equ $3700
+     6 = 3800			redge	equ $3800
+     7 = 3E82			costab	equ sintab+$20
+     8
+     9 = 007E			sinx	equ $7e
+    10 = 007F			cosx	equ $7f
+    11 = 0080			siny	equ $80
+    12 = 0081			cosy	equ $81
+    13 = 0082			sx1	equ $82
+    14 = 0083			sx2	equ $83
+    15 = 0084			sy1	equ $84
+    16 = 0085			sy2	equ $85
+    17 = 0086			screen	equ $86
+    18 = 0087			tmp	equ $87
+    19 = 0088			tmp2	equ $88
+    20 = 0089			ext	equ $89
+    21 = 008A			angx	equ $8a
+    22 = 008B			angy	equ $8b
+    23 = 008C			xn	equ $8c
+    24 = 008D			yn	equ $8d
+    25 = 008F			x1	equ $8f
+    26 = 0090			x2	equ $90
+    27 = 0091			x3	equ $91
+    28 = 0092			y1	equ $92
+    29 = 0093			y2	equ $93
+    30 = 0094			y3	equ $94
+    31 = 0095			dx	equ $95
+    32 = 0096			dy	equ $96
+    33
+    34 = 0097			chb	equ $97
+    35 = 00AF			tx	equ $af
+    36 = 00B7			ty	equ $b7
+    37
+    38 = 00FE			scr	equ $fe
+    39
+    40 					org $3b00
+    41
+    42 FFFF> 3B00-3E81> 63 6F + 	dta c'code:pr0be'
+    43 				; init
+    44 3B0A A0 00		init	ldy #$00
+    45 3B0C 8C 30 02			sty 560
+    46 3B0F 98			_genxtb	tya
+    47 3B10 4A				lsr @
+    48 3B11 4A				lsr @
+    49 3B12 99 00 30			sta xtab,y
+    50 3B15 C8				iny
+    51 3B16 D0 F7			bne _genxtb
+    52
+    53 3B18 98				tya
+    54 3B19 38				sec
+    55 3B1A 6A			_genbm	ror @
+    56 3B1B 6A				ror @
+    57 3B1C 10 01			bpl *+3
+    58 3B1E 6A				ror @
+    59 3B1F 99 00 34			sta bitmask,y
+    60 3B22 C8				iny
+    61 3B23 D0 F5			bne _genbm
+    62
+    63 3B25 A0 F0			ldy #240
+    64 3B27 A2 9F			ldx #$9f
+    65 3B29 8A			_genan1	txa
+    66 3B2A 99 02 4C			sta ant1+$02,y
+    67 3B2D 99 02 4E			sta ant2+$02,y
+    68 3B30 88				dey
+    69 3B31 A9 00			lda #$00
+    70 3B33 99 02 4C			sta ant1+$02,y
+    71 3B36 A9 40			lda #$40
+    72 3B38 99 02 4E			sta ant2+$02,y
+    73 3B3B 88				dey
+    74 3B3C A9 4D			lda #$4d
+    75 3B3E 99 02 4C			sta ant1+$02,y
+    76 3B41 99 02 4E			sta ant2+$02,y
+    77 3B44 CA				dex
+    78 3B45 88				dey
+    79 3B46 D0 E1			bne _genan1
+    80
+    81 				; generate square table
+    82 3B48 98			gensqrt	tya
+    83 3B49 AA				tax
+    84 3B4A F0 18			beq _gsqr2
+    85
+    86 3B4C 85 87			sta tmp
+    87 3B4E A9 00			lda #$00
+    88 3B50 85 89			sta ext
+    89 3B52 18			mult2	clc
+    90 3B53 65 87			adc tmp
+    91 3B55 90 02			bcc *+4
+    92 3B57 E6 89			inc ext
+    93 3B59 CA				dex
+    94 3B5A D0 F6			bne mult2
+    95
+    96 3B5C A2 07			ldx #$07
+    97 3B5E 46 89		_gsqrt	lsr ext
+    98 3B60 6A				ror @
+    99 3B61 CA				dex
+   100 3B62 D0 FA			bne _gsqrt	; div 128
+   101 3B64 99 00 35		_gsqr2	sta sqrtab,y
+   102 3B67 99 00 36			sta sqrtab+256,y
+   103 3B6A 48				pha
+   104 3B6B 98				tya
+   105 3B6C 49 FF			eor #$ff
+   106 3B6E 18				clc
+   107 3B6F 69 01			adc #$01
+   108 3B71 AA				tax		; X=256-Y
+   109 3B72 68				pla
+   110 3B73 9D 00 35			sta sqrtab,x
+   111 3B76 9D 00 36			sta sqrtab+256,x
+   112 3B79 C8				iny
+   113 3B7A 10 CC			bpl gensqrt
+   114
+   115
+   116 				; generate ztab
+   117 3B7C A2 BF			ldx #191
+   118 3B7E 86 87		_gnztab	stx tmp
+   119 3B80 A9 08			lda #$08
+   120 3B82 85 89			sta ext
+   121
+   122 3B84 A0 00			ldy #$00
+   123 3B86 98				tya
+   124 3B87 38			divv	sec
+   125 3B88 E5 87			sbc tmp
+   126 3B8A B0 04			bcs *+6
+   127 3B8C C6 89			dec ext
+   128 3B8E 30 03			bmi _div
+   129 3B90 C8				iny
+   130 3B91 D0 F4			bne divv
+   131
+   132 3B93 98			_div	tya
+   133 3B94 9D C0 31			sta ztab-$40,x
+   134 3B97 CA				dex
+   135 3B98 D0 E4			bne _gnztab
+   136
+   137 				; generate sintab
+   138 3B9A A0 1F			ldy #$1f
+   139 3B9C BD 62 3E		_gsin	lda sintab,x
+   140 3B9F 99 82 3E			sta sintab+$20,y
+   141 3BA2 9D E2 3E			sta sintab+$80,x
+   142 3BA5 E8				inx
+   143 3BA6 88				dey
+   144 3BA7 10 F3			bpl _gsin
+   145
+   146 3BA9 A2 3F			ldx #$3f
+   147 3BAB BD 62 3E		_gsin2	lda sintab,x
+   148 3BAE 49 FF			eor #$ff
+   149 3BB0 18				clc
+   150 3BB1 69 01			adc #$01
+   151 3BB3 9D A2 3E			sta sintab+$40,x
+   152 3BB6 CA				dex
+   153 3BB7 10 F2			bpl _gsin2
+   154
+   155 				; generate chessboard
+   156 3BB9 A2 17			ldx #23
+   157 3BBB A9 00			lda #$00
+   158 3BBD 95 97		_genchb	sta chb,x
+   159 3BBF CA				dex
+   160 3BC0 95 97			sta chb,x
+   161 3BC2 49 55			eor #$55
+   162 3BC4 CA				dex
+   163 3BC5 10 F6			bpl _genchb
+   164
+   165 				* main loop
+   166 3BC7 A5 14		loop	lda 20
+   167 3BC9 C5 14			cmp 20
+   168 3BCB F0 FC			beq *-2			; czekaj ramke (czy konieczne?)
+   169
+   170 3BCD A5 86			lda screen
+   171 3BCF D0 04			bne _flp
+   172 3BD1 A2 4C			ldx #>ant1
+   173 3BD3 D0 02			bne _flp2
+   174 3BD5 A2 4E		_flp	ldx #>ant2
+   175 3BD7 49 40		_flp2	eor #$40
+   176 3BD9 85 86			sta screen
+   177 3BDB 8E 31 02			stx 561
+   178 3BDE 8E 03 D4			stx $d403
+   179
+   180 				* roll chessboard
+   181 3BE1 A0 01			ldy #$01
+   182 3BE3 A2 17		roll	ldx #23
+   183 3BE5 A5 97			lda chb
+   184 3BE7 0A				asl @		; set carry flag
+   185 3BE8 36 97		_roll	rol chb,x
+   186 3BEA CA				dex
+   187 3BEB 10 FB			bpl _roll
+   188 3BED 88				dey
+   189 3BEE 10 F3			bpl roll
+   190
+   191 				* draw chessboard
+   192 3BF0 A9 60			lda #$60
+   193 3BF2 8D 14 3C			sta bp20+2
+   194 3BF5 A5 86			lda screen
+   195 3BF7 18				clc
+   196 3BF8 69 08			adc #$08	; moze da rade zaoszczedzic te 3 bajty...
+   197 3BFA 8D 13 3C			sta bp20+1
+   198
+   199 3BFD A9 03			lda #$03
+   200 3BFF 85 88			sta tmp2
+   201 3C01 A9 01		_drwcb4	lda #$01
+   202 3C03 85 87			sta tmp
+   203 3C05 A9 00			lda #$00
+   204 3C07 8D 11 3C			sta bp21+1
+   205 3C0A A0 07		_drwcb3	ldy #$07
+   206 3C0C A2 17		_drwcb	ldx #23
+   207 3C0E B5 97		_drwcb2	lda chb,x
+   208 3C10 49 00		bp21	eor #$00
+   209 3C12 9D FF FF		bp20	sta $ffff,x
+   210 3C15 CA				dex
+   211 3C16 10 F6			bpl _drwcb2
+   212 3C18 EE 14 3C			inc bp20+2
+   213 3C1B 88				dey
+   214 3C1C 10 EE			bpl _drwcb
+   215 3C1E A9 55			lda #$55
+   216 3C20 8D 11 3C			sta bp21+1
+   217 3C23 C6 87			dec tmp
+   218 3C25 10 E3			bpl _drwcb3
+   219 3C27 C6 88			dec tmp2
+   220 3C29 10 D6			bpl _drwcb4
+   221
+   222 3C2B A6 8A			ldx angx
+   223 3C2D BD 62 3E			lda sintab,x
+   224 3C30 85 7E			sta sinx
+   225 3C32 BD 82 3E			lda costab,x
+   226 3C35 85 7F			sta cosx
+   227 3C37 A6 8B			ldx angy
+   228 3C39 BD 62 3E			lda sintab,x
+   229 3C3C 85 80			sta siny
+   230 3C3E BD 82 3E			lda costab,x
+   231 3C41 85 81			sta cosy
+   232
+   233 3C43 A2 07			ldx #$07
+   234 				; x axis rotation
+   235 3C45 B5 F2		rot	lda pz,x
+   236 3C47 A4 7E			ldy sinx
+   237 3C49 20 53 3E			jsr fmul
+   238 3C4C 85 87			sta tmp
+   239 3C4E B5 EA			lda py,x
+   240 3C50 A4 7F			ldy cosx
+   241 3C52 20 53 3E			jsr fmul
+   242 3C55 38				sec
+   243 3C56 E5 87			sbc tmp
+   244 3C58 85 8D			sta yn		; yn=py*cos(angx)-pz*sin(angx)
+   245
+   246 3C5A B5 F2			lda pz,x
+   247 3C5C A4 7F			ldy cosx
+   248 3C5E 20 53 3E			jsr fmul
+   249 3C61 85 87			sta tmp
+   250 3C63 B5 EA			lda py,x
+   251 3C65 A4 7E			ldy sinx
+   252 3C67 20 53 3E			jsr fmul
+   253 3C6A 18				clc
+   254 3C6B 65 87			adc tmp
+   255 3C6D 85 87			sta tmp		; tmp=py*sin(angx)+pz*cos(angx)
+   256
+   257 				; y axis rotation
+   258 3C6F A5 87			lda tmp
+   259 3C71 A4 80			ldy siny
+   260 3C73 20 53 3E			jsr fmul
+   261 3C76 85 88			sta tmp2
+   262 3C78 B5 E2			lda px,x
+   263 3C7A A4 81			ldy cosy
+   264 3C7C 20 53 3E			jsr fmul
+   265 3C7F 38				sec
+   266 3C80 E5 88			sbc tmp2
+   267 3C82 85 8C			sta xn		; xn=px*cos(angy)-tmp*sin(angy)
+   268
+   269 3C84 B5 E2			lda px,x
+   270 3C86 A4 80			ldy siny
+   271 3C88 20 53 3E			jsr fmul
+   272 3C8B 85 88			sta tmp2
+   273 3C8D A5 87			lda tmp
+   274 3C8F A4 81			ldy cosy
+   275 3C91 20 53 3E			jsr fmul
+   276 3C94 18				clc
+   277 3C95 65 88			adc tmp2	; .a=px*sin(angy)+tmp*cos(angy)
+   278
+   279 				; transformation
+   280 3C97 18				clc
+   281 3C98 69 40			adc #$40
+   282 3C9A A8				tay
+   283 3C9B B9 00 32			lda ztab,y
+   284 3C9E A8				tay
+   285 3C9F A5 8C			lda xn
+   286 3CA1 20 53 3E			jsr fmul
+   287 3CA4 18				clc
+   288 3CA5 69 50			adc #80
+   289 3CA7 95 AF			sta tx,x	; tx=xn*ztab+80
+   290
+   291 3CA9 A5 8D			lda yn
+   292 3CAB 20 53 3E			jsr fmul
+   293 3CAE 18				clc
+   294 3CAF 69 80			adc #48+$50
+   295 3CB1 95 B7			sta ty,x	; ty=yn*ztab+48
+   296
+   297 3CB3 CA				dex
+   298 3CB4 10 8F			bpl rot
+   299
+   300 3CB6 E6 8B			inc angy
+   301
+   302 3CB8 A5 8A			lda angx
+   303 3CBA 18				clc
+   304 3CBB 69 02			adc #$02
+   305 3CBD 29 7F			and #$7f
+   306 3CBF 85 8A			sta angx
+   307 3CC1 A5 8B			lda angy
+   308 3CC3 29 7F			and #$7f
+   309 3CC5 85 8B			sta angy
+   310
+   311 3CC7 A5 B1			lda tx+2
+   312 3CC9 85 90			sta x2
+   313 3CCB A5 B9			lda ty+2
+   314 3CCD 85 93			sta y2
+   315 3CCF A5 B0			lda tx+1
+   316 3CD1 85 91			sta x3
+   317 3CD3 A5 B8			lda ty+1
+   318 3CD5 85 94			sta y3
+   319 3CD7 A4 B2			ldy tx+3
+   320 3CD9 A5 BA			lda ty+3
+   321 3CDB 20 54 3D			jsr poly
+   322
+   323 3CDE A5 B1			lda tx+2
+   324 3CE0 85 90			sta x2
+   325 3CE2 A5 B9			lda ty+2
+   326 3CE4 85 93			sta y2
+   327 3CE6 A5 AF			lda tx+0
+   328 3CE8 85 91			sta x3
+   329 3CEA A5 B7			lda ty+0
+   330 3CEC 85 94			sta y3
+   331 3CEE A4 B4			ldy tx+5
+   332 3CF0 A5 BC			lda ty+5
+   333 3CF2 20 54 3D			jsr poly
+   334
+   335 3CF5 A5 B3			lda tx+4
+   336 3CF7 85 90			sta x2
+   337 3CF9 A5 BB			lda ty+4
+   338 3CFB 85 93			sta y2
+   339 3CFD A5 B2			lda tx+3
+   340 3CFF 85 91			sta x3
+   341 3D01 A5 BA			lda ty+3
+   342 3D03 85 94			sta y3
+   343 3D05 A4 B4			ldy tx+5
+   344 3D07 A5 BC			lda ty+5
+   345 3D09 20 54 3D			jsr poly
+   346
+   347 3D0C A5 AF			lda tx+0
+   348 3D0E 85 90			sta x2
+   349 3D10 A5 B7			lda ty+0
+   350 3D12 85 93			sta y2
+   351 3D14 A5 B0			lda tx+1
+   352 3D16 85 91			sta x3
+   353 3D18 A5 B8			lda ty+1
+   354 3D1A 85 94			sta y3
+   355 3D1C A4 B5			ldy tx+6
+   356 3D1E A5 BD			lda ty+6
+   357 3D20 20 54 3D			jsr poly
+   358
+   359 3D23 A5 B4			lda tx+5
+   360 3D25 85 90			sta x2
+   361 3D27 A5 BC			lda ty+5
+   362 3D29 85 93			sta y2
+   363 3D2B A5 B6			lda tx+7
+   364 3D2D 85 91			sta x3
+   365 3D2F A5 BE			lda ty+7
+   366 3D31 85 94			sta y3
+   367 3D33 A4 B5			ldy tx+6
+   368 3D35 A5 BD			lda ty+6
+   369 3D37 20 54 3D			jsr poly
+   370
+   371 3D3A A5 B0			lda tx+1
+   372 3D3C 85 90			sta x2
+   373 3D3E A5 B8			lda ty+1
+   374 3D40 85 93			sta y2
+   375 3D42 A5 B6			lda tx+7
+   376 3D44 85 91			sta x3
+   377 3D46 A5 BE			lda ty+7
+   378 3D48 85 94			sta y3
+   379 3D4A A4 B3			ldy tx+4
+   380 3D4C A5 BB			lda ty+4
+   381 3D4E 20 54 3D			jsr poly
+   382
+   383 3D51 4C C7 3B			jmp loop
+   384
+   385 				; poly (.y, .a, x2, y2, x3, y3)
+   386 3D54 84 8F		poly	sty x1
+   387 3D56 C5 94			cmp y3
+   388 3D58 90 0C			bcc sorty
+   389 3D5A AA				tax
+   390 3D5B A5 91			lda x3
+   391 3D5D 85 8F			sta x1
+   392 3D5F 84 91			sty x3
+   393 3D61 A4 94			ldy y3
+   394 3D63 86 94			stx y3
+   395 3D65 98				tya
+   396
+   397 3D66 85 92		sorty	sta y1
+   398 3D68 C5 93			cmp y2
+   399 3D6A 90 0F			bcc sorty2
+   400 3D6C AA				tax
+   401 3D6D A5 93			lda y2
+   402 3D6F 85 92			sta y1
+   403 3D71 86 93			stx y2
+   404 3D73 A6 8F			ldx x1
+   405 3D75 A5 90			lda x2
+   406 3D77 85 8F			sta x1
+   407 3D79 86 90			stx x2
+   408
+   409 3D7B A5 93		sorty2	lda y2
+   410 3D7D C5 94			cmp y3
+   411 3D7F 90 0F			bcc _dopoly
+   412 3D81 AA				tax
+   413 3D82 A5 94			lda y3
+   414 3D84 85 93			sta y2
+   415 3D86 86 94			stx y3
+   416 3D88 A6 90			ldx x2
+   417 3D8A A5 91			lda x3
+   418 3D8C 85 90			sta x2
+   419 3D8E 86 91			stx x3
+   420
+   421 3D90 A6 8F		_dopoly	ldx x1
+   422 3D92 A4 92			ldy y1
+   423 3D94 A5 90			lda x2
+   424 3D96 85 83			sta sx2
+   425 3D98 A5 93			lda y2
+   426 3D9A 85 85			sta sy2
+   427 3D9C 20 E5 3D			jsr scanedg
+   428 3D9F A6 90			ldx x2
+   429 3DA1 A4 93			ldy y2
+   430 3DA3 A5 91			lda x3
+   431 3DA5 85 83			sta sx2
+   432 3DA7 A5 94			lda y3
+   433 3DA9 85 85			sta sy2
+   434 3DAB 20 E5 3D			jsr scanedg
+   435 3DAE A6 8F			ldx x1
+   436 3DB0 A4 92			ldy y1
+   437 3DB2 A9 38			lda #>redge
+   438 3DB4 8D 2D 3E			sta bp2+2
+   439 3DB7 8D 43 3E			sta bp4+2
+   440 3DBA 20 E5 3D			jsr scanedg
+   441 3DBD A9 37			lda #>ledge
+   442 3DBF 8D 2D 3E			sta bp2+2
+   443 3DC2 8D 43 3E			sta bp4+2
+   444
+   445 				; draw poly
+   446 3DC5 A4 92			ldy y1
+   447 3DC7 B9 00 37		_drwply	lda ledge,y
+   448 3DCA D9 00 38			cmp redge,y
+   449 3DCD 90 09			bcc _drw1
+   450 3DCF BE 00 38			ldx redge,y
+   451 3DD2 20 BF 00			jsr hline
+   452 3DD5 4C DF 3D			jmp _drw2
+   453 3DD8 AA			_drw1	tax
+   454 3DD9 B9 00 38			lda redge,y
+   455 3DDC 20 BF 00			jsr hline
+   456 3DDF C8			_drw2	iny
+   457 3DE0 C4 94			cpy y3
+   458 3DE2 90 E3			bcc _drwply
+   459
+   460 3DE4 60				rts
+   461
+   462 				; scanedge
+   463 3DE5 C4 85		scanedg	cpy sy2
+   464 3DE7 D0 01			bne *+3
+   465 3DE9 60				rts
+   466
+   467 3DEA 86 82			stx sx1
+   468 3DEC E4 83			cpx sx2
+   469 3DEE 90 0B			bcc _scels1
+   470 3DF0 8A				txa
+   471 3DF1 38				sec
+   472 3DF2 E5 83			sbc sx2
+   473 3DF4 85 95			sta dx
+   474 3DF6 A9 CA			lda #$ca
+   475 3DF8 4C 04 3E			jmp _sce1
+   476
+   477 3DFB A5 83		_scels1	lda sx2
+   478 3DFD 38				sec
+   479 3DFE E5 82			sbc sx1
+   480 3E00 85 95			sta dx
+   481 3E02 A9 E8			lda #$e8
+   482
+   483 3E04 8D 23 3E		_sce1	sta bp1
+   484 3E07 8D 4B 3E			sta bp3
+   485
+   486 3E0A 84 84			sty sy1
+   487 3E0C A5 85			lda sy2
+   488 3E0E 38				sec
+   489 3E0F E5 84			sbc sy1
+   490 3E11 85 96			sta dy
+   491
+   492 3E13 A6 82			ldx sx1
+   493 3E15 A4 84			ldy sy1
+   494 3E17 A5 95			lda dx
+   495 3E19 C5 96			cmp dy
+   496 3E1B 90 1B			bcc _sce2
+   497
+   498 3E1D A9 00			lda #$00
+   499 3E1F 38				sec
+   500 3E20 E5 95			sbc dx
+   501
+   502 3E22 18				clc
+   503 3E23 E8			bp1	inx
+   504 3E24 65 96			adc dy
+   505 3E26 90 FB			bcc bp1
+   506 3E28 85 87			sta tmp
+   507 3E2A 8A				txa
+   508 3E2B 99 00 37		bp2	sta ledge,y
+   509 3E2E A5 87			lda tmp
+   510 3E30 C8				iny
+   511 3E31 E5 95			sbc dx
+   512 3E33 C4 85			cpy sy2
+   513 3E35 90 EC			bcc bp1
+   514 3E37 60				rts
+   515
+   516 3E38 A9 00		_sce2	lda #$00
+   517 3E3A 38				sec
+   518 3E3B E5 96			sbc dy
+   519
+   520 3E3D 18				clc
+   521 3E3E 85 87		_doedg	sta tmp
+   522 3E40 8A				txa
+   523 3E41 99 00 37		bp4	sta ledge,y
+   524 3E44 A5 87			lda tmp
+   525 3E46 C8				iny
+   526 3E47 65 95			adc dx
+   527 3E49 90 03			bcc _sce3
+   528 3E4B E8			bp3	inx
+   529 3E4C E5 96			sbc dy
+   530 3E4E C4 85		_sce3	cpy sy2
+   531 3E50 90 EC			bcc _doedg
+   532 3E52 60				rts
+   533
+   534 				; fast multiply A*Y->A
+   535 3E53 85 FA		fmul	sta $fa
+   536 3E55 49 FF			eor #$ff
+   537 3E57 18				clc
+   538 3E58 69 01			adc #$01
+   539 3E5A 85 FC			sta $fc
+   540 3E5C B1 FA			lda ($fa),y
+   541 3E5E 38				sec
+   542 3E5F F1 FC			sbc ($fc),y
+   543 3E61 60				rts
+   544
+   545 3E62 00 01 03 04 06 07 + sintab	dta $00,$01,$03,$04,$06,$07,$09,$0a,$0c,$0d,$0f,$10,$11,$13,$14,$15
+   546 3E72 16 17 18 19 1A 1B + 	dta $16,$17,$18,$19,$1a,$1b,$1c,$1c,$1d,$1e,$1e,$1f,$1f,$1f,$1f,$1f
+   547
+   548 				; antic
+   549 3E82				org $4c00
+   550 4C00-4C02> 70 70 70	ant1	dta $70,$70,$70			; self generating: + (3+4)*2 = 14bytes
+   551 4C03				org $4cf3
+   552 4CF3-4CF5> 41 00 4C		dta $41,$00,$4c
+   553 4CF6				org $4e00
+   554 4E00-4E02> 70 70 70	ant2	dta $70,$70,$70			; self generating
+   555 4E03				org $4ef3
+   556 4EF3-4EF5> 41 00 4E		dta $41,$00,$4e			; 34 bytes for 2ant meyby better cpy std ant prg?
+   557
+   558 				; color pallete
+   559 4EF6				org $2c4
+   560 02C4-02C6> 84 88 8C		dta $84,$88,$8c
+   561
+   562 02C7				org $bf
+   563 				; hline (.x, .a, .y)
+   564 00BF-00FD> 84 88		hline	sty tmp2
+   565 00C1 85 DC			sta $dc		; bp12
+   566
+   567 00C3 A5 86			lda screen
+   568 00C5 85 D2			sta $d2		; bp10+$01
+   569 00C7 85 D8			sta $d8		; bp11+$01
+   570 00C9 84 D3			sty $d3		; bp10+$02
+   571 00CB 84 D9			sty $d9		; bp11+$02
+   572
+   573 00CD 18				clc
+   574 00CE BC 00 30		_drwhln	ldy xtab,x
+   575 00D1 B9 FF 50		bp10	lda $50ff,y
+   576 00D4 7D 00 34			adc bitmask,x
+   577 00D7 99 FF 50		bp11	sta $50ff,y
+   578 00DA E8				inx
+   579 00DB E0 FF		bp12	cpx #$ff
+   580 00DD 90 EF			bcc _drwhln
+   581
+   582 00DF A4 88			ldy tmp2
+   583 00E1 60				rts
+   584
+   585 				; object coord
+   586 00E2 E0 00 F0 10 20 00 + px	dta $e0,$00,$f0,$10,$20,$00,$f0,$10
+   587 00EA 00 E0 00 00 00 20 + py	dta $00,$e0,$00,$00,$00,$20,$00,$00
+   588 00F2 00 00 10 10 00 00 + pz	dta $00,$00,$10,$10,$00,$00,$f0,$f0
+   589 00FA 00 35 00 35			dta $00,$35,$00,$35
+   590 				;
+   591 02E0-02E1> 0A 3B			run init

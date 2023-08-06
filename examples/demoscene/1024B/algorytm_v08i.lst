@@ -1,0 +1,767 @@
+mads 2.1.6 build 66 (7 Jun 23)
+Source: D:\!Delphi\mads\examples\demoscene\1024B\algorytm_v08i.asm
+     1 				;                       /|
+     2 				;                      //|.
+     3 				;                     //_| .
+     4 				;                 __ // /| .
+     5 				;                /_ \/\__|. 
+     6 				;                \\_/  _/|_
+     7 				;                .g.e.n.d.a.
+     8 				;
+     9 				;______________________________________________________
+    10 				;
+    11 				; Algorytm - 1K glitchy intro by Agenda
+    12 				; for Forever 2019
+    13 				; code/msx/gfx: svoy
+    14 				; gfx: Piesiu
+    15 				; tomaswoj@gmail.com
+    16 				; http://pl.linkedin.com/in/tomaswoj
+    17 				; Nov 2018 - Feb 2019  
+    18 				; Cracow, Copehagen/Glostrup, Schaumburg, Munich (airport :)), Frankfurt (airport :)).
+    19 				; BIG KUDOS to Koala for optimization help (50+ cut bytes credit goes to him, lots of valuable suggestions and help)!
+    20
+    21 				; good illegal opcodes cheatsheet:
+    22 				; https://xxl.atari.pl/sally-6502c/?fbclid=IwAR3OzILLYZpJnamVOBDI--wNp4vY2LQcgmczaggsgr0E0glVCs9L9vWFS88
+    23 				; but no illegals used here... :P
+    24
+    25 					opt h+		
+    26 					org $6003 ; thanks to this Koala re-org we can reuse lo/hi of VBLK for proper sound initialization
+    27
+    28 				; common constants
+    29 = 00D3			FRMCNT	equ $d3
+    30 = 00D4			SECTION equ $d4
+    31 = 00D5			CHINDEX	equ $d5
+    32 = 00D6			FRM4	equ $d6
+    33 = 00D7			FRM5	equ $d7
+    34 = 00D8			PTRN4	equ $d8
+    35 = 00D9			NOISV	equ $d9
+    36 = 0020			JMP_L	equ $20 ; jump vector low 
+    37 = 0021			JMP_H	equ $21
+    38 = 0094			PMG2POS equ $94
+    39 = 00D0			VOLUME	equ $d0
+    40 = 9C40			SCREEN	equ $9c40
+    41
+    42 = 2000			MYBASE	equ $2000 ; 2K boundary
+    43 = 3300			FREQ	equ $3300
+    44 = 4000			MYCBASE	equ $4000 ; charbase
+    45
+    46 				; OS/VBLK constants
+    47 = 0224			VVBLK_L	equ $224
+    48 = 0225			VVBLK_H equ $225 ; shadow of VBLANK interrupt routine
+    49 = D201			AUDC1	equ $D201
+    50 = D203			AUDC2	equ $D203
+    51 = D205			AUDC3	equ $D205
+    52 = D207			AUDC4	equ $D207
+    53 = D200			AUDF1	equ $D200
+    54 = D202			AUDF2	equ $D202
+    55 = D204			AUDF3	equ $D204
+    56 = D206			AUDF4	equ $D206
+    57 = D208			AUDCTL 	equ $D208 ;
+    58 = D20F			SKCTL	equ $D20f;
+    59
+    60 				; fx1 constants
+    61 				;--------------
+    62 = 0095			PMG3POS equ $95
+    63 = 0096			PMG4POS equ $96
+    64 = A000			BASIC	equ $a000
+    65 = 803A			SCR_1	equ $803a
+    66 = 809A			SCR_2	equ $809a
+    67
+    68
+    69 				; fx2 constants
+    70 				; -------------
+    71 = 0097			PIX_I	equ $97	
+    72 = 0098			PIX_L	equ $98
+    73 = 0099			PIX_H	equ $99
+    74 = 009A			IMG_L	equ $9a
+    75 = 009B			IMG_H	equ $9b
+    76
+    77 = 009C			IMG_TMP	equ $9c
+    78 = 009B			MIR_TMP	equ $9b
+    79
+    80 = 009D			PIX_SEL	equ $9d
+    81 = 009E			PIX_REA	equ $9e
+    82
+    83 = 009F			OFFSET	equ $9f
+    84 = 00A0			IMGADDR equ $a0
+    85
+    86
+    87 = 9F4C			PICSTAL	equ $9c40+19*40+20
+    88 = 9F54			PICSTAR	equ $9c40+19*40+20+8
+    89 = 9F43			PICMIRL	equ $9c40+19*40+11
+    90 = 9F4C			PICMIRR	equ $9c40+19*40+20
+    91
+    92 				; fx3 constants
+    93 				; -------------
+    94 = 9C20			DLIST	equ $9c20
+    95
+    96 				; main intro loop, run on every VBLANK, plays sound, then switches to main (current) fx code
+    97 				; at the end of section (FRMCNT = 256=0) it runs the exit fx code, that preps the scene for
+    98 				; the next fx, all driven by demo flow data table at the end 	
+    99 				myvbl:
+   100 					; SOUND SECTION
+   101 FFFF> 6003-62FB> 05 D3		ora FRMCNT	
+   102 6005 8D 00 D2			sta AUDF1 ; modulate slightly the background beat
+   103 					
+   104 6008 A5 D3			lda FRMCNT
+   105 600A A8				tay
+   106 600B A2 1A			ldx #$1a	
+   107 600D 29 20			and #%00100000
+   108 600F D0 02			bne secfreq
+   109 6011 A2 DA			ldx #$da
+   110 6013			secfreq:		
+   111 6013 8E 04 D2			stx AUDF3
+   112 					; main beat
+   113 6016 98				tya ; get FRMCNT from the y register
+   114 6017 29 1F			and #%00011111
+   115 6019 85 D7			sta FRM5
+   116 601B AA				tax
+   117 601C BD 23 63			lda kickbas,x
+   118 601F 4A				lsr	
+   119 6020 8D 05 D2			sta AUDC3
+   120 					;
+   121 6023 98				tya ; get FRMCNT
+   122 6024 29 0F			and #%00001111
+   123 6026 AA				tax
+   124 6027 BD F6 62			lda sndkick5,x	 
+   125 602A 8D 01 D2			sta AUDC1	
+   126 					; lead sound, but start from section 5
+   127 602D A5 D4			lda SECTION
+   128 602F 85 D5			sta CHINDEX
+   129 6031 C9 05			cmp #5
+   130 6033 90 14			bcc skip_lead
+   131 6035 BD 13 63			lda sndkick6,x	; x already contains right value?	
+   132 6038 8D 03 D2			sta AUDC2
+   133 603B 98				tya
+   134 603C 4A				lsr
+   135 603D 4A				lsr
+   136 603E 4A				lsr
+   137 603F 4A				lsr
+   138 6040 29 07			and #%00000111	
+   139 6042 AA				tax
+   140 6043 BD 48 63			lda leadnotes,x	
+   141 6046 8D 02 D2			sta AUDF2
+   142 6049			skip_lead:	
+   143 					; background lead sound	
+   144 6049 A6 D4			ldx SECTION
+   145 604B BD 05 63			lda seclead-1,x
+   146 604E 8D 06 D2			sta AUDF4
+   147 6051 A9 A2			lda #%10100010
+   148 6053 8D 07 D2			sta AUDC4
+   149 					; SOUND END
+   150 								
+   151 6056 A9 00			lda #0 ; zero offset for fx run addresses
+   152 6058 20 B1 60			jsr jumper ; 5b
+   153 						
+   154 605B			runback: ; now it is handled by rts from the fx code itself
+   155 					
+   156 605B E6 D3			inc FRMCNT
+   157 					; if not the end of the section, continue w/o increasing the section
+   158 605D D0 07			bne skipsec
+   159 					; now do some section exit stuff
+   160 605F A9 0D			lda #(EXIT_L-RUN_L) ; calculate offset based on sections count
+   161 6061 20 B1 60			jsr jumper	; run the fx exit/next fx prep function, if applicable
+   162 					
+   163 6064			exitback:	
+   164 					; now increase the section
+   165 6064 E6 D4			inc SECTION	
+   166 6066			skipsec:	
+   167 6066 4C 62 E4			jmp $E462 ; return procedure after memory map
+   168 				 	
+   169 				 	; program entry point
+   170 				 	; setup basic and OS ON
+   171 					;lda #%00110001
+   172 					;sta $D301 ; PORTB
+   173 6069			program:	
+   174 6069 A9 03			lda #3
+   175 606B 8D 24 02			sta VVBLK_L ; VBLK init (lo)
+   176 606E 8D 0F D2			sta SKCTL ; sound init
+   177 					
+   178 6071 A0 60			ldy #%01100000
+   179 6073 8C 08 D2			sty AUDCTL ; sound init
+   180 6076 8C 25 02			sty VVBLK_H ; VBLK init (hi)
+   181
+   182 						
+   183 				; fx1 prep procedure
+   184 				;--------------------------------------------------	
+   185 6079			fx1_prep:
+   186 					
+   187 6079 A9 08			lda #8
+   188 607B 20 9C EF			jsr $EF9C
+   189
+   190 607E A9 A0			lda #>BASIC
+   191 6080 8D 3B 80			sta SCR_1+1	
+   192 6083 A9 A2			lda #>(BASIC+600) ; pot 1b? by inx
+   193 6085 8D 9B 80			sta SCR_2+1 ; used for randomized background content
+   194 					
+   195 								
+   196 					;sei
+   197 6088 A9 20			lda #>mybase
+   198 608A 8D 07 D4			sta $D407; set PMBASE, needs to be at 1K boundary for double resoultuon and 2K boundary for single resolution sprites (Every line)
+   199
+   200 608D A9 37			lda #55
+   201 608F 8D 08 D0			sta $D008 ; setup pmg0 size to x4	
+   202 6092 A0 04			ldy #4
+   203 6094			pmgposloop:
+   204 6094 0A				asl
+   205 6095 99 92 00			sta PMG2POS-2,y ; for further use
+   206 6098 88				dey
+   207 6099 D0 F9			bne pmgposloop	
+   208
+   209 					;ldy #0
+   210 609B			fx1black:
+   211 609B A9 CC			lda #$cc
+   212 609D 99 8E 22			sta mybase+640+14,y
+   213 60A0 A9 AA			lda #$aa	
+   214 60A2 99 0E 23			sta mybase+768+14,y
+   215 60A5 88				dey
+   216 60A6 D0 F3			bne fx1black
+   217 					
+   218 				; general intro setup
+   219 					;ldy #0; - reuse 0 from the above?
+   220 					;sty FRMCNT ; not needed??
+   221 					;sty SECTION
+   222 					
+   223 60A8 20 96 62			jsr setpmg
+   224 60AB 58				cli
+   225 					
+   226
+   227 				; fx1 prep end	
+   228 				;--------------------------------------------------
+   229
+   230 60AC			frame
+   231 					; play sound here or fx code
+   232 					; most of magic done in VBLK
+   233 60AC			mainjsr:
+   234 60AC 20 22 62			jsr empty ; main fx loop, outside of VBLANK (if exists) to be plugged here
+   235 60AF 50 FB			bvc frame
+   236 									
+   237 				; --------------------------------------------------------
+   238 				; main end
+   239 				; --------------------------------------------------------
+   240
+   241
+   242 				; simple jumper code, used to run the fx function and fx exit function
+   243 60B1			jumper:
+   244 60B1 18				clc
+   245 60B2 65 D4			adc SECTION
+   246 60B4 AA				tax
+   247
+   248 					;alternative approach to make this jump (thanks for the tip Koala!), 4b less than a 'typical' code:
+   249 60B5 BD DC 62			lda RUN_H,x
+   250 60B8 48				pha
+   251 60B9 BD C2 62			lda RUN_L,x
+   252 60BC 48				pha
+   253 60BD 60				rts
+   254
+   255 				; main VBLKed fx functions (run 60FPS):
+   256
+   257 				; fx1 --------------------------------------------------
+   258 				; random gfx modes (GTIA) changes, central symbol, background PMG bars
+   259 60BE			fx1_vbl:	
+   260 				; copy logo to pmg1
+   261 60BE A0 20			ldy #(4*8)	
+   262 60C0			fx1logocpy:
+   263 					;lda agpmg,y
+   264 60C0 98				tya
+   265 60C1 4A				lsr
+   266 60C2 4A				lsr
+   267 60C3 AA				tax
+   268 60C4 BD B4 63			lda square3+1-1,x	
+   269 60C7 99 30 22			sta mybase+512+14+34,y
+   270 60CA 88				dey
+   271 60CB D0 F3			bne fx1logocpy
+   272 					
+   273 60CD AD 0A D2			lda $D20a
+   274 60D0 8D 3A 80			sta SCR_1
+   275 60D3 8D 9A 80			sta SCR_2
+   276
+   277 					
+   278 60D6 09 01			ora #%00000001 ; all upfront ; pot 2bytes, limited visual artifacts
+   279 60D8 29 C1			and #%11000001
+   280 					;sei
+   281 					;lda #%00000001
+   282 60DA 8D 1B D0			sta $D01b ; GPRIOR and GTIA modes	
+   283
+   284 					; now move the background PMG lines around
+   285 60DD E6 94			inc PMG2POS
+   286 60DF C6 95			dec PMG3POS
+   287 60E1 E6 96			inc PMG4POS
+   288
+   289 						
+   290 					; update their actual positions... with PMG0 standing still
+   291 60E3 A0 04			ldy #4
+   292 60E5			moveloop:		
+   293 60E5 B9 92 00			lda PMG2POS-2,y
+   294 60E8 99 FF CF			sta $D000-1,y
+   295 60EB AD 0A D2			lda $D20a ; reuse loop for size changes
+   296 60EE 99 08 D0			sta $D009-1,y ; size
+   297 60F1 88				dey
+   298 60F2 D0 F1			bne moveloop
+   299 					
+   300 					;jmp pmgblink ; can be skipped
+   301 					;rts
+   302
+   303 60F4			pmgblink:
+   304 					; play with PMG color to the beat
+   305 60F4 A4 D7			ldy FRM5
+   306 60F6 B9 23 63			lda kickbas,y
+   307 60F9 8D 12 D0			sta $D012
+   308 60FC 60				rts
+   309
+   310 				; fx1 end ----------------------------------------------
+   311
+   312 				; fx1 exit function (fx2 prep)--------------------------
+   313 60FD			fx2_prep:
+   314
+   315 				; clean pmg0
+   316 60FD 20 8C 62			jsr cleanpmg0
+   317 					
+   318 				; populate filled PMG square at the bottom left
+   319 6100 A0 07			ldy #7
+   320 6102 84 D8			sty PTRN4 ; PMG pattern to be used in fx4
+   321 6104 C8				iny	  ; and now use it for the loop counter
+   322 6105 A9 FF			lda #$ff ; full square
+   323 6107			black:
+   324 6107 99 6F 22			sta mybase+512+111,y ; bottom left
+   325 610A 88				dey
+   326 610B D0 FA			bne black
+   327
+   328 					; populate the data with semirandom (BASIC)
+   329 					;ldy #255; reuse 0 from the previous loop
+   330 610D			randcpy:
+   331 610D B9 00 A0			lda $A000,y
+   332 6110 99 1E 64			sta algtext+40,y
+   333 6113 99 40 9C			sta SCREEN,y
+   334 6116 88				dey
+   335 6117 D0 F4			bne randcpy
+   336 6119 60				rts ; cannot skip this as we are reusing the procedure in another effect (fx3)
+   337 					
+   338 				; fx1 exit end -----------------------------------------
+   339
+   340 				; fx2 --------------------------------------------------
+   341 				; simple full screen pictures, made of text mode and swapping charsets
+   342 				; interleaved with pseudorandom, sound synced sections
+   343 611A			fx2_vbl:
+   344 					
+   345 					;calc pmg size based on beat
+   346 611A A6 D7			ldx FRM5 
+   347 611C BD 23 63			lda kickbas,x
+   348 611F 29 03			and #%00000011		 
+   349 6121 8D 08 D0			sta $D008 ; set pmg size to x1
+   350 						
+   351 							
+   352 6124 A5 D3			lda frmcnt
+   353 6126 D0 19			bne skip_gfx_reset
+   354 					
+   355 					; on 0 frame in section reset GFX so we are displaying the picture
+   356 6128 78				sei
+   357 					;lda #0 ; looks like it is already set to 0, nice :)	
+   358 6129 85 9F			sta OFFSET ; used in target address drawing, no offset for regular picture
+   359 612B 20 9C EF			jsr $EF9C ; reset gfx mode
+   360 					;cli; seems not needed here
+   361 					
+   362 612E 8D C6 02			sta 710 ; set background to black
+   363 6131 8D 42 9C			sta SCREEN+2 ; cleanup the cursor ; pot 3 bytes savings (if no cursor clear, but not nice)
+   364 					
+   365 					; now iterate through pictures 0-3		
+   366 6134 A5 D4			lda SECTION ; we can use the section counter as picture selector...
+   367 6136 29 03			and #%00000011
+   368 6138 85 9D			sta PIX_SEL
+   369 613A AA				tax
+   370 613B BC 70 63			ldy colors,x
+   371 613E 8C C0 02			sty 704 ; shadow for PMG0 color
+   372 					;sty $D012
+   373 							
+   374 6141			skip_gfx_reset:
+   375 6141 A2 00			ldx #0	
+   376 6143 A5 D3			lda frmcnt ; if noise to be drawn, pass through bpl...
+   377 6145 10 0B			bpl display
+   378 6147			drawnoise:
+   379 					; PMG setup
+   380 6147 20 96 62			jsr setpmg
+   381 					; randomize location/pixel selection
+   382 614A AD 0A D2			lda $D20a
+   383 614D 85 9F			sta OFFSET
+   384 614F 85 9D			sta PIX_SEL
+   385 6151 E8				inx ; reuse as x=0 (still), and now it will be x=1, so used for colors/charbase/pmgpos selector below
+   386 					
+   387 6152			display:	
+   388 					; assume x contains right data pair index, 0 for picture, 1 for noise
+   389 6152 BD 42 63			lda datapar-1,x
+   390 6155 8D 00 D0			sta $D000 ; set PMG0 pos
+   391 6158 BD 44 63			lda datapar+2-1,x
+   392 615B 8D 09 D4			sta $D409
+   393 615E BD 46 63			lda datapar+4-1,x	
+   394 6161 8D 17 D0			sta $D017 ; set the foreground color 
+   395
+   396 					; modify charbase for the picture, depends on the framecount
+   397 6164 A5 D3			lda FRMCNT
+   398 6166 30 0A			bmi skipcharmod
+   399 6168 4A				lsr
+   400 6169 4A				lsr
+   401 616A 4A				lsr
+   402 616B 4A				lsr
+   403 616C 4A				lsr
+   404 616D 85 D5			sta CHINDEX
+   405 616F 20 A1 62			jsr updlog	
+   406 6172			skipcharmod:	
+   407
+   408 					; calculate offset based on picture selection (PIX_SEL*16+16)
+   409 6172 A5 9D			lda PIX_SEL	
+   410 6174 0A				asl
+   411 6175 0A				asl
+   412 6176 0A				asl
+   413 6177 0A				asl
+   414 6178 69 10			adc #16
+   415 617A A8				tay 	
+   416 617B A2 10			ldx #16
+   417 617D			copyimgdata: ; copy the image data fo display
+   418 617D B9 73 63			lda imgl-1,y
+   419 6180 95 9F			sta IMGADDR-1,x
+   420 6182 88				dey
+   421 6183 CA				dex
+   422 6184 D0 F7			bne copyimgdata
+   423 					
+   424 					; now display it	
+   425 6186 A9 4C			lda #<PICMIRR
+   426 6188 20 8D 61			jsr showerMirror
+   427 618B A9 43			lda #<PICMIRL
+   428 					;jsr showerMirror ; lovely! 4-foking-bytes less!!!		
+   429 					;rts	
+   430
+   431 618D			showerMirror:
+   432 618D 65 9F			adc OFFSET	
+   433 618F 85 98			sta PIX_L ; moved from outside of JSR
+   434 6191 A2 9F			ldx #>PICMIRL ; does not matter whether its PICMIR or PICMIR, both are $9f
+   435 6193 86 99			stx PIX_H ; moved from outside of JSR
+   436 6195 A2 10			ldx #16 ; amount of lines
+   437 6197			imglineMirror:	
+   438 6197 B5 9F			lda IMGADDR-1,x
+   439 6199 85 9C			sta IMG_TMP
+   440 619B A0 08			ldy #8
+   441 619D			pixloopMirror:
+   442 619D A5 9C			lda IMG_TMP
+   443 619F 29 80			and #%10000000
+   444 61A1 91 98			sta (PIX_L),y
+   445 61A3 06 9C			asl IMG_TMP
+   446 61A5 66 9B			ror MIR_TMP	
+   447 61A7 88				dey	
+   448 61A8 D0 F3			bne pixloopMirror
+   449 					; copy the mirror to the data
+   450 61AA A5 9B			lda MIR_TMP
+   451 61AC 95 9F			sta IMGADDR-1,x
+   452 					; now move the line down
+   453 61AE A5 98			lda PIX_L;
+   454 61B0 38				sec
+   455 61B1 E9 28			sbc #40
+   456 61B3 B0 02			bcs skipdec_h40		
+   457 61B5 C6 99			dec PIX_H
+   458 61B7			skipdec_h40:	
+   459 61B7 85 98			sta PIX_L;
+   460 					;rts
+   461 61B9 CA				dex
+   462 61BA D0 DB			bne imglineMirror	
+   463 61BC 60				rts
+   464
+   465 				; fx2 end ----------------------------------------------
+   466
+   467 				; fx2 exit ---------------------------------------------
+   468 				; prep for fx 3
+   469 61BD			fx3_prep:
+   470 					;lda #0 ; again, looks like its not needed :)
+   471 61BD 20 9C EF			jsr $EF9C
+   472 61C0 20 0D 61			jsr randcpy ; populating there the random content (upper lines of the screen)	
+   473 					
+   474 				; clean pmg0
+   475 61C3 20 8C 62			jsr cleanpmg0
+   476 					; move pmg1 and pmg2 off screen
+   477 					;lda #0 ;a=0 already :)
+   478 					;sta $D002 ; no need for that, as it looks to be offscreen already, from the previous fx	
+   479 61C6 8D 03 D0			sta $D003
+   480 61C9 8D C0 02			sta 704 ; set pmg0 to colors
+   481 						
+   482 				; copy square icon to PMG		
+   483 61CC A0 12			ldy #(16+2)
+   484 61CE			fx3_logocpy:
+   485 61CE 98				tya
+   486 61CF 4A				lsr
+   487 61D0 AA				tax
+   488 61D1 BD B3 63			lda square3-1,x	
+   489 61D4 99 61 22			sta mybase+512+14+84-1,y
+   490 61D7 88				dey
+   491 61D8 D0 F4			bne fx3_logocpy
+   492
+   493 					;sizes x 2
+   494 61DA C8				iny ; reuse y=0 above 
+   495 61DB 8C 08 D0			sty $D008
+   496 61DE 8C 09 D0			sty $D009 ; do it for the next fx
+   497 								
+   498 					;PMG0 horizontal pos
+   499 61E1 A9 C0			lda #192
+   500 61E3 8D 00 D0			sta $D000
+   501 					
+   502 					
+   503 61E6 20 96 62			jsr setpmg
+   504 					;cli ; seems that it is not needed
+   505
+   506 				;crdlist:
+   507 					; $9c20 DL start
+   508 					; 70 70 70 42 40 9c
+   509 					; 0 - 10 - ... 70 - 8 blank lines
+   510 					; 20 x 02 (text mode 0, 0f - text mode 15, hires)
+   511 					; 41 20 9c ; jmp back
+   512 				; the section below not needed after all! :) it will be randomized anyway as part of the frame
+   513 				;	ldy #20
+   514 				;emptyline:
+   515 				;	lda #$70
+   516 				;	ldx $D20a
+   517 				;	cpx #128
+   518 				;	bcs emptyskip
+   519 				;	lda #$2f
+   520 				;emptyskip:		
+   521 				;	sta DLIST,y
+   522 				;	dey
+   523 				;	bne emptyline
+   524
+   525 				; end list creation, text copy, colors setup, all in one fat loop
+   526 								
+   527 61E9 A0 28			ldy #40
+   528 61EB			copytxt
+   529 					; setup the text line
+   530 61EB B9 F5 63			lda algtext-1,y
+   531 61EE 99 3F 9C			sta screen-1,y
+   532 					; setup end of display list
+   533 61F1 B9 EB 63			lda enddlst-1,y
+   534 61F4 99 34 9C			sta $9c20+21-1,y
+   535 					; setup colors	
+   536 61F7 B9 DD 63			lda coltab-1,y
+   537 61FA 99 C3 02			sta 708-1,y		
+   538 61FD 88				dey
+   539 61FE D0 EB			bne copytxt	
+   540 						
+   541 				; setup fx3 main frame:
+   542 6200 A9 05			lda <fx3_frame
+   543 6202 8D AD 60			sta mainjsr+1
+   544 					;lda >fx3_frame ; assume its 21 for now :)
+   545 					;sta mainjsr+2		
+   546 					;rts ; pot
+   547
+   548 				; fx2 exit end -----------------------------------------
+   549
+   550 				; fx3 frame --------------------------------------------
+   551 				; randomized display list + intro title text
+   552 				; on top of rapid changes of background color - resulting in grayscale like
+   553 				; gradient, PMG logo blinking to the sound...
+   554 6205			fx3_frame:
+   555 6205 AD 0B D4			lda $D40b
+   556 6208 4A				lsr
+   557 6209 4A				lsr
+   558 620A 4A				lsr
+   559 620B 2D 0A D2			and $D20a	
+   560 620E 8D 1A D0			sta $d01a
+   561 6211 60				rts 	
+   562 				; fx3 frame end ----------------------------------------
+   563
+   564 				; fx4 frame --------------------------------------------
+   565 6212			fx4_frame:
+   566 6212 A9 C3			lda #$c3	;Ensure charset is in ROM area
+   567 6214 0D 0A D2			ora $d20a	;Random
+   568 6217 8D 09 D4			sta $d409	;Set charset
+   569 621A A6 D5			ldx CHINDEX
+   570 621C 3D F2 63			and noiscol,x ; modify color of the noise	
+   571 621F 8D 16 D0			sta $d016	;make some color
+   572 6222			empty:
+   573 6222 60				rts 
+   574 				; fx4 frame end ----------------------------------------
+   575 					
+   576 				; fx3 vblk ---------------------------------------------
+   577 6223			fx3_vbl:
+   578
+   579 					; mess up display list
+   580 6223 A0 14			ldy #20	
+   581 6225			dlistmess:
+   582 6225 AD 0A D2			lda $D20a
+   583 6228 29 0E			and #%00001110
+   584 622A 99 20 9C			sta DLIST,y
+   585 622D 88				dey
+   586 622E D0 F5			bne dlistmess
+   587 					
+   588 					;jsr pmgblink	
+   589 					;rts - part of pmgblink
+   590 6230 4C F4 60			jmp pmgblink ; instead of the 2 lines above :)
+   591 				; fx3 vblk end -----------------------------------------
+   592
+   593 				; fx4 prep ---------------------------------------------
+   594 6233			fx4_prep:
+   595 6233 A9 02			lda #2
+   596 6235 20 9C EF			jsr $EF9C
+   597 6238 8E 6F 02			stx $26f ; ok here
+   598 					
+   599 623B 20 96 62			jsr setpmg
+   600 					;cli
+   601
+   602 623E 20 8C 62			jsr cleanpmg0
+   603 						
+   604 6241 8C 01 D0			sty $D001 ; hide 'end' PMG for now
+   605 6244 A9 42			lda #66 ; pmg0 position
+   606 6246 8D 00 D0			sta $D000
+   607 					
+   608 					
+   609 				; setup fx4 main frame:
+   610 6249 A9 12			lda <fx4_frame
+   611 624B 8D AD 60			sta mainjsr+1
+   612 624E 4A				lsr
+   613 624F 8D C1 02			sta 705 ; use it ($A) for the 'end' PMG color
+   614 					;lda >fx4_frame ; assume its 21 for now :)
+   615 					;sta mainjsr+2
+   616 					;rts			
+   617 					
+   618 				; fx4 prep end -----------------------------------------
+   619 				; fx4 effect
+   620 				; randomized charset changes, as quick as possible, resulting
+   621 				; in nice randomized patterns. On the left side PMG graphics animation
+   622 				; ending with 'END' PMG shown 
+   623 6252			fx4_vbl:
+   624 6252 A4 D7			ldy FRM5
+   625 6254 B9 23 63			lda kickbas,y
+   626 6257 8D C8 02			sta 712 ; 712/$D01A?
+   627
+   628 625A A5 D3			lda frmcnt	
+   629 625C 6A				ror
+   630 625D B0 0F			bcs skiprot ; rotate the PMG0 every 2nd frame, so its not too fast
+   631 					
+   632 625F A0 5F			ldy #95 ; very interesting pattern if commented out 
+   633 6261 A5 D8			lda PTRN4	
+   634 6263			rotcol:	
+   635 6263 0A				asl
+   636 6264 69 00			adc #0		
+   637 6266 99 10 22			sta MYBASE+512+16,y
+   638 6269 88				dey
+   639 626A D0 F7			bne rotcol
+   640 626C 85 D8			sta PTRN4 ; save the 'rotated' pattern for the next iteration (by 1px)
+   641
+   642 626E			skiprot:
+   643 626E A0 12			ldy #(16+2)
+   644 6270			fx4_logocpy: ; keep the logo (square) non-rotated, so just copy it, also copy the end string pmg here
+   645 6270 98				tya
+   646 6271 4A				lsr
+   647 6272 AA				tax
+   648 6273 BD B3 63			lda square3-1,x	
+   649 6276 99 53 22			sta mybase+512+14+70-1,y
+   650 6279 BD E2 63			lda endstr,x
+   651 627C 99 D7 22			sta MYBASE+512+128+14+74-1,y	
+   652 627F 88				dey
+   653 6280 D0 EE			bne fx4_logocpy
+   654 					
+   655 					; now modify CHINDEX so it can be used in frame loop, to switch the fx color	
+   656 6282 A5 D3			lda frmcnt
+   657 6284 2A				rol
+   658 6285 2A				rol
+   659 6286 2A				rol
+   660 6287 29 03			and #%00000011
+   661 6289 85 D5			sta CHINDEX
+   662 628B 60				rts
+   663 							
+   664 628C			cleanpmg0:
+   665 628C A9 00			lda #0
+   666 628E A8				tay
+   667 628F			cleanloop:
+   668 628F 99 00 22			sta mybase+512,y 
+   669 6292 88				dey
+   670 6293 D0 FA			bne cleanloop	
+   671 6295 60				rts
+   672 					
+   673 6296			setpmg:
+   674 6296 78				sei
+   675 6297 A9 2E			lda #%101110 ; double line, no missle DMA
+   676 					;sta $D400; DMACTL - 62 - single line, normal playfield
+   677 6299 8D 2F 02			sta $22f
+   678 629C 4A				lsr	
+   679 					;lda #3 ; can be skipped due to lsr above
+   680 629D 8D 1D D0			sta $D01D ; GRACTL -set both players and missles	
+   681 62A0 60				rts	
+   682 					
+   683 					
+   684 62A1			updlog:
+   685 62A1 A5 D5			lda CHINDEX
+   686 62A3 0A				asl
+   687 62A4 0A				asl
+   688 62A5 0A				asl
+   689 62A6 69 08			adc #8
+   690 62A8 AA				tax
+   691 62A9 A0 08			ldy #8
+   692 62AB			uplogloop:
+   693 62AB BD 4F 63			lda pics-1,x ; central logo update
+   694 62AE 99 B3 63			sta square3-1,y
+   695 62B1 BD BD 63			lda linepat-1,x ; charset update
+   696 62B4 99 FF 3F			sta MYCBASE-1,y 
+   697 62B7 CA				dex
+   698 62B8 88				dey
+   699 62B9 D0 F0			bne uplogloop
+   700 62BB 60				rts	
+   701
+   702 62BC			showend:
+   703 62BC A9 56			lda #$56
+   704 62BE 8D 01 D0			sta $D001
+   705 62C1 60				rts					
+   706 					
+   707 				; demo flow....13 x 256 frames sections
+   708
+   709 62C2 BD BD BD BD BD 19 + RUN_L	dta b(<fx1_vbl-1,	<fx1_vbl-1, 	<fx1_vbl-1,	<fx1_vbl-1,	<fx1_vbl-1,	<fx2_vbl-1,	<fx2_vbl-1,	<fx2_vbl-1,	<fx2_vbl-1,	<fx3_vbl-1,	<fx3_vbl-1, 	<fx4_vbl-1, 	<fx4_vbl-1);
+   710 62CF A0 A0 A0 A0 FC 21 + EXIT_L	dta b(<updlog-1,	<updlog-1,	<updlog-1,	<updlog-1,	<fx2_prep-1,	<empty-1,	<empty-1,	<empty-1,	<fx3_prep-1,	<empty-1,	<fx4_prep-1,	<empty-1, 	<showend-1);
+   711 62DC 60 60 60 60 60 61 + RUN_H 	dta b(>fx1_vbl,		>fx1_vbl,	>fx1_vbl,	>fx1_vbl,	>fx1_vbl,	>fx2_vbl,	>fx2_vbl,	>fx2_vbl,	>fx2_vbl,	>fx3_vbl,	>fx3_vbl,	>fx4_vbl,	>fx4_vbl);
+   712 62E9 62 62 62 62 60 62 + EXIT_H  dta b(>updlog,		>updlog, 	>updlog,	>updlog,	>fx2_prep,	>empty,		>empty,		>empty,		>fx3_prep,	>empty,		>fx4_prep,	>empty,		>showend);
+   713
+   714 				; data
+   715 				; msx - 3 vol envelopes, 
+   716 62F6 02 06 04 03 02 01	sndkick5 dta b(2,6,4,3,2,1); background percussion envelope
+   717 62FC				org sndkick5+16
+   718 6306-6334> 6C 50 5A 50 + seclead	dta b(108,80,90,80,108,80,90,80,70,60,50,90,108); background lead sound notes
+   719 6313 C0 CA CA C9 C8 C7 + sndkick6 dta b($c0,$ca,$ca,$c9,$c8,$c7,$c6,$c5,$c4,$c3,$c3,$c2,$c2,$c1,$c1,$c1); melody lead sound vol envelope
+   720 6323 02 06 0F 0F 0F 0D + kickbas  dta b(2,6,15,15,15,13,13,13,11,9,7,5,4,3,2,1,1,1);
+   721 6335				org kickbas+32
+   722 6343-63E6> 30 40 E0 0F + datapar dta b(48,$40,$E0,$0f,$02); used to switch pmg/colors/charsets in fx2
+   723 6348 55 47 1C 55 48 3F + leadnotes dta b(85,71,28,85,72,63,82,254); 7 steps version, main melody
+   724 				; fx1 
+   725 				; icon images drawn in fx1
+   726 6350			pics:
+   727 6350 E7 E7 66 66 66 66 + pic1	dta b($E7,$E7,$66,$66,$66,$66,$7E,$7E); symbol2
+   728 6358 FF FF 42 5A 5A 42 + pic2	dta b($FF,$FF,$42,$5A,$5A,$42,$FF,$FF); symbol3
+   729 6360 E7 E7 66 7E 7E 18 + pic3	dta b($E7,$E7,$66,$7E,$7E,$18,$FF,$FF); symbol4
+   730 6368 FF FF C3 C3 C3 C3 + pic4	dta b($FF,$FF,$C3,$C3,$C3,$C3,$FF,$FF); square
+   731
+   732 				; fx2
+   733 				; fullscreen images drawn in fx2
+   734 6370 24 C4 EA 8A		colors	dta b($24,$c4,$ea,$8a);	
+   735 6374 00 0D 0D 0D 0D 0D + imgl 	dta b($0,$D,$D,$D,$D,$D,$D,$D,$D,$1D,$39,$F9,$F1,$E1,$0,$0); // atari logo
+   736 6384 03 0F 1C 30 60 60 + circle	dta b($3,$F,$1C,$30,$60,$60,$C0,$C0,$C0,$C0,$60,$60,$30,$1C,$F,$3); // 5 vals
+   737 6394 01 01 03 03 06 06 + tri   	dta b($1,$1,$3,$3,$6,$6,$C,$C,$18,$18,$30,$30,$60,$60,$FF,$FF); // 4 vals
+   738 63A4 00 00 0F 18 08 18 + chip	dta b($0,$0,$F,$18,$8,$18,$8,$18,$8,$18,$8,$18,$8,$18,$F,$0); // 2 vals -> 13 vals
+   739 63B4 FF FF 60 FF FF 03 + square3 dta b($FF,$FF,$60,$FF,$FF,$3,$FF,$FF,$0,$0) ; symbol1
+   740 				; charset patterns to be used in icons drawing
+   741 63BE FF FF 00 00 FF FF + linepat		dta b($FF,$FF,$00,$00,$FF,$FF,$00,$00); dithered lines
+   742 63C6 FF F1 D5 F1 8F AB + linepat2 	dta b($FF,$F1,$D5,$F1,$8F,$AB,$8F,$FF); spongy
+   743 63CE 3C 7E E7 C3 C3 E7 + linepat3	dta b($3c,$7e,$e7,$c3,$c3,$e7,$7e,$3c); good! circles
+   744 63D6 55 FE 43 DA 5B C2 + linepat4	dta b($55,$FE,$43,$DA,$5B,$C2,$7F,$AA); comb + square, nice!
+   745
+   746 				; fx3 
+   747 				; color scheme for 3rd fx
+   748 63DE DC 94 AA 9A		coltab	dta b($dc,$94, $aa, $9a);
+   749 				; PMG 'End' string, used in the last fx
+   750 63E2 C1 81 DB AD EB	endstr	 dta b($C1,$81,$DB,$AD,$EB)
+   751 63E7				org endstr+10
+   752
+   753 63EC-6407> 42 40 9C 41 + enddlst	dta b($42,$40,$9c,$41,$20,$9c);
+   754 						
+   755 				; fx4
+   756 				;PTRN3	dta b($83,$7,$E,$1C,$38,$70,$E0,$C1); replaced with neat rotations
+   757 				; color changes on the last fx
+   758 63F2 3F 9F FF CF		noiscol	dta b(%00111111,%10011111,%11111111,%11001111); 
+   759
+   760 				; fx3 but we need empty string later on...
+   761 				; ALGORYTM by AGENDA
+   762 63F6 21 2C 27 2F 32 39 + algtext	dta b(33,44,39,47,50,57,52,45,0,98,121,0,33,39,37,46,36,33);
+   763
+   764 02E0-02E1> 69 60			run program
+   765 					end	

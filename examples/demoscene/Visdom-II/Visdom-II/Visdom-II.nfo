@@ -1,0 +1,35 @@
+;
+;	">> VISDOM DEMO PART II <<"_for_the_Halle_Project_93
+;
+;	This is the final fixed single file version I have promised 19 years ago :-)
+;
+;	(c) 25-02-1993 by_JAC! first_version_with_main_effects
+;	(r)_03-03-1993_by_JAC! Wiggle_works_100%.
+;	(r)_07-03-1993_by_JAC! Visdom,Credits_&_Infopart.
+;	(r)_09-03-1993_by-JAC! Ktab_&_ImpRes.
+;	(r)_13-03-1993_by_JAC! Info_V1.1,ImpRes_break.
+;	(f)_16-03-1993_by_JAC! All_texts_written,excluded,encrypted.
+;	(f)_16-03-1993_by_JAC! final_version
+;	(r)_06-08-1995_by_JAC! for Amiga
+;	(r) 28-09-2002 by JAC! for_PC
+;	(r)_17-06-2010 by JAC! wiggle_color_mix_fixed
+;	(r)_22-02-2012 by JAC! fader,decrunch,PAL_and_RAM_size_check_added
+;	(r)_05-03-2012 by JAC! NTSC_version_started
+;	(r)_13-03-2012 by JAC! NTSC_version_finished
+;
+;	This demo was created as contribution to the Halle Project '93 compilation.
+;	It is part 4 on the first disk, press "START" to start each part.
+;	Press "HELP" to enter the info screen and "SPACE to return to the main screen.
+;
+;	It was created during 6 months or military service isolation in Karlsruhe using
+;	my Amiga 500 cross development system and my Atari XL stored in big wooden box.
+;	An extraordinary situation which made an extraordinary demo possible.
+;	I still love the raster split logo, the wiggle, impres and the cool tune by Karsten Schmidt.
+;
+;	Raster Split Logo - 9 colors out of 128 at 160 pixels per line, 60 lines high, animated in waves
+;	Wiggle - 32 colors out of 256 at 80 pixels per line, 128 lines high, sin sin x movement
+;	ImpRes - 16 colors out of 128 at 160 pixels per line, 128 lines high, sin x/sin y movement
+;
+;	This was the first demo to exploit the GTIA bug which became the basis for many new graphics modes.
+;	Apart from Silly Things, this is the demo I am >>really<< proud of.
+;	Those were the days, JAC!
