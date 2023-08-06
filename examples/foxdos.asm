@@ -3,6 +3,22 @@
 
 // $0980
 
+/*
+
+- installs the D: device like any other Atari DOS
+- loads the executable file AUTORUN at startup
+- supports the standard DOS 2 file system
+- the supported sector size (128 or 256 bytes) is determined at the foxDOS compilation stage
+- foxDOS allows you to read the file by D:
+- only one file can be read at a time, but it can be of any length
+- foxDOS allows you to overwrite an existing file located in one sector
+- other operations like reading the directory, deleting, renaming etc. are not supported
+- foxDOS fits entirely in the boot sectors
+- foxDOS does not set MEMLO, but it only takes up $0700 .. $097F
+- foxDOS does not disable the ROM during transmission
+
+*/
+
 SECTOR_SIZE equ	256
 DIR_SECTOR equ	$169
 
