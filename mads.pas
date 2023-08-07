@@ -1731,7 +1731,7 @@ begin
 
  con := con+show_full_name(global_name,full_name,false)+' ('+IntToStr(Int64(line_err)+ord(line_err=0))+load_mes(81);
 
- if (b=0) and (str_blad<>'') then add:=add+' '+str_blad;
+ if (b in [0,3]) and (str_blad<>'') then add:=add+' '+str_blad;
 
  if b=18 then str_blad:=a;                 // Cannont open or create file ' '
 
@@ -5411,6 +5411,10 @@ begin
 
     if not(ciag) then
      if op_ in ['C','D'] then op_:='B';
+
+
+    if struct_used.use and ciag then					// STRING length = typ
+     if length(tmp) <> typ then blad(old,3, '''' + tmp + '''');
 
 
     if reloc and dreloc.use then begin
@@ -15550,7 +15554,6 @@ procedure Syntax;
 (*----------------------------------------------------------------------------*)
 (*  wyswietlamy informacje na temat przelacznikow, konfiguracji MADS'a        *)
 (*----------------------------------------------------------------------------*)
-var s: string;
 begin
  TextColor(WHITE);
  Writeln(Tab2Space(load_mes(mads_version)));
