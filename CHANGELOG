@@ -1,3 +1,14 @@
+2023-08-08
+- umożliwione inicjalizowanie danych STRUCT przez STRING, np:
+
+.struct test
+ a .long
+ b :3 .byte
+.ends
+
+tmp dta test [0] ('abc', 'x')
+
+
 2023-06-07
 - SDX: Weak Symbol, SMB^
 

@@ -3628,15 +3628,42 @@ begin
 end;
 
 
-procedure save_dtaS(war:string; ile:integer; const typ: byte; var old: string);
+procedure save_dtaS(war:string; ile:integer; typ: byte; var old: string);
 (*----------------------------------------------------------------------------*)
 (* zapisanie wartosci danych tworzonych przez strukture                       *)
 (* w celu zachowania relokowalnosci zapis przez OBLICZ_DANE                   *)
 (*----------------------------------------------------------------------------*)
-var i: integer;
+var i, j, k: integer;
+    txt: string;
+    ch: char;
 begin
 
- while ile>0 do begin
+ if (war <> '') and (war[1] in ['''','"']) then begin		// init STRUCT by STRING
+
+  ch:=war[1];
+
+  ile:=ile * typ;
+
+  if length(war)-2 > ile then blad(old, 3, war);
+
+  k:=1;
+  war:=get_string(k,war,old,true);
+
+  typ:=1;
+
+  for k:=1 to length(war) do begin
+   txt := ch + war[k] + ch;
+   j:=1;
+   oblicz_dane(j,txt, old, typ);
+
+   dec(ile);
+  end;
+
+  war:='0';
+ end;
+
+
+ while ile > 0 do begin
 
   i:=1;
   oblicz_dane(i, war, old, typ);
@@ -5411,11 +5438,6 @@ begin
 
     if not(ciag) then
      if op_ in ['C','D'] then op_:='B';
-
-
-    if struct_used.use and ciag then					// STRING length = typ
-     if length(tmp) <> typ then blad(old,3, '''' + tmp + '''');
-
 
     if reloc and dreloc.use then begin
      dec(war,rel_ofs);
