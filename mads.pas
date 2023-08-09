@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2023-06-03                                                   *)
+(*  last change: 2023-08-09                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -7613,13 +7613,17 @@ begin
 
       txt:=t_str[idx].lab;
 
-      if mne.l=__struct_run_noLabel then
-       str:=ety+'.'+txt
-      else begin
+      if mne.l=__struct_run_noLabel then begin
+       str:=ety+'.'+txt;
 
-       //_odd:=pos('.',txt);                                //???
-       //if _odd>0 then txt:=copy(txt,_odd,length(txt));    //???
+       if load_lab(ety, true) < 0 then begin       // ETY moze wielokrotnie wystepowac, wiec testujemy LOAD_LAB < 0
+         k:=1;
+         save_str(ety,k,0,1,adres,bank);           // nie zwiekszamy STRUCT.ADRES (+0)
 
+         save_lab(ety,adres-struct.adres,bank,zm); // tutaj operujemy na nowej wartosci STRUCT.ADRES
+       end;
+
+      end else begin
        if txt[1]<>'.' then txt:='.'+txt;
 
        str:=ety+txt;
@@ -7646,7 +7650,7 @@ begin
 
       end;
 
-      inc(adres, j*t_str[idx].rpt);
+      inc(adres, j * t_str[idx].rpt);
      end;
 
 end;
@@ -10217,7 +10221,7 @@ begin
 
             struct.idx:=loa_str(txt, struct.id);
 
-            save_lab(ety,struct.idx, __id_struct,zm);
+            save_lab(ety,struct.idx, __id_struct, zm);
 
            end else begin
           // znalazl ofset do tablicy
@@ -10229,7 +10233,6 @@ begin
            if pass_end<3 then pass_end:=3;     // jesli sa struktury to musza byc conajmniej 3 przebiegi
 
 end;
-
 
 
 procedure search_comment_block(var i:integer; var zm,txt:string);

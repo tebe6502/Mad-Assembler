@@ -1,3 +1,6 @@
+2023-08-09
+- issue #18 fixed, https://github.com/tebe6502/Mad-Assembler/issues/18
+
 2023-08-08
 - umożliwione inicjalizowanie danych STRUCT przez STRING, np:
 
