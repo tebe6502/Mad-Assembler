@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2023-08-09                                                   *)
+(*  last change: 2023-09-12                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -2251,6 +2251,8 @@ begin
  if a<>'' then begin			// !!! konieczny test
 
   if a='@' then begin
+   regOpty.use:=false;
+
    a:=IntToStr(anonymous_idx)+'@';
 
    inc(anonymous_idx);
