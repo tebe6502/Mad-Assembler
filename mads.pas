@@ -2250,9 +2250,9 @@ begin
 
  if a<>'' then begin			// !!! konieczny test
 
-  if a='@' then begin
-   regOpty.use:=false;
+  regOpty.use:=false;
 
+  if a='@' then begin
    a:=IntToStr(anonymous_idx)+'@';
 
    inc(anonymous_idx);
