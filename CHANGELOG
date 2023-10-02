@@ -1,3 +1,6 @@
+2023-10-02
+- poprawiony test dla przekroczenia adresu asemblacji $FFFF, WARNING: Memory range has been exceeded
+
 2023-09-12
 - issue #10 fixed, https://github.com/tebe6502/Mad-Assembler/issues/10
 

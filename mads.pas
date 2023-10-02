@@ -1563,7 +1563,11 @@ var x, y, ex, ey: integer;
     znk: char;
 begin
 
- if (pass=pass_end) and (opt and opt_O > 0) then begin
+ if (pass = pass_end) and (opt and opt_O > 0) then begin
+
+
+ if (adres > $FFFF) then warning(128);
+
 
   if org then begin
 
@@ -10344,9 +10348,6 @@ var g: file;
 
     label JUMP, LOOP, LOOP2, JUMP_2;
 begin
-
-
-if (adres > $FFFF) and (pass = pass_end) then warning(128);
 
 
 LOOP2:
