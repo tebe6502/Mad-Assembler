@@ -9,3 +9,9 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 
 # Free Pascal Compiler http://www.freepascal.org/
 # Compile: fpc -Mdelphi -vh -O3 mads.pas
+
+
+## Projects in Mad-Assembler
+
+* [Infocom Z-Machine interpreter](https://github.com/jindroush/atari-inform-interpreter)
+
