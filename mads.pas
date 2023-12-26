@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2023-09-12                                                   *)
+(*  last change: 2023-12-26                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -25,7 +25,7 @@ uses
 {$IFDEF WINDOWS}
 	windows,
 {$ENDIF}
-	crt;
+	crt, sysutils;
 
 type
 
@@ -276,7 +276,10 @@ const
   opt_B = 128;
 
 
-var lst, lab, hhh, mmm: textfile;
+var
+    OutBuf: array [0..100000] of char;
+
+    lst, lab, hhh, mmm: textfile;
     dst: file;
 
     label_type: char = 'V';
@@ -1320,6 +1323,8 @@ begin
    writeln(warning_mes);
    warning_old:=warning_mes;
 
+   Flush(Output);
+
    NormVideo;
   end;
 
@@ -1487,6 +1492,8 @@ begin
     write(#13#10,messages[a].mes)
    else
     write(messages[a].mes);
+
+   Flush(Output);
 
    NormVideo;
 
@@ -15584,10 +15591,16 @@ procedure Syntax;
 (*----------------------------------------------------------------------------*)
 begin
  TextColor(WHITE);
- Writeln(Tab2Space(load_mes(mads_version)));
+
+ Writeln(Tab2Space(load_mes(mads_version)) + ' (' + {$i %DATE%} + ')');
+
+ Flush(Output);
 
  TextColor(DARKGRAY);
  Writeln(Tab2Space(load_mes(mads_version-2)));
+
+ Flush(Output);
+
  NormVideo;
 
  halt(3);
@@ -15975,11 +15988,14 @@ end;
 (*----------------------------------------------------------------------------*)
 begin
 
+// Textrec(Output).FlushFunc:=nil;
+
 {$IFDEF WINDOWS}
  if GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) = 3 then begin
-  Assign(Output, ''); Rewrite(Output);
+  Assign(Output, ''); FileMode:=1; Rewrite(Output);
  end;
 {$ENDIF}
+
 
  SetLength(t_lin,1);
  SetLength(t_lab,1);
