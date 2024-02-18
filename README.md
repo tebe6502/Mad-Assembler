@@ -22,5 +22,10 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [Bosconian 64 PAL](https://github.com/shanti77atari/bosconian64pal)
 * [Gacek VBXE](https://github.com/shanti77atari/bosconian64pal)
 * [Gacek](https://github.com/shanti77atari/gacek)
-* [Higway Encounter](https://github.com/shanti77atari/highway) 
+* [Higway Encounter](https://github.com/shanti77atari/highway)
+* [Nibbly](https://github.com/tebe6502/Nibbly)
+* [Pang](https://github.com/tebe6502/Pang)
+* [Getris](https://github.com/tebe6502/getris)
+* [A-Maze](https://github.com/KaroLaunonen/a-maze)
+
 
