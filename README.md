@@ -27,5 +27,8 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [Pang](https://github.com/tebe6502/Pang)
 * [Getris](https://github.com/tebe6502/getris)
 * [A-Maze](https://github.com/KaroLaunonen/a-maze)
+* [5dots](https://gitlab.com/bocianu/5dots)
+* [Raiders of the Lost Ark](https://forums.atariage.com/topic/260558-raiders-of-the-lost-ark/)
+* [Pad](https://forums.atariage.com/topic/191864-pad-15-beta/?do=findComment&comment=4011355)
 
 
