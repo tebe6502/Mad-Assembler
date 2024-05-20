@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2023-12-26                                                   *)
+(*  last change: 2024-04-21                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -6987,9 +6987,9 @@ end;
  omin_spacje(i,a);
 
 
- if _lab_first(a[i]) then begin					// sprawdz czy etykieta konczy sie znakiem ':'
+ if _lab_first(a[i]) and (a[i+1] <> ':') then begin		// sprawdz czy etykieta konczy sie znakiem ':'
 
-  j:=i;
+  j:=i;								// a: z: r: są zarezerwowane dla rozszerzen mnemonika
 
   tmp:=get_lab(i,a,false);
 
@@ -15591,7 +15591,6 @@ procedure Syntax;
 (*----------------------------------------------------------------------------*)
 begin
  TextColor(WHITE);
-
  Writeln(Tab2Space(load_mes(mads_version)) + ' (' + {$i %DATE%} + ')');
 
  Flush(Output);

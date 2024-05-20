@@ -1,3 +1,6 @@
+2024-04-21
+- etykiety automodyfikacji muszą być dluzsze niz 1 znak, a:, z:, r: są zarezerwowane dla rozszerzeń mnemonika w stylu xasm
+
 2023-10-02
 - poprawiony test dla przekroczenia adresu asemblacji $FFFF, WARNING: Memory range has been exceeded
 
