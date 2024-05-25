@@ -1,3 +1,6 @@
+2024-05-25
+- nowy przełącznik '-xp Display warnings for unreferenced procedures'
+
 2024-04-21
 - etykiety automodyfikacji muszą być dluzsze niz 1 znak, a:, z:, r: są zarezerwowane dla rozszerzeń mnemonika w stylu xasm
 

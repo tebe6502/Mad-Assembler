@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2024-04-21                                                   *)
+(*  last change: 2024-05-25                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -132,7 +132,7 @@ type
               end;
 
    mesTab   = record
-               pas: byte;         // numer przebiegu
+               //pas: byte;         // numer przebiegu
 	       col: byte;	  // kolor
                mes: string;       // tresc komunikatu bledu
               end;
@@ -433,6 +433,7 @@ var
     blocked     : Boolean = false;
     rel_used    : Boolean = false;
     put_used    : Boolean = false;
+    list_exclude_proc: Boolean = false;
     exclude_proc: Boolean = false;
     mne_used    : Boolean = false;
     data_out    : Boolean = false;
@@ -600,7 +601,7 @@ var
 
 
 // komunikaty
- mes: array [0..3640] of char=(
+ mes: array [0..3714] of char=(
 {0}  chr(ord('V') + $80),'a','l','u','e',' ','o','u','t',' ','o','f',' ','r','a','n','g','e',
 {1}  chr(ord('M') + $80),'i','s','s','i','n','g',' ','.','E','N','D','I','F',
 {2}  chr(ord('L') + $80),'a','b','e','l',' ',#9,' ','d','e','c','l','a','r','e','d',' ','t','w','i','c','e',
@@ -730,7 +731,9 @@ var
 {126} chr(ord('B') + $80),'r','a','n','c','h',' ','a','c','r','o','s','s',' ','p','a','g','e',' ','b','o','u','n','d','a','r','y',' ',
 {127} chr(ord('R') + $80),'e','g','i','s','t','e','r',' ','A',' ','i','s',' ','c','h','a','n','g','e','d',
 {128} chr(ord('M') + $80),'e','m','o','r','y',' ','r','a','n','g','e',' ','h','a','s',' ','b','e','e','n',' ','e','x','c','e','e','d','e','d',
-{129} chr(ord('S') + $80),'y','n','t','a','x',':',' ','m','a','d','s',' ','s','o','u','r','c','e',' ','[','o','p','t','i','o','n','s',']',#13,#10,
+{129} chr(ord('U') + $80),'n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e',' ',
+
+{130} chr(ord('S') + $80),'y','n','t','a','x',':',' ','m','a','d','s',' ','s','o','u','r','c','e',' ','[','o','p','t','i','o','n','s',']',#13,#10,
       '-','b',':','a','d','d','r','e','s','s',#9,'G','e','n','e','r','a','t','e',' ','b','i','n','a','r','y',' ','f','i','l','e',' ','a','t',' ','s','p','e','c','i','f','i','e','d',' ','a','d','d','r','e','s','s',' ','<','a','d','d','r','e','s','s','>',#13,#10,
       '-','b','c',#9,#9,'A','c','t','i','v','a','t','e',' ','b','r','a','n','c','h',' ','c','o','n','d','i','t','i','o','n',' ','t','e','s','t',#13,#10,
       '-','c',#9,#9,'A','c','t','i','v','a','t','e',' ','c','a','s','e',' ','s','e','n','s','i','t','i','v','i','t','y',' ','f','o','r',' ','l','a','b','e','l','s',#13,#10,
@@ -749,18 +752,20 @@ var
       '-','t','[',':','f','i','l','e','n','a','m','e',']',#9,'G','e','n','e','r','a','t','e',' ','"','.','l','a','b','"',' ','l','a','b','e','l','s',' ','f','i','l','e',#13,#10,
       '-','u',#9,#9,'D','i','s','p','l','a','y',' ','w','a','r','n','i','n','g','s',' ','f','o','r',' ','u','n','u','s','e','d',' ','l','a','b','e','l','s',#13,#10,
       '-','v','u',#9,#9,'V','e','r','i','f','y',' ','c','o','d','e',' ','i','n','s','i','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',#13,#10,
-      '-','x',#9,#9,'E','x','c','l','u','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',' ','f','r','o','m',' ','c','o','d','e',' ','g','e','n','e','r','a','t','i','o','n',
-{130} chr($80),
+      '-','x',#9,#9,'E','x','c','l','u','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',' ','f','r','o','m',' ','c','o','d','e',' ','g','e','n','e','r','a','t','i','o','n',#13,#10,      
+      '-','x','p',#9,#9,'D','i','s','p','l','a','y',' ','w','a','r','n','i','n','g','s',' ','f','o','r',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',
+
+{131} chr($80),
 
 // version
 
-{131} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','7',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{132} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','7',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80));
 
 const
 
-  mads_version = 131 + 1;
+  mads_version = 132 + 1;
 
   TAB = ^I;            // Char for a TAB
   CR  = ^M;            // Char for a CR
@@ -1291,9 +1296,13 @@ begin
 
   case a of
         8: txt:=txt+'?';
+	
       109: txt:=txt+'$'+HEX(zpvar,4);
-   69,115,120,121,125,126: txt:=txt+str_blad;
+      
+   69,115,120,121,125,126,129: txt:=txt+str_blad;
+   
        70: txt:=txt+'$'+HEX(adres,4);
+       
       118: begin
             while pos(#9,txt)>0 do begin
              i:=pos(#9,txt);
@@ -1307,6 +1316,7 @@ begin
              __W: txt:=txt+'WRITE';
             end;
            end;
+	   
       119: begin
             txt:=txt+infinite.lab;
             lin:=infinite.lin;
@@ -1317,8 +1327,11 @@ begin
   warning_mes:=show_full_name(nam,full_name,false)+' ('+IntToStr(lin)+') WARNING: '+txt;
 
   if warning_mes<>warning_old then begin
-
-   TextColor(LIGHTCYAN);
+  
+   if a = 129 then 
+    TextColor(YELLOW)
+   else
+    TextColor(LIGHTCYAN);
 
    writeln(warning_mes);
    warning_old:=warning_mes;
@@ -1371,11 +1384,11 @@ begin
  a:=Tab2Space(a);
 
  for i := High(messages)-1 downto 0 do
-  if messages[i].mes=a then begin a:=''; Exit end;
+  if messages[i].mes = a then begin a:=''; Exit end;
 
  i:=High(messages);
 
- messages[i].pas:=pass;
+// messages[i].pas:=pass;
  messages[i].mes:=a;
  messages[i].col:=cl;
 
@@ -1398,6 +1411,12 @@ var a, b: integer;
 begin
 
  if open_ok then begin
+
+  if list_exclude_proc then
+   for a:=0 to high(t_prc)-1 do
+    if t_prc[a].use = false then warning(129, t_prc[a].nam);
+
+
 
   Flush_dst;
 
@@ -1497,9 +1516,9 @@ begin
 
    NormVideo;
 
-   for b:=High(messages)-1 downto 0 do    // usuwamy powtarzajace sie komunikaty
+//   for b:=High(messages)-1 downto 0 do    // usuwamy powtarzajace sie komunikaty
 //    if messages[b].pas=messages[a].pas then
-     if messages[b].mes = messages[a].mes then messages[b].pas:=$ff;
+//     if messages[b].mes = messages[a].mes then messages[b].pas:=$ff;
 
   end;
 
@@ -15785,9 +15804,16 @@ begin
     'C': case_used    := true;
     'P': full_name    := true;
     'S': silent       := true;
-    'X': exclude_proc := true;
+
+    'X': if UpCase(t[_i+1]) = 'P' then begin
+          list_exclude_proc := true;
+	  inc(_i);
+	 end else
+	  exclude_proc := true;
+
     'U': unused_label := true;
-    'V': if UpCase(t[_i+1])='U' then begin inc(_i,2); VerifyProc := true end;
+
+    'V': if UpCase(t[_i+1])='U' then begin inc(_i); VerifyProc := true end;
 
 
     'B': if UpCase(t[_i+1]) = 'C' then begin
