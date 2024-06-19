@@ -1,0 +1,58 @@
+;        /|
+;       //|.
+;      //_| .
+;  __ // /| .
+; /_ \/\__|.
+; \\_/  _/|_
+; .g.e.n.d.a.
+; (c) 2022 ;)
+
+sin_t = $2000 ; <- adres tabicy sinusa (tablica zajmuje 1 stronę pamięci)
+
+	org $80
+;procka zajmuje 27b na ZP albo 31b poza ZP 
+;amplituda cosinusa: $00-$20
+	lda #0
+	tax
+	tay
+loop
+__1	adc #$00
+	bvc __2
+	inc __3+1
+__2
+	inc __1+1
+	inc __1+1
+	pha
+__3	lda #$70 ;<- wartość centrująca (można zmieniać aby przesunąć środek amplitudy)
+a_sin_t equ *+1
+	sta sin_t,x
+	dey
+.IF	a_sin_t<255
+	sta (a_sin_t),y
+.ELSE
+	sta sin_t,y
+.ENDIF
+	pla
+	inx
+	bpl loop
+
+	; jmp *
+
+;poniżej prosta wizualizacja tablicy:
+	lda #$ff
+	sta $d00d ;graf p0
+	lda #$1f
+	sta 704	;colo p0
+	lda #$0
+	sta $22f ;screen off
+
+eff
+	ldx $14
+eff_
+	lda sin_t,x
+	sta $d000
+	sta $d40a
+	inx
+	lda $d40b
+	bne eff_
+	beq eff

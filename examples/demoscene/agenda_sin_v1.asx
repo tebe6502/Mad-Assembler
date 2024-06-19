@@ -1,0 +1,61 @@
+;        /|
+;       //|.
+;      //_| .
+;  __ // /| .
+; /_ \/\__|.
+; \\_/  _/|_
+; .g.e.n.d.a.
+; (c) 2022 ;)
+
+sin_t = $2000 ; <- adres tabicy sinusa (tablica zajmuje 1 stronę pamięci)
+
+	org $80
+;procka zajmuje 42b na ZP albo 45b poza ZP
+;amplituda sinusa: $00-$ff
+	ldy #$3f
+	ldx #0
+	; txa ;nie ma przymusu zerowanie akumulatora (nie zauważyłem jakiegoś większego wpływu na tworzoną tablicę)
+loop
+__1	adc #$00
+	bcc __2
+	inc __3+1
+__2
+	inc __1+1
+	pha
+__4	lda #0
+	and #%11
+	bne skp
+
+__3	lda #$00 ;<- za pomocą tego można przesówać na inne świartki sinusa
+	sta sin_t+$c0,x
+	sta sin_t+$80,y
+	eor #$ff
+	sta sin_t+$40,x
+	sta sin_t+$00,y
+	inx
+	dey
+skp
+	pla
+	inc __4+1
+	bne loop
+
+	; jmp *
+
+;poniżej prosta wizualizacja tablicy:
+	lda #$ff
+	sta $d00d ;graf p0
+	lda #$1f
+	sta 704	;colo p0
+	lda #$0
+	sta $22f ;screen off
+
+eff
+	ldx $14
+eff_
+	lda sin_t,x
+	sta $d000
+	sta $d40a
+	inx
+	lda $d40b
+	bne eff_
+	beq eff
