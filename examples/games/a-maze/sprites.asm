@@ -1,0 +1,21 @@
+;
+; Sprites
+;
+
+.IFNDEF SPRITES_ASM
+.DEF SPRITES_ASM
+
+.ALIGN
+the_guy
+	:20 dta 0
+	dta %00000000
+	dta %00111100
+	dta %01111110
+	dta %01011010
+	dta %01111110
+	dta %01000010
+	dta %00111100
+	dta %00000000
+	:228 dta 0
+
+.ENDIF
