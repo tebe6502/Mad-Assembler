@@ -1,0 +1,732 @@
+mads 2.1.3 build 45 (7 Jun 21)
+Source: D:\!demo_effect\pmg\shanti\src\engine.asm
+     1 				// Shanti PM Multiplexer
+     2
+     3 						icl 'atari.hea'
+Source: d:\!atari\macro\atari.hea
+     1
+   302 					opt l+
+     4
+     5
+     6 = 0010			MAX_SPRITES		equ 16
+     7
+     8 = 0010			POSY_MIN		equ 16
+     9 = 00D0			POSY_MAX		equ 208
+    10
+    11 = 0040			POSX_MIN		equ 64
+    12 = 00B8			POSX_MAX		equ 184
+    13
+    14 = 0014			tim	equ $14			;zegar systemowy
+    15
+    16
+    17 					org $0080		;strona zerowa
+    18
+    19 = 0080			spr_flag	.ds 1		;bajty na stronie zerowej wykorzystywane przez MULTI
+    20 = 0081			poz_y		.ds 1
+    21 = 0082			duch_dy		.ds 1
+    22 = 0083			dli_A		.ds 1
+    23 = 0084			dli_X		.ds 1
+    24
+    25
+    26 				.public	multi.animuj, multi.show_sprites, sprites, shape_tab01, shape_tab23
+    27 				.public sprite_x, sprite_y, sprite_shape, sprite_c0, sprite_c1, sprite_anim, sprite_anim_speed
+    28 				.public multi.init_engine, multi.ret01, multi.ret23, multi.init_sprite
+    29 				.public charsets, tcolor, creg
+    30
+    31 FFFF> 01,0000-0D2C> 4D + 	.reloc
+    32 				;	org $c000
+    33
+    34 01,0000 00 00 00 00 00 + sprites			:$0800 brk		;adres pamięci dla duszków
+    35
+    36 = 01,0100		shape_tab01		= sprites		;adresy ksztaltow dla duszka 01
+    37 = 01,0200		shape_tab23		= sprites+$100		;adresy ksztaltow dla duszka 23
+    38
+    39 = 01,0300		blok_status		= sprites+$200+32*0	;tablica pomocnicza do ustalenia zajętości duszków
+    40 = 01,0320		blok_x01		= sprites+$200+32*1	;pozycje pary duszków 0 i 1
+    41 = 01,0340		blok_x23		= sprites+$200+32*2	;pozycje pary duszków 2 i 3
+    42 = 01,0360		blok_c0			= sprites+$200+32*3	;kolor duszka 0
+    43 = 01,0380		blok_c1			= sprites+$200+32*4	;kolor duszka 1
+    44 = 01,03A0		blok_c2			= sprites+$200+32*5	;kolor duszka 2
+    45 = 01,03C0		blok_c3			= sprites+$200+32*6	;kolor duszka 3
+    46
+    47 = 01,03E0		charsets		= sprites+$200+32*7
+    48
+    49 					ert .lo(*) <> 0
+    50
+    51 01,0800 C2 0A F9 0A 20 + tab_skok01	dta a(multi.dy0, multi.dy1, multi.dy2, multi.dy3, multi.dy4, multi.dy5, multi.dy6, multi.dy7)
+    52
+    53 01,0810 CA 0B 07 0C 2E + tab_skok23	dta a(multi.dy0b, multi.dy1b, multi.dy2b, multi.dy3b, multi.dy4b, multi.dy5b, multi.dy6b, multi.dy7b)
+    54
+    55 01,0820 00 00 00 00 00 + tcolor			:32 brk
+    56
+    57 01,0840 00 00 00 00 00 + sprite_x		:MAX_SPRITES brk	;pozycja X obiektu
+    58 01,0850 00 00 00 00 00 + sprite_y		:MAX_SPRITES brk	;pozycja Y obiektu
+    59 01,0860 00 00 00 00 00 + sprite_shape		:MAX_SPRITES brk	;ksztalt obiektu
+    60 01,0870 00 00 00 00 00 + sprite_c0		:MAX_SPRITES brk	;kolor 0 obiektu
+    61 01,0880 00 00 00 00 00 + sprite_c1		:MAX_SPRITES brk	;kolor 1 obiektu
+    62 01,0890 00 00 00 00 00 + sprite_anim		:MAX_SPRITES brk	;liczba klatek animacji obiektu
+    63 01,08A0 00 00 00 00 00 + sprite_anim_speed 	:MAX_SPRITES brk	;szybkość animacji obiektu
+    64
+    65
+    66 				;.rept 26,#
+    67 				;.public dli:1, dli:1.chrs, dli:1.col0, dli:1.col1, dli:1.reg0, dli:1.reg1
+    68 				;.endr
+    69
+    70 				; !!! koniecznie od poczatku strony pamieci przy linkowaniu
+    71
+    72 					;	.reloc
+    73
+    74 01,08B0					icl 'przerwania.asm'
+Source: D:\!demo_effect\pmg\shanti\src\przerwania.asm
+     1 				//przerwania
+     2
+     3
+     4 01,08B0 85 83		dli0			sta dli_A
+     5 01,08B2 86 84					stx dli_X
+     6
+     7 01,08B4 A2 00		licznik			ldx #0
+     8
+     9 01,08B6 BD DE 03					lda charsets-2,x
+    10 01,08B9 8D 0A D4					sta wsync
+    11 01,08BC 8D 09 D4					sta chbase
+    12
+    13 01,08BF BD 1E 08					lda tcolor-2,x
+    14 01,08C2 8D 1E D0		creg			sta $d01e
+    15
+    16 01,08C5 BD 20 03					lda blok_x01,x			;player 0 i 1
+    17 01,08C8 F0 15					beq @+
+    18 01,08CA 8D 01 D0					sta hposp1
+    19 01,08CD 8D 00 D0					sta hposp0
+    20 01,08D0 4A					lsr
+    21 01,08D1 F0 0C					beq @+				;=0 poza ekranem, nie zmieniaj kolorów
+    22 01,08D3 BD 60 03					lda blok_c0,x
+    23 01,08D6 8D 12 D0					sta colpm0
+    24 01,08D9 BD 80 03					lda blok_c1,x
+    25 01,08DC 8D 13 D0					sta colpm1
+    26
+    27 01,08DF BD 40 03		@			lda blok_x23,x			;player 2 i 3
+    28 01,08E2 F0 15					beq @+
+    29 01,08E4 8D 03 D0					sta hposp3
+    30 01,08E7 8D 02 D0					sta hposp2
+    31 01,08EA 4A					lsr
+    32 01,08EB F0 0C					beq @+
+    33 01,08ED BD A0 03					lda blok_c2,x
+    34 01,08F0 8D 14 D0					sta colpm2
+    35 01,08F3 BD C0 03					lda blok_c3,x
+    36 01,08F6 8D 15 D0					sta colpm3
+    37
+    38 01,08F9 A9 00		@			lda #0				;wyczysc pozycję
+    39 01,08FB 9D 20 03					sta blok_x01,x
+    40 01,08FE 9D 40 03					sta blok_x23,x
+    41 01,0901 9D 00 03					sta blok_status,x
+    42
+    43 01,0904 EE B5 08					inc licznik+1
+    44
+    45 01,0907 A5 83					lda dli_A
+    46 01,0909 A6 84					ldx dli_X
+    47 01,090B 40					rti
+    48
+    49
+    50
+    51 				/*
+    52 				?adr = *
+    53
+    54 					.rept 26,#,#+2,#+1
+    55 				dli%%1			sta dli_A
+    56
+    57 				dli%%1.chrs		lda #0
+    58 							sta wsync
+    59 							sta chbase
+    60
+    61 				dli%%1.col0		lda #0
+    62 				dli%%1.reg0		sta $d01e
+    63 				dli%%1.col1		lda #0
+    64 				dli%%1.reg1		sta $d01e
+    65
+    66 							lda blok_x01+%%2		;player 0 i 1
+    67 							beq @+
+    68 							sta hposp1
+    69 							sta hposp0
+    70 							lsr
+    71 							beq @+				;=0 poza ekranem, nie zmieniaj kolorów
+    72 							lda blok_c0+%%2
+    73 							sta colpm0
+    74 							lda blok_c1+%%2
+    75 							sta colpm1
+    76
+    77 				@			lda blok_x23+%%2		;player 2 i 3
+    78 							beq @+
+    79 							sta hposp3
+    80 							sta hposp2
+    81 							lsr
+    82 							beq @+
+    83 							lda blok_c2+%%2
+    84 							sta colpm2
+    85 							lda blok_c3+%%2
+    86 							sta colpm3
+    87
+    88 				@			lda #0				;wyczysc pozycję
+    89 							sta blok_x01+%%2
+    90 							sta blok_x23+%%2
+    91 							sta blok_status+%%2
+    92
+    93 						ift %%3 < 26
+    94 							mva <dli%%3 vdli+1
+    95
+    96 							ift .hi(dli%%3) <> .hi(?adr)
+    97 							mva >dli%%3 vdli+2
+    98 							eif
+    99 						eif
+   100
+   101 							lda dli_A
+   102 							rti
+   103 				?adr = *
+   104
+   105 					.endr
+   106 				*/
+   106
+   107
+   108 01,090C 2C 0F D4		nmi			bit nmist
+   109 01,090F 10 03					bpl vbl
+   110
+   111 01,0911 4C B0 08		vdli			jmp dli0
+   112
+   113 01,0914 48 8A 48 98 48	vbl			phr
+   114 01,0919 8D 0F D4					sta nmist
+   115
+   116 01,091C E6 14					inc tim
+   117
+   118 01,091E A9 02 8D B5 08				mva #2 licznik+1
+   119
+   120 01,0923 A9 B0 8D 12 09 + 			mwa #dli0 vdli+1
+   121
+   122 01,092D 4C 00 01		vbl_user		jmp $0100
+    75
+    76 01,0930					icl 'multi.asm'
+Source: D:\!demo_effect\pmg\shanti\src\multi.asm
+     1 				//MULTI
+     2 				//multiplekser
+     3
+     4
+     5 01,0930			.local multi
+     6
+     7 01,0930			animuj
+     8 01,0930 A5 14				lda tim
+     9 01,0932 8D 41 09				sta _em2+1
+    10
+    11 01,0935 A2 0F				ldx #MAX_SPRITES-1
+    12 01,0937 BD 40 08		@		lda sprite_x,x
+    13 01,093A D0 04				bne @+
+    14 01,093C CA		next		dex
+    15 01,093D 10 F8				bpl @-
+    16 01,093F 60				rts
+    17 				@
+    18 01,0940 A9 FF		_em2		lda #$ff
+    19 01,0942 3D A0 08				and sprite_anim_speed,x
+    20 01,0945 D0 F5				bne next
+    21 01,0947 BD 90 08				lda sprite_anim,x
+    22 01,094A F0 F0				beq next
+    23 01,094C 49 FF				eor #255
+    24 01,094E 8D 60 09				sta _em1-1
+    25 01,0951 49 FF				eor #255
+    26
+    27 01,0953 3D 60 08				and sprite_shape,x
+    28 01,0956 8D 62 09				sta _em1+1
+    29 01,0959 FE 60 08				inc sprite_shape,x		;animacja przeciwnikow
+    30 01,095C BD 60 08				lda sprite_shape,x
+    31 01,095F 29 FF				and #$ff			;odwrotnosc maski
+    32 01,0961 09 FF		_em1		ora #$ff
+    33 01,0963 9D 60 08				sta sprite_shape,x
+    34 01,0966 4C 3C 09				jmp next
+    35
+    36
+    37 				//inicjalizacja spritów
+    38 01,0969			init_sprite
+    39 01,0969 A9 0F 8D D5 09			mva #MAX_SPRITES-1 start+1
+    40
+    41 01,096E			init_sprite2
+    42 01,096E A9 00				lda #0
+    43 01,0970 AA				tax
+    44 01,0971 9D 00 03		@		sta sprites+$300,x		;wyczysc duszki
+    45 01,0974 9D 00 04				sta sprites+$400,x
+    46 01,0977 9D 00 05				sta sprites+$500,x
+    47 01,097A 9D 00 06				sta sprites+$600,x
+    48 01,097D 9D 00 07				sta sprites+$700,x
+    49 01,0980 E8				inx
+    50 01,0981 D0 EE				bne @-
+    51
+    52 01,0983 A2 1F				ldx #31
+    53 01,0985 9D 00 03		@		sta blok_status,x		;wyczysc tablice
+    54 01,0988 9D 20 03				sta blok_x01,x
+    55 01,098B 9D 40 03				sta blok_x23,x
+    56 01,098E 9D 60 03				sta blok_c0,x
+    57 01,0991 9D 80 03				sta blok_c1,x
+    58 01,0994 9D A0 03				sta blok_c2,x
+    59 01,0997 9D C0 03				sta blok_c3,x
+    60 01,099A CA				dex
+    61 01,099B 10 E8				bpl @-
+    62
+    63 01,099D A2 0F				ldx #MAX_SPRITES-1
+    64 01,099F 9D 40 08		@		sta sprite_x,x
+    65 01,09A2 9D 50 08				sta sprite_y,x
+    66 01,09A5 9D 60 08				sta sprite_shape,x
+    67 01,09A8 9D 70 08				sta sprite_c0,x
+    68 01,09AB 9D 80 08				sta sprite_c1,x
+    69 01,09AE 9D 90 08				sta sprite_anim,x
+    70 01,09B1 9D A0 08				sta sprite_anim_speed,x
+    71 01,09B4 CA				dex
+    72 01,09B5 10 E8				bpl @-
+    73
+    74 01,09B7 60				rts
+    75
+    76
+    77 				//narysuj wszystkie duszki
+    78 01,09B8			show_sprites
+    79 01,09B8 A0 00				ldy #0
+    80 01,09BA 84 80				sty spr_flag
+    81 01,09BC AD 40 08				lda sprite_x
+    82 01,09BF F0 03				beq *+5
+    83 01,09C1 20 18 0A				jsr print_sprite		;gracz
+    84 01,09C4 AC D5 09				ldy start+1
+    85
+    86 01,09C7 B9 40 08		@		lda sprite_x,y
+    87 01,09CA F0 03				beq @+
+    88 01,09CC 20 18 0A				jsr print_sprite
+    89 01,09CF 88		@		dey
+    90 01,09D0 D0 02				bne *+4
+    91 01,09D2 A0 0F				ldy #MAX_SPRITES-1
+    92
+    93 01,09D4 C0 0F		start		cpy #MAX_SPRITES-1
+    94 01,09D6 D0 EF				bne @-1
+    95
+    96
+    97 01,09D8 A5 80				lda spr_flag
+    98 01,09DA F0 03				beq @+
+    99 01,09DC 8D D5 09				sta start+1
+   100
+   101 01,09DF AD 21 03		@		lda blok_x01+1			;player 0 i 1
+   102 01,09E2 8D 01 D0				sta hposp1
+   103 01,09E5 8D 00 D0				sta hposp0
+   104 01,09E8 AD 61 03				lda blok_c0+1
+   105 01,09EB 8D 12 D0				sta colpm0
+   106 01,09EE AD 81 03				lda blok_c1+1
+   107 01,09F1 8D 13 D0				sta colpm1
+   108 01,09F4 AD 41 03				lda blok_x23+1			;player 2 i 3
+   109 01,09F7 8D 03 D0				sta hposp3
+   110 01,09FA 8D 02 D0				sta hposp2
+   111 01,09FD AD A1 03				lda blok_c2+1
+   112 01,0A00 8D 14 D0				sta colpm2
+   113 01,0A03 AD C1 03				lda blok_c3+1
+   114 01,0A06 8D 15 D0				sta colpm3
+   115
+   116 01,0A09 A9 00				lda #0
+   117 01,0A0B 8D 21 03				sta blok_x01+1
+   118 01,0A0E 8D 41 03				sta blok_x23+1
+   119 01,0A11 8D 01 03				sta blok_status+1
+   120 01,0A14 8D 1C 03				sta blok_status+28
+   121 01,0A17 60				rts
+   122
+   123
+   124 				//narysuj sprite nr w Y
+   125 01,0A18			print_sprite
+   126 01,0A18 B9 50 08				lda sprite_y,y			;juz odczytane
+   127 01,0A1B C9 10				cmp #POSY_MIN
+   128 01,0A1D 90 28				bcc quit
+   129 01,0A1F C9 D0				cmp #POSY_MAX
+   130 01,0A21 B0 24				bcs quit
+   131
+   132 01,0A23 85 81				sta poz_y
+   133 01,0A25 4A 4A 4A				:3 lsr
+   134 01,0A28 AA				tax				;nr pierwszego bloku
+   135 01,0A29 A5 81				lda poz_y
+   136 01,0A2B 29 07				and #%111
+   137 01,0A2D 85 82				sta duch_dy
+   138
+   139 01,0A2F D0 01				bne *+3
+   140 01,0A31 CA				dex				;jesli dy=0 to zmniejsz nr pierwszego bloku
+   141
+   142 01,0A32 BD 00 03				lda blok_status,x
+   143 01,0A35 1D 01 03				ora blok_status+1,x
+   144 01,0A38 1D 02 03				ora blok_status+2,x
+   145 01,0A3B 4A				lsr
+   146 01,0A3C 90 0A				bcc @+
+   147 01,0A3E 4A				lsr
+   148 01,0A3F 90 3E				jcc @+1
+   149
+   150 01,0A41 A5 80				lda spr_flag
+   151 01,0A43 D0 02				bne *+4
+   152 01,0A45 84 80				sty spr_flag
+   153 01,0A47 60		quit		rts				;nie można narysować duszka
+   154
+   155
+   156 01,0A48 FE 00 03		@		inc blok_status,x
+   157 01,0A4B FE 02 03				inc blok_status+2,x
+   158
+   159 				//ustawienie pozycji i koloru duszków w bloku
+   160 01,0A4E BD 23 03				lda blok_x01+3,x
+   161 01,0A51 D0 03				bne *+5
+   162 01,0A53 FE 23 03				inc blok_x01+3,x
+   163
+   164 01,0A56 B9 40 08				lda sprite_x,y			;sprite 0 i 1
+   165 01,0A59 9D 20 03				sta blok_x01,x
+   166
+   167 01,0A5C B9 70 08				lda sprite_c0,y
+   168 01,0A5F 9D 60 03				sta blok_c0,x
+   169 01,0A62 B9 80 08				lda sprite_c1,y
+   170 01,0A65 9D 80 03				sta blok_c1,x
+   171
+   172 01,0A68 B9 60 08		psp1b		lda sprite_shape,y
+   173 01,0A6B 0A				asl @
+   174 01,0A6C 8D 72 0A				sta _psp1+1
+   175
+   176 						;sty nr_duszka
+   177 01,0A6F A6 81				ldx poz_y
+   178
+   179 01,0A71 6C 00 01		_psp1		jmp (shape_tab01)
+   180
+   181 01,0A74			ret01		;ldy nr_duszka
+   182
+   183 01,0A74 A5 82				lda duch_dy
+   184 01,0A76 0A				asl @
+   185
+   186 						;ldy nr_duszka
+   187
+   188 01,0A77 8D 7D 0A				sta l01+1
+   189 01,0A7A A9 00				lda #0
+   190
+   191 01,0A7C 6C 00 08		l01		jmp (tab_skok01)
+   192
+   193 01,0A7F A9 02		@		lda #2
+   194 01,0A81 1D 00 03				ora blok_status,x		;zajmij wybranego duszka w statusie
+   195 01,0A84 9D 00 03				sta blok_status,x
+   196 01,0A87 A9 02				lda #2
+   197 01,0A89 1D 02 03				ora blok_status+2,x
+   198 01,0A8C 9D 02 03				sta blok_status+2,x
+   199
+   200
+   201 01,0A8F BD 43 03				lda blok_x23+3,x
+   202 01,0A92 D0 03				bne *+5
+   203 01,0A94 FE 43 03				inc blok_x23+3,x
+   204
+   205 01,0A97 B9 40 08				lda sprite_x,y			;sprite 2 i 3
+   206 01,0A9A 9D 40 03				sta blok_x23,x
+   207
+   208 01,0A9D B9 70 08				lda sprite_c0,y
+   209 01,0AA0 9D A0 03				sta blok_c2,x
+   210 01,0AA3 B9 80 08				lda sprite_c1,y
+   211 01,0AA6 9D C0 03				sta blok_c3,x
+   212
+   213 01,0AA9 B9 60 08		psp2b		lda sprite_shape,y
+   214 01,0AAC 0A				asl @
+   215 01,0AAD 8D B3 0A				sta _psp2+1
+   216
+   217 						;sty nr_duszka
+   218 01,0AB0 A6 81				ldx poz_y
+   219
+   220 01,0AB2 6C 00 02		_psp2		jmp (shape_tab23)
+   221
+   222 01,0AB5			ret23		;ldy nr_duszka
+   223
+   224 01,0AB5 A5 82				lda duch_dy
+   225 01,0AB7 0A				asl @
+   226 01,0AB8 09 10				ora #%10000			;+16
+   227
+   228 						;ldy nr_duszka
+   229
+   230 01,0ABA 8D C0 0A				sta l23+1
+   231 01,0ABD A9 00				lda #0
+   232
+   233 01,0ABF 6C 10 08		l23		jmp (tab_skok23)
+   234
+   235
+   236 01,0AC2			dy0
+   237 01,0AC2 9D 10 04				sta sprites+$400+$10,x
+   238 01,0AC5 9D 10 05				sta sprites+$500+$10,x
+   239
+   240 01,0AC8 9D F8 03				sta sprites+$400-8,x
+   241 01,0ACB 9D F9 03				sta sprites+$400-7,x
+   242 01,0ACE 9D FA 03				sta sprites+$400-6,x
+   243 01,0AD1 9D FB 03				sta sprites+$400-5,x
+   244 01,0AD4 9D FC 03				sta sprites+$400-4,x
+   245 01,0AD7 9D FD 03				sta sprites+$400-3,x
+   246 01,0ADA 9D FE 03				sta sprites+$400-2,x
+   247 01,0ADD 9D FF 03				sta sprites+$400-1,x
+   248
+   249 01,0AE0 9D F8 04				sta sprites+$500-8,x
+   250 01,0AE3 9D F9 04				sta sprites+$500-7,x
+   251 01,0AE6 9D FA 04				sta sprites+$500-6,x
+   252 01,0AE9 9D FB 04				sta sprites+$500-5,x
+   253 01,0AEC 9D FC 04				sta sprites+$500-4,x
+   254 01,0AEF 9D FD 04				sta sprites+$500-3,x
+   255 01,0AF2 9D FE 04				sta sprites+$500-2,x
+   256 01,0AF5 9D FF 04				sta sprites+$500-1,x
+   257
+   258 01,0AF8 60				rts
+   259
+   260 01,0AF9			dy1
+   261 01,0AF9 9D 13 04				sta sprites+$400+$13,x
+   262 01,0AFC 9D 13 05				sta sprites+$500+$13,x
+   263 01,0AFF 9D 14 04				sta sprites+$400+$14,x
+   264 01,0B02 9D 14 05				sta sprites+$500+$14,x
+   265 01,0B05 9D 15 04				sta sprites+$400+$15,x
+   266 01,0B08 9D 15 05				sta sprites+$500+$15,x
+   267 01,0B0B 9D 16 04				sta sprites+$400+$16,x
+   268 01,0B0E 9D 16 05				sta sprites+$500+$16,x
+   269 01,0B11 9D 17 04				sta sprites+$400+$17,x
+   270 01,0B14 9D 17 05				sta sprites+$500+$17,x
+   271 01,0B17 9D 18 04				sta sprites+$400+$18,x
+   272 01,0B1A 9D 18 05				sta sprites+$500+$18,x
+   273 01,0B1D 4C B1 0B				jmp dy7+36
+   274
+   275 01,0B20			dy2
+   276 01,0B20 9D 13 04				sta sprites+$400+$13,x
+   277 01,0B23 9D 13 05				sta sprites+$500+$13,x
+   278 01,0B26 9D 14 04				sta sprites+$400+$14,x
+   279 01,0B29 9D 14 05				sta sprites+$500+$14,x
+   280 01,0B2C 9D 15 04				sta sprites+$400+$15,x
+   281 01,0B2F 9D 15 05				sta sprites+$500+$15,x
+   282 01,0B32 9D 16 04				sta sprites+$400+$16,x
+   283 01,0B35 9D 16 05				sta sprites+$500+$16,x
+   284 01,0B38 9D 17 04				sta sprites+$400+$17,x
+   285 01,0B3B 9D 17 05				sta sprites+$500+$17,x
+   286 01,0B3E 4C AB 0B				jmp dy7+30
+   287
+   288 01,0B41			dy3
+   289 01,0B41 9D 13 04				sta sprites+$400+$13,x
+   290 01,0B44 9D 13 05				sta sprites+$500+$13,x
+   291 01,0B47 9D 14 04				sta sprites+$400+$14,x
+   292 01,0B4A 9D 14 05				sta sprites+$500+$14,x
+   293 01,0B4D 9D 15 04				sta sprites+$400+$15,x
+   294 01,0B50 9D 15 05				sta sprites+$500+$15,x
+   295 01,0B53 9D 16 04				sta sprites+$400+$16,x
+   296 01,0B56 9D 16 05				sta sprites+$500+$16,x
+   297 01,0B59 4C A5 0B				jmp dy7+24
+   298
+   299 01,0B5C			dy4
+   300 01,0B5C 9D 13 04				sta sprites+$400+$13,x
+   301 01,0B5F 9D 13 05				sta sprites+$500+$13,x
+   302 01,0B62 9D 14 04				sta sprites+$400+$14,x
+   303 01,0B65 9D 14 05				sta sprites+$500+$14,x
+   304 01,0B68 9D 15 04				sta sprites+$400+$15,x
+   305 01,0B6B 9D 15 05				sta sprites+$500+$15,x
+   306 01,0B6E 4C 9F 0B				jmp dy7+18
+   307
+   308 01,0B71			dy5
+   309 01,0B71 E0 B0				cpx #POSY_MAX-32
+   310 01,0B73 B0 24				bcs dy7+12
+   311 01,0B75 9D 13 04				sta sprites+$400+$13,x
+   312 01,0B78 9D 13 05				sta sprites+$500+$13,x
+   313 01,0B7B 9D 14 04				sta sprites+$400+$14,x
+   314 01,0B7E 9D 14 05				sta sprites+$500+$14,x
+   315 01,0B81 4C 99 0B				jmp dy7+12
+   316
+   317 01,0B84			dy6
+   318 01,0B84 9D 13 04				sta sprites+$400+$13,x
+   319 01,0B87 9D 13 05				sta sprites+$500+$13,x
+   320 01,0B8A 4C 93 0B				jmp dy7+6
+   321
+   322 01,0B8D			dy7
+   323 01,0B8D 9D F9 03				sta sprites+$400-7,x
+   324 01,0B90 9D F9 04				sta sprites+$500-7,x
+   325 01,0B93 9D FA 03				sta sprites+$400-6,x
+   326 01,0B96 9D FA 04				sta sprites+$500-6,x
+   327 01,0B99 9D FB 03				sta sprites+$400-5,x
+   328 01,0B9C 9D FB 04				sta sprites+$500-5,x
+   329 01,0B9F 9D FC 03				sta sprites+$400-4,x
+   330 01,0BA2 9D FC 04				sta sprites+$500-4,x
+   331 01,0BA5 9D FD 03				sta sprites+$400-3,x
+   332 01,0BA8 9D FD 04				sta sprites+$500-3,x
+   333 01,0BAB 9D FE 03				sta sprites+$400-2,x
+   334 01,0BAE 9D FE 04				sta sprites+$500-2,x
+   335 01,0BB1 9D FF 03				sta sprites+$400-1,x
+   336 01,0BB4 9D FF 04				sta sprites+$500-1,x
+   337
+   338 01,0BB7 9D 10 04				sta sprites+$400+$10,x
+   339 01,0BBA 9D 11 04				sta sprites+$400+$11,x
+   340 01,0BBD 9D 12 04				sta sprites+$400+$12,x
+   341 01,0BC0 9D 10 05				sta sprites+$500+$10,x
+   342 01,0BC3 9D 11 05				sta sprites+$500+$11,x
+   343 01,0BC6 9D 12 05				sta sprites+$500+$12,x
+   344 01,0BC9 60				rts
+   345
+   346
+   347 01,0BCA			dy0b
+   348 01,0BCA 9D 11 06				sta sprites+$600+$11,x
+   349 01,0BCD 9D 11 07				sta sprites+$700+$11,x
+   350
+   351 01,0BD0 9D 10 06				sta sprites+$600+$10,x
+   352 01,0BD3 9D 10 07				sta sprites+$700+$10,x
+   353
+   354 01,0BD6 9D F8 05				sta sprites+$600-8,x
+   355 01,0BD9 9D F9 05				sta sprites+$600-7,x
+   356 01,0BDC 9D FA 05				sta sprites+$600-6,x
+   357 01,0BDF 9D FB 05				sta sprites+$600-5,x
+   358 01,0BE2 9D FC 05				sta sprites+$600-4,x
+   359 01,0BE5 9D FD 05				sta sprites+$600-3,x
+   360 01,0BE8 9D FE 05				sta sprites+$600-2,x
+   361 01,0BEB 9D FF 05				sta sprites+$600-1,x
+   362
+   363 01,0BEE 9D F8 06				sta sprites+$700-8,x
+   364 01,0BF1 9D F9 06				sta sprites+$700-7,x
+   365 01,0BF4 9D FA 06				sta sprites+$700-6,x
+   366 01,0BF7 9D FB 06				sta sprites+$700-5,x
+   367 01,0BFA 9D FC 06				sta sprites+$700-4,x
+   368 01,0BFD 9D FD 06				sta sprites+$700-3,x
+   369 01,0C00 9D FE 06				sta sprites+$700-2,x
+   370 01,0C03 9D FF 06				sta sprites+$700-1,x
+   371
+   372 01,0C06 60				rts
+   373
+   374 01,0C07			dy1b
+   375 01,0C07 9D 13 06				sta sprites+$600+$13,x
+   376 01,0C0A 9D 13 07				sta sprites+$700+$13,x
+   377 01,0C0D 9D 14 06				sta sprites+$600+$14,x
+   378 01,0C10 9D 14 07				sta sprites+$700+$14,x
+   379 01,0C13 9D 15 06				sta sprites+$600+$15,x
+   380 01,0C16 9D 15 07				sta sprites+$700+$15,x
+   381 01,0C19 9D 16 06				sta sprites+$600+$16,x
+   382 01,0C1C 9D 16 07				sta sprites+$700+$16,x
+   383 01,0C1F 9D 17 06				sta sprites+$600+$17,x
+   384 01,0C22 9D 17 07				sta sprites+$700+$17,x
+   385 01,0C25 9D 18 06				sta sprites+$600+$18,x
+   386 01,0C28 9D 18 07				sta sprites+$700+$18,x
+   387 01,0C2B 4C BB 0C				jmp dy7b+36
+   388
+   389
+   390 01,0C2E			dy2b
+   391 01,0C2E 9D 13 06				sta sprites+$600+$13,x
+   392 01,0C31 9D 13 07				sta sprites+$700+$13,x
+   393 01,0C34 9D 14 06				sta sprites+$600+$14,x
+   394 01,0C37 9D 14 07				sta sprites+$700+$14,x
+   395 01,0C3A 9D 15 06				sta sprites+$600+$15,x
+   396 01,0C3D 9D 15 07				sta sprites+$700+$15,x
+   397 01,0C40 9D 16 06				sta sprites+$600+$16,x
+   398 01,0C43 9D 16 07				sta sprites+$700+$16,x
+   399 01,0C46 9D 17 06				sta sprites+$600+$17,x
+   400 01,0C49 9D 17 07				sta sprites+$700+$17,x
+   401 01,0C4C 4C B5 0C				jmp dy7b+30
+   402
+   403 01,0C4F			dy3b
+   404 01,0C4F 9D 13 06				sta sprites+$600+$13,x
+   405 01,0C52 9D 13 07				sta sprites+$700+$13,x
+   406 01,0C55 9D 14 06				sta sprites+$600+$14,x
+   407 01,0C58 9D 14 07				sta sprites+$700+$14,x
+   408 01,0C5B 9D 15 06				sta sprites+$600+$15,x
+   409 01,0C5E 9D 15 07				sta sprites+$700+$15,x
+   410 01,0C61 9D 16 06				sta sprites+$600+$16,x
+   411 01,0C64 9D 16 07				sta sprites+$700+$16,x
+   412 01,0C67 4C AF 0C				jmp dy7b+24
+   413
+   414 01,0C6A			dy4b
+   415 01,0C6A 9D 13 06				sta sprites+$600+$13,x
+   416 01,0C6D 9D 13 07				sta sprites+$700+$13,x
+   417 01,0C70 9D 14 06				sta sprites+$600+$14,x
+   418 01,0C73 9D 14 07				sta sprites+$700+$14,x
+   419 01,0C76 9D 15 06				sta sprites+$600+$15,x
+   420 01,0C79 9D 15 07				sta sprites+$700+$15,x
+   421 01,0C7C 4C A9 0C				jmp dy7b+18
+   422
+   423 01,0C7F			dy5b
+   424 01,0C7F 9D 13 06				sta sprites+$600+$13,x
+   425 01,0C82 9D 13 07				sta sprites+$700+$13,x
+   426 01,0C85 9D 14 06				sta sprites+$600+$14,x
+   427 01,0C88 9D 14 07				sta sprites+$700+$14,x
+   428 01,0C8B 4C A3 0C				jmp dy7b+12
+   429
+   430
+   431 01,0C8E			dy6b
+   432 01,0C8E 9D 13 06				sta sprites+$600+$13,x
+   433 01,0C91 9D 13 07				sta sprites+$700+$13,x
+   434 01,0C94 4C 9D 0C				jmp dy7b+6
+   435
+   436 01,0C97			dy7b
+   437 01,0C97 9D F9 05				sta sprites+$600-7,x
+   438 01,0C9A 9D F9 06				sta sprites+$700-7,x
+   439 01,0C9D 9D FA 05				sta sprites+$600-6,x
+   440 01,0CA0 9D FA 06				sta sprites+$700-6,x
+   441 01,0CA3 9D FB 05				sta sprites+$600-5,x
+   442 01,0CA6 9D FB 06				sta sprites+$700-5,x
+   443 01,0CA9 9D FC 05				sta sprites+$600-4,x
+   444 01,0CAC 9D FC 06				sta sprites+$700-4,x
+   445 01,0CAF 9D FD 05				sta sprites+$600-3,x
+   446 01,0CB2 9D FD 06				sta sprites+$700-3,x
+   447 01,0CB5 9D FE 05				sta sprites+$600-2,x
+   448 01,0CB8 9D FE 06				sta sprites+$700-2,x
+   449 01,0CBB 9D FF 05				sta sprites+$600-1,x
+   450 01,0CBE 9D FF 06				sta sprites+$700-1,x
+   451
+   452 01,0CC1 9D 10 06				sta sprites+$600+$10,x
+   453 01,0CC4 9D 11 06				sta sprites+$600+$11,x
+   454 01,0CC7 9D 12 06				sta sprites+$600+$12,x
+   455 01,0CCA 9D 10 07				sta sprites+$700+$10,x
+   456 01,0CCD 9D 11 07				sta sprites+$700+$11,x
+   457 01,0CD0 9D 12 07				sta sprites+$700+$12,x
+   458 01,0CD3 60				rts
+   459
+   460 				.endl
+    77
+    78
+    79 01,0CD4			.local	multi
+    80
+    81 01,0CD4			.proc	init_engine (.word yx) .reg
+    82
+    83 01,0CD4 78				sei
+    84 01,0CD5 A9 00 8D 0E D4			mva #0 nmien
+    85 01,0CDA 8D 0E D2				sta irqen
+    86
+    87 01,0CDD 8E 2E 09				stx vbl_user+1
+    88 01,0CE0 8C 2F 09				sty vbl_user+2
+    89
+    90 01,0CE3 A9 FE 8D 01 D3			mva #$fe portb
+    91
+    92 01,0CE8 8D 08 D2				sta audctl		;inicjalizacja dźwięku
+    93 01,0CEB A9 03 8D 0F D2			mva #3 skctl
+    94
+    95 						;mva #2 chrctl		;włącz negatyw
+    96
+    97 01,0CF0 A9 0C 8D FA FF + 		mwa #nmi nmivec
+    98
+    99 01,0CFA A9 40 8D 0E D4			mva #$40 nmien
+   100
+   101 01,0CFF A5 14 C5 14 F0 + 		lda:cmp:req 20
+   102
+   103 01,0D05 AD 30 02 8D 02 + 		mwa SDLSTL dlptr		;program antica
+   104
+   105 01,0D11 A9 3E 8D 00 D4			mva #scr40 dmactl
+   106 01,0D16 A9 C0 8D 0E D4			mva #$c0 nmien			;wlacz dli+vblk
+   107
+   108 01,0D1B A9 03 8D 1D D0			mva #3 pmcntl			;włączamy duszki
+   109 01,0D20 A9 01 8D 07 D4			mva #>sprites pmbase
+   110 01,0D25 A9 31 8D 1B D0			mva #32+16+1 gtiactl		;kolorowe duszki, pociski w jednym kolorze
+   111
+   112 01,0D2A 4C 69 09				jmp multi.init_sprite
+   113 				.endp
+   114
+   115 				.endl
+   115 01,0D2D			BLK UPDATE ADDRESS
+   115 01,0D2D EF FF 57		
+   115 01,0D2D F4 00 00 08 02 + 
+   115 01,0D2D EF FF 3C		
+   115 01,0D2D 02 00 24 09 F1 + 
+   115 01,0D2D EF FF 3E		
+   115 01,0D2D 03 00 29 09 B0 + 
+   115 01,0D2D			BLK UPDATE PUBLIC
+   115 01,0D2D 57 56 0C 00 4D + MULTI.ANIMUJ
+   115 01,0D2D 57 56 12 00 4D + MULTI.SHOW_SPRITES
+   115 01,0D2D 57 56 07 00 53 + SPRITES
+   115 01,0D2D 57 43 0B 00 53 + SHAPE_TAB01
+   115 01,0D2D 57 43 0B 00 53 + SHAPE_TAB23
+   115 01,0D2D 57 56 08 00 53 + SPRITE_X
+   115 01,0D2D 57 56 08 00 53 + SPRITE_Y
+   115 01,0D2D 57 56 0C 00 53 + SPRITE_SHAPE
+   115 01,0D2D 57 56 09 00 53 + SPRITE_C0
+   115 01,0D2D 57 56 09 00 53 + SPRITE_C1
+   115 01,0D2D 57 56 0B 00 53 + SPRITE_ANIM
+   115 01,0D2D 57 56 11 00 53 + SPRITE_ANIM_SPEED
+   115 01,0D2D 57 50 11 00 4D + MULTI.INIT_ENGINE
+   115 01,0D2D 57 56 0B 00 4D + MULTI.RET01
+   115 01,0D2D 57 56 0B 00 4D + MULTI.RET23
+   115 01,0D2D 57 56 11 00 4D + MULTI.INIT_SPRITE
+   115 01,0D2D 57 43 08 00 43 + CHARSETS
+   115 01,0D2D 57 56 06 00 54 + TCOLOR
+   115 01,0D2D 57 56 04 00 43 + CREG

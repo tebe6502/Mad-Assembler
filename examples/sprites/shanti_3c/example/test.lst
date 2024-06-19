@@ -1,0 +1,2691 @@
+mads 2.1.6 build 59 (3 May 23)
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+     1 				// Shanti engine example
+     2
+     3 = 0230			SDLSTL	= $0230
+     4 = 0231			SDLSTH	= $0231
+     5
+     6 = D016			color0	= $d016
+     7 = D017			color1	= $d017
+     8 = D018			color2	= $d018
+     9 = D019			color3	= $d019
+    10
+    11 = D400			dmactl	= $d400
+    12
+    13 				.enum	@dmactl
+    14 = 0000				blank	= %00
+    15 = 0001				narrow	= %01
+    16 = 0002				normal	= %10
+    17 = 0003				wide	= %11
+    18 = 0004				missiles= %100
+    19 = 0008				players	= %1000
+    20 = 0010				oneline	= %10000
+    21 = 0020				dma	= %100000
+    22 				.ende
+    23
+    24 = 003F			scr48	= @dmactl(wide|dma|players|missiles|oneline)		;screen 48b
+    25 = 003E			scr40	= @dmactl(normal|dma|players|missiles|oneline)		;screen 40b
+    26 = 003D			scr32	= @dmactl(narrow|dma|players|missiles|oneline)		;screen 32b
+    27
+    28
+    29 					org $2000
+    30
+    31 				jgp	;ins '..\assets\hans_kloss.fnt'
+    32
+    33 				scr	;ins '..\assets\hans_kloss.scr'
+    34
+    35
+    36 					.align
+    37
+    38
+    39 				dlist	;dta $70,$70
+    40 FFFF> 2000-3A34> F0		dta $f0
+    41 2001 D4 00 20 D4 30 20 + 	:24 dta $40|$04|$80|$10,a(scr+#*48)
+    42 2049 41 00 20			dta $41,a(dlist)
+    43
+    44
+    45 204C			vbl
+    46 					;this area is for yours routines
+    47
+    48
+    49
+    50
+    51 					;the required exit method
+    52
+    53 204C 68 A8 68 AA 68		plr
+    54 2051 40				rti
+    55
+    56
+    57 2052 A9 00		main		lda <dlist		; DLIST address
+    58 2054 8D 30 02				sta SDLSTL		; shadow DLPTR
+    59 2057 A9 20				lda >dlist
+    60 2059 8D 31 02				sta SDLSTH
+    61
+    62 						multi.init_engine #vbl		; !!! INIT_ENGINE !!! execute first
+    62 				 LDY> VBL\ LDX< VBL\ JSR MULTI.INIT_ENGINE
+    62 205C A0 20		 LDY> VBL
+    62 205E A2 4C		 LDX< VBL
+    62 2060 20 D4 4C		 JSR MULTI.INIT_ENGINE
+    63
+    64 2063 A9 3D 8D 00 D4			mva #scr32 dmactl		; scr32, scr40, scr48
+    65
+    66 2068 A9 84 8D 16 D0			mva #$84 color0
+    67 206D A9 E8 8D 17 D0			mva #$e8 color1
+    68 2072 A9 72 8D 18 D0			mva #$72 color2
+    69 2077 A9 0E 8D 19 D0			mva #$0e color3
+    70
+    71
+    72  [0000] 20 24 28 2C			.put >jgp,>[jgp+$400],>[jgp+$800],>[jgp+$c00]
+    73
+    74 						.rept 26,#
+    75 						LDA #.GET[#&3]
+    76 						STA CHARSETS+#
+    77 						.endr
+Source: REPT
+    75 207C A9 20				LDA #.GET[#&3]
+    75 207E 8D E0 03				STA CHARSETS+#
+    75 2081 A9 24				LDA #.GET[#&3]
+    75 2083 8D E1 03				STA CHARSETS+#
+    75 2086 A9 28				LDA #.GET[#&3]
+    75 2088 8D E2 03				STA CHARSETS+#
+    75 208B A9 2C				LDA #.GET[#&3]
+    75 208D 8D E3 03				STA CHARSETS+#
+    75 2090 A9 20				LDA #.GET[#&3]
+    75 2092 8D E4 03				STA CHARSETS+#
+    75 2095 A9 24				LDA #.GET[#&3]
+    75 2097 8D E5 03				STA CHARSETS+#
+    75 209A A9 28				LDA #.GET[#&3]
+    75 209C 8D E6 03				STA CHARSETS+#
+    75 209F A9 2C				LDA #.GET[#&3]
+    75 20A1 8D E7 03				STA CHARSETS+#
+    75 20A4 A9 20				LDA #.GET[#&3]
+    75 20A6 8D E8 03				STA CHARSETS+#
+    75 20A9 A9 24				LDA #.GET[#&3]
+    75 20AB 8D E9 03				STA CHARSETS+#
+    75 20AE A9 28				LDA #.GET[#&3]
+    75 20B0 8D EA 03				STA CHARSETS+#
+    75 20B3 A9 2C				LDA #.GET[#&3]
+    75 20B5 8D EB 03				STA CHARSETS+#
+    75 20B8 A9 20				LDA #.GET[#&3]
+    75 20BA 8D EC 03				STA CHARSETS+#
+    75 20BD A9 24				LDA #.GET[#&3]
+    75 20BF 8D ED 03				STA CHARSETS+#
+    75 20C2 A9 28				LDA #.GET[#&3]
+    75 20C4 8D EE 03				STA CHARSETS+#
+    75 20C7 A9 2C				LDA #.GET[#&3]
+    75 20C9 8D EF 03				STA CHARSETS+#
+    75 20CC A9 20				LDA #.GET[#&3]
+    75 20CE 8D F0 03				STA CHARSETS+#
+    75 20D1 A9 24				LDA #.GET[#&3]
+    75 20D3 8D F1 03				STA CHARSETS+#
+    75 20D6 A9 28				LDA #.GET[#&3]
+    75 20D8 8D F2 03				STA CHARSETS+#
+    75 20DB A9 2C				LDA #.GET[#&3]
+    75 20DD 8D F3 03				STA CHARSETS+#
+    75 20E0 A9 20				LDA #.GET[#&3]
+    75 20E2 8D F4 03				STA CHARSETS+#
+    75 20E5 A9 24				LDA #.GET[#&3]
+    75 20E7 8D F5 03				STA CHARSETS+#
+    75 20EA A9 28				LDA #.GET[#&3]
+    75 20EC 8D F6 03				STA CHARSETS+#
+    75 20EF A9 2C				LDA #.GET[#&3]
+    75 20F1 8D F7 03				STA CHARSETS+#
+    75 20F4 A9 20				LDA #.GET[#&3]
+    75 20F6 8D F8 03				STA CHARSETS+#
+    75 20F9 A9 24				LDA #.GET[#&3]
+    75 20FB 8D F9 03				STA CHARSETS+#
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+    78
+    79
+    80 20FE 20 AA 22				jsr f0	; addShape
+    81 2101 20 8B 2A				jsr f1
+    82 2104 20 5C 32				jsr f2
+    83
+    84
+    85 				// addSprite	num, color0, color1, shape_idx, sprite_x, sprite_y, anim_speed, anim
+    86
+    87 				.macro addSprite (num, c0, c1, shape, x, y, speed, anim)
+    88 					mva #%%c0	sprite_c0+%%num
+    89 					mva #%%c1	sprite_c1+%%num
+    90 					mva #%%shape	sprite_shape+%%num	;ksztalt startowy
+    91 					mva #%%x	sprite_x+%%num
+    92 					mva #%%y	sprite_y+%%num
+    93 					mva #%%speed	sprite_anim_speed+%%num	;predkoœæ animacji
+    94 					mva #%%anim	sprite_anim+%%num	;maska dla liczby klatek animacji
+    95 				.endm
+    96
+    97 2107					addSprite 0 $64 $18 12  40  32 7 255
+Macro: ADDSPRITE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2107 A9 64 8D 70 48		mva #$64	sprite_c0+0
+     2 210C A9 18 8D 80 48		mva #$18	sprite_c1+0
+     3 2111 A9 0C 8D 60 48		mva #12	sprite_shape+0	;ksztalt startowy
+     4 2116 A9 28 8D 40 48		mva #40	sprite_x+0
+     5 211B A9 20 8D 50 48		mva #32	sprite_y+0
+     6 2120 A9 07 8D A0 48		mva #7	sprite_anim_speed+0	;predkoœæ animacji
+     7 2125 A9 FF 8D 90 48		mva #255	sprite_anim+0	;maska dla liczby klatek animacji
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+    98 212A					addSprite 1 $24 $e8 0   56  40 3 255
+Macro: ADDSPRITE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 212A A9 24 8D 71 48		mva #$24	sprite_c0+1
+     2 212F A9 E8 8D 81 48		mva #$E8	sprite_c1+1
+     3 2134 A9 00 8D 61 48		mva #0	sprite_shape+1	;ksztalt startowy
+     4 2139 A9 38 8D 41 48		mva #56	sprite_x+1
+     5 213E A9 28 8D 51 48		mva #40	sprite_y+1
+     6 2143 A9 03 8D A1 48		mva #3	sprite_anim_speed+1	;predkoœæ animacji
+     7 2148 A9 FF 8D 91 48		mva #255	sprite_anim+1	;maska dla liczby klatek animacji
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+    99 214D					addSprite 2 $04 $38 3   72  48 1 255
+Macro: ADDSPRITE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 214D A9 04 8D 72 48		mva #$04	sprite_c0+2
+     2 2152 A9 38 8D 82 48		mva #$38	sprite_c1+2
+     3 2157 A9 03 8D 62 48		mva #3	sprite_shape+2	;ksztalt startowy
+     4 215C A9 48 8D 42 48		mva #72	sprite_x+2
+     5 2161 A9 30 8D 52 48		mva #48	sprite_y+2
+     6 2166 A9 01 8D A2 48		mva #1	sprite_anim_speed+2	;predkoœæ animacji
+     7 216B A9 FF 8D 92 48		mva #255	sprite_anim+2	;maska dla liczby klatek animacji
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   100 2170					addSprite 3 $04 $78 15  84  56 3 255
+Macro: ADDSPRITE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2170 A9 04 8D 73 48		mva #$04	sprite_c0+3
+     2 2175 A9 78 8D 83 48		mva #$78	sprite_c1+3
+     3 217A A9 0F 8D 63 48		mva #15	sprite_shape+3	;ksztalt startowy
+     4 217F A9 54 8D 43 48		mva #84	sprite_x+3
+     5 2184 A9 38 8D 53 48		mva #56	sprite_y+3
+     6 2189 A9 03 8D A3 48		mva #3	sprite_anim_speed+3	;predkoœæ animacji
+     7 218E A9 FF 8D 93 48		mva #255	sprite_anim+3	;maska dla liczby klatek animacji
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   101 2193					addSprite 4 $a4 $a8 0   96  64 3 255
+Macro: ADDSPRITE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2193 A9 A4 8D 74 48		mva #$A4	sprite_c0+4
+     2 2198 A9 A8 8D 84 48		mva #$A8	sprite_c1+4
+     3 219D A9 00 8D 64 48		mva #0	sprite_shape+4	;ksztalt startowy
+     4 21A2 A9 60 8D 44 48		mva #96	sprite_x+4
+     5 21A7 A9 40 8D 54 48		mva #64	sprite_y+4
+     6 21AC A9 03 8D A4 48		mva #3	sprite_anim_speed+4	;predkoœæ animacji
+     7 21B1 A9 FF 8D 94 48		mva #255	sprite_anim+4	;maska dla liczby klatek animacji
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   102 21B6					addSprite 5 $34 $38 18 104  72 1 255
+Macro: ADDSPRITE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 21B6 A9 34 8D 75 48		mva #$34	sprite_c0+5
+     2 21BB A9 38 8D 85 48		mva #$38	sprite_c1+5
+     3 21C0 A9 12 8D 65 48		mva #18	sprite_shape+5	;ksztalt startowy
+     4 21C5 A9 68 8D 45 48		mva #104	sprite_x+5
+     5 21CA A9 48 8D 55 48		mva #72	sprite_y+5
+     6 21CF A9 01 8D A5 48		mva #1	sprite_anim_speed+5	;predkoœæ animacji
+     7 21D4 A9 FF 8D 95 48		mva #255	sprite_anim+5	;maska dla liczby klatek animacji
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   103 21D9					addSprite 6 $04 $68 2  112  82 3 255
+Macro: ADDSPRITE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 21D9 A9 04 8D 76 48		mva #$04	sprite_c0+6
+     2 21DE A9 68 8D 86 48		mva #$68	sprite_c1+6
+     3 21E3 A9 02 8D 66 48		mva #2	sprite_shape+6	;ksztalt startowy
+     4 21E8 A9 70 8D 46 48		mva #112	sprite_x+6
+     5 21ED A9 52 8D 56 48		mva #82	sprite_y+6
+     6 21F2 A9 03 8D A6 48		mva #3	sprite_anim_speed+6	;predkoœæ animacji
+     7 21F7 A9 FF 8D 96 48		mva #255	sprite_anim+6	;maska dla liczby klatek animacji
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   104 21FC					addSprite 7 $04 $08 0  124  94 3 255
+Macro: ADDSPRITE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 21FC A9 04 8D 77 48		mva #$04	sprite_c0+7
+     2 2201 A9 08 8D 87 48		mva #$08	sprite_c1+7
+     3 2206 A9 00 8D 67 48		mva #0	sprite_shape+7	;ksztalt startowy
+     4 220B A9 7C 8D 47 48		mva #124	sprite_x+7
+     5 2210 A9 5E 8D 57 48		mva #94	sprite_y+7
+     6 2215 A9 03 8D A7 48		mva #3	sprite_anim_speed+7	;predkoœæ animacji
+     7 221A A9 FF 8D 97 48		mva #255	sprite_anim+7	;maska dla liczby klatek animacji
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   105 221F					addSprite 8 $4c $f8 11 134 108 3 255
+Macro: ADDSPRITE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 221F A9 4C 8D 78 48		mva #$4C	sprite_c0+8
+     2 2224 A9 F8 8D 88 48		mva #$F8	sprite_c1+8
+     3 2229 A9 0B 8D 68 48		mva #11	sprite_shape+8	;ksztalt startowy
+     4 222E A9 86 8D 48 48		mva #134	sprite_x+8
+     5 2233 A9 6C 8D 58 48		mva #108	sprite_y+8
+     6 2238 A9 03 8D A8 48		mva #3	sprite_anim_speed+8	;predkoœæ animacji
+     7 223D A9 FF 8D 98 48		mva #255	sprite_anim+8	;maska dla liczby klatek animacji
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   106
+   107
+   108 2242 A9 1A			lda <$d01a		; ustawienie rejestru koloru
+   109 2244 8D C3 48			sta creg+1
+   110
+   111
+   112 2247 A5 14 C5 14 F0 FC	loop	lda:cmp:req 20
+   113
+   114 224D 20 B8 49			jsr multi.show_sprites
+   115 					//jsr multi.animuj
+   116
+   117
+   118 2250 A9 1A		px	lda #26
+   119 2252 8D 5D 22			sta npx+1
+   120 2255 A9 00		px2	lda #0
+   121 2257 8D 66 22			sta npx2+1
+   122
+   123 225A A2 08			ldx #8
+   124
+   125 225C AD 00 3B		npx	lda track0
+   126 225F 18 69 30			add #48
+   127 2262 9D 40 48			sta sprite_x,x
+   128
+   129 2265 AD 00 3C		npx2	lda track1
+   130 2268 18 69 10			add #16
+   131 226B 9D 50 48			sta sprite_y,x
+   132
+   133 226E E0 03			cpx #3
+   134 2270 D0 12			bne sk_
+   135
+   136 2272 AD 5D 22 18 69 02 + 	adb npx+1 #2
+   137 227B AD 66 22 38 E9 05 + 	sbb npx2+1 #5
+   138
+   139 2284			sk_
+   140
+   141 2284 AD 5D 22 18 69 02 + 	adb npx+1 #2
+   142 228D AD 66 22 38 E9 05 + 	sbb npx2+1 #5
+   143
+   144 2296 9D 20 48			sta tcolor,x
+   145
+   146 2299 CA				dex
+   147 229A 10 C0			bpl npx
+   148
+   149 229C AD 0F D2			lda $d20f
+   150 229F 29 04			and #4
+   151 					;bne skp
+   152
+   153 22A1 EE 51 22			inc px+1
+   154 22A4 CE 56 22			dec px2+1
+   155
+   156 22A7			skp
+   157
+   158 22A7 4C 47 22			jmp loop
+   159
+   160
+   161
+   162 				.macro	addShape (idx, nam)
+   163 					mwa #%%nam._01 shape_tab01+%%idx*2
+   164 					mwa #%%nam._23 shape_tab23+%%idx*2
+   165 				.endm
+   166
+   167
+   168 22AA			.local	f0
+   169 22AA					addShape 0, shp0
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 22AA A9 4B 8D 00 01 A9 + 	mwa #SHP0._01 shape_tab01+0*2
+     2 22B4 A9 C2 8D 00 02 A9 + 	mwa #SHP0._23 shape_tab23+0*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   170 22BE					addShape 1, shp1
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 22BE A9 39 8D 02 01 A9 + 	mwa #SHP1._01 shape_tab01+1*2
+     2 22C8 A9 AA 8D 02 02 A9 + 	mwa #SHP1._23 shape_tab23+1*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   171 22D2					addShape 2, shp2
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 22D2 A9 1B 8D 04 01 A9 + 	mwa #SHP2._01 shape_tab01+2*2
+     2 22DC A9 90 8D 04 02 A9 + 	mwa #SHP2._23 shape_tab23+2*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   172 22E6					addShape 3, shp3
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 22E6 A9 05 8D 06 01 A9 + 	mwa #SHP3._01 shape_tab01+3*2
+     2 22F0 A9 76 8D 06 02 A9 + 	mwa #SHP3._23 shape_tab23+3*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   173 22FA					addShape 4, shp4
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 22FA A9 E7 8D 08 01 A9 + 	mwa #SHP4._01 shape_tab01+4*2
+     2 2304 A9 5A 8D 08 02 A9 + 	mwa #SHP4._23 shape_tab23+4*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   174 230E					addShape 5, shp5
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 230E A9 CD 8D 0A 01 A9 + 	mwa #SHP5._01 shape_tab01+5*2
+     2 2318 A9 40 8D 0A 02 A9 + 	mwa #SHP5._23 shape_tab23+5*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   175 2322					addShape 6, shp6
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2322 A9 B3 8D 0C 01 A9 + 	mwa #SHP6._01 shape_tab01+6*2
+     2 232C A9 2E 8D 0C 02 A9 + 	mwa #SHP6._23 shape_tab23+6*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   176 2336					addShape 7, shp7
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2336 A9 A9 8D 0E 01 A9 + 	mwa #SHP7._01 shape_tab01+7*2
+     2 2340 A9 1A 8D 0E 02 A9 + 	mwa #SHP7._23 shape_tab23+7*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   177
+   178 234A 60					rts
+   179
+   180 234B				icl '..\convert\font0.asm'
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\..\convert\font0.asm
+     1
+     2 234B			.local	shp0
+     3
+     4 234B			_01
+     5 234B A9 00			lda #0
+     6 234D 9D 00 45			sta sprites+$500+0,x
+     7 2350 9D 0E 44			sta sprites+$400+14,x
+     8 2353 9D 0F 44			sta sprites+$400+15,x
+     9 2356 A9 02			lda #2
+    10 2358 9D 08 45			sta sprites+$500+8,x
+    11 235B 9D 09 45			sta sprites+$500+9,x
+    12 235E A9 22			lda #34
+    13 2360 9D 04 45			sta sprites+$500+4,x
+    14 2363 9D 05 45			sta sprites+$500+5,x
+    15 2366 9D 06 45			sta sprites+$500+6,x
+    16 2369 9D 07 45			sta sprites+$500+7,x
+    17 236C 9D 0C 45			sta sprites+$500+12,x
+    18 236F 9D 0D 45			sta sprites+$500+13,x
+    19 2372 A9 30			lda #48
+    20 2374 9D 02 45			sta sprites+$500+2,x
+    21 2377 9D 03 45			sta sprites+$500+3,x
+    22 237A A9 32			lda #50
+    23 237C 9D 0A 45			sta sprites+$500+10,x
+    24 237F 9D 0B 45			sta sprites+$500+11,x
+    25 2382 A9 66			lda #102
+    26 2384 9D 0E 45			sta sprites+$500+14,x
+    27 2387 9D 0F 45			sta sprites+$500+15,x
+    28 238A A9 78			lda #120
+    29 238C 9D 00 44			sta sprites+$400+0,x
+    30 238F 9D 01 44			sta sprites+$400+1,x
+    31 2392 A9 80			lda #128
+    32 2394 9D 01 45			sta sprites+$500+1,x
+    33 2397 A9 CC			lda #204
+    34 2399 9D 02 44			sta sprites+$400+2,x
+    35 239C 9D 03 44			sta sprites+$400+3,x
+    36 239F 9D 04 44			sta sprites+$400+4,x
+    37 23A2 9D 05 44			sta sprites+$400+5,x
+    38 23A5 9D 06 44			sta sprites+$400+6,x
+    39 23A8 9D 07 44			sta sprites+$400+7,x
+    40 23AB 9D 0A 44			sta sprites+$400+10,x
+    41 23AE 9D 0B 44			sta sprites+$400+11,x
+    42 23B1 9D 0C 44			sta sprites+$400+12,x
+    43 23B4 9D 0D 44			sta sprites+$400+13,x
+    44 23B7 A9 FC			lda #252
+    45 23B9 9D 08 44			sta sprites+$400+8,x
+    46 23BC 9D 09 44			sta sprites+$400+9,x
+    47
+    48 23BF 4C 74 4A			jmp multi.ret01
+    49
+    50 23C2			_23
+    51 23C2 A9 00			lda #0
+    52 23C4 9D 00 47			sta sprites+$700+0,x
+    53 23C7 9D 0E 46			sta sprites+$600+14,x
+    54 23CA 9D 0F 46			sta sprites+$600+15,x
+    55 23CD A9 02			lda #2
+    56 23CF 9D 08 47			sta sprites+$700+8,x
+    57 23D2 9D 09 47			sta sprites+$700+9,x
+    58 23D5 A9 22			lda #34
+    59 23D7 9D 04 47			sta sprites+$700+4,x
+    60 23DA 9D 05 47			sta sprites+$700+5,x
+    61 23DD 9D 06 47			sta sprites+$700+6,x
+    62 23E0 9D 07 47			sta sprites+$700+7,x
+    63 23E3 9D 0C 47			sta sprites+$700+12,x
+    64 23E6 9D 0D 47			sta sprites+$700+13,x
+    65 23E9 A9 30			lda #48
+    66 23EB 9D 02 47			sta sprites+$700+2,x
+    67 23EE 9D 03 47			sta sprites+$700+3,x
+    68 23F1 A9 32			lda #50
+    69 23F3 9D 0A 47			sta sprites+$700+10,x
+    70 23F6 9D 0B 47			sta sprites+$700+11,x
+    71 23F9 A9 66			lda #102
+    72 23FB 9D 0E 47			sta sprites+$700+14,x
+    73 23FE 9D 0F 47			sta sprites+$700+15,x
+    74 2401 A9 78			lda #120
+    75 2403 9D 00 46			sta sprites+$600+0,x
+    76 2406 9D 01 46			sta sprites+$600+1,x
+    77 2409 A9 80			lda #128
+    78 240B 9D 01 47			sta sprites+$700+1,x
+    79 240E A9 CC			lda #204
+    80 2410 9D 02 46			sta sprites+$600+2,x
+    81 2413 9D 03 46			sta sprites+$600+3,x
+    82 2416 9D 04 46			sta sprites+$600+4,x
+    83 2419 9D 05 46			sta sprites+$600+5,x
+    84 241C 9D 06 46			sta sprites+$600+6,x
+    85 241F 9D 07 46			sta sprites+$600+7,x
+    86 2422 9D 0A 46			sta sprites+$600+10,x
+    87 2425 9D 0B 46			sta sprites+$600+11,x
+    88 2428 9D 0C 46			sta sprites+$600+12,x
+    89 242B 9D 0D 46			sta sprites+$600+13,x
+    90 242E A9 FC			lda #252
+    91 2430 9D 08 46			sta sprites+$600+8,x
+    92 2433 9D 09 46			sta sprites+$600+9,x
+    93
+    94 2436 4C B5 4A			jmp multi.ret23
+    95 				.endl
+    96
+    97 2439			.local	shp1
+    98
+    99 2439			_01
+   100 2439 A9 00			lda #0
+   101 243B 9D 00 45			sta sprites+$500+0,x
+   102 243E 9D 01 45			sta sprites+$500+1,x
+   103 2441 9D 0E 44			sta sprites+$400+14,x
+   104 2444 9D 0F 44			sta sprites+$400+15,x
+   105 2447 A9 06			lda #6
+   106 2449 9D 06 45			sta sprites+$500+6,x
+   107 244C 9D 07 45			sta sprites+$500+7,x
+   108 244F 9D 0C 45			sta sprites+$500+12,x
+   109 2452 9D 0D 45			sta sprites+$500+13,x
+   110 2455 A9 22			lda #34
+   111 2457 9D 04 45			sta sprites+$500+4,x
+   112 245A 9D 05 45			sta sprites+$500+5,x
+   113 245D 9D 0A 45			sta sprites+$500+10,x
+   114 2460 9D 0B 45			sta sprites+$500+11,x
+   115 2463 A9 30			lda #48
+   116 2465 9D 02 45			sta sprites+$500+2,x
+   117 2468 9D 03 45			sta sprites+$500+3,x
+   118 246B 9D 08 45			sta sprites+$500+8,x
+   119 246E 9D 09 45			sta sprites+$500+9,x
+   120 2471 A9 7C			lda #124
+   121 2473 9D 0E 45			sta sprites+$500+14,x
+   122 2476 9D 0F 45			sta sprites+$500+15,x
+   123 2479 A9 CC			lda #204
+   124 247B 9D 02 44			sta sprites+$400+2,x
+   125 247E 9D 03 44			sta sprites+$400+3,x
+   126 2481 9D 04 44			sta sprites+$400+4,x
+   127 2484 9D 05 44			sta sprites+$400+5,x
+   128 2487 9D 08 44			sta sprites+$400+8,x
+   129 248A 9D 09 44			sta sprites+$400+9,x
+   130 248D 9D 0A 44			sta sprites+$400+10,x
+   131 2490 9D 0B 44			sta sprites+$400+11,x
+   132 2493 A9 F8			lda #248
+   133 2495 9D 00 44			sta sprites+$400+0,x
+   134 2498 9D 01 44			sta sprites+$400+1,x
+   135 249B 9D 06 44			sta sprites+$400+6,x
+   136 249E 9D 07 44			sta sprites+$400+7,x
+   137 24A1 9D 0C 44			sta sprites+$400+12,x
+   138 24A4 9D 0D 44			sta sprites+$400+13,x
+   139
+   140 24A7 4C 74 4A			jmp multi.ret01
+   141
+   142 24AA			_23
+   143 24AA A9 00			lda #0
+   144 24AC 9D 00 47			sta sprites+$700+0,x
+   145 24AF 9D 01 47			sta sprites+$700+1,x
+   146 24B2 9D 0E 46			sta sprites+$600+14,x
+   147 24B5 9D 0F 46			sta sprites+$600+15,x
+   148 24B8 A9 06			lda #6
+   149 24BA 9D 06 47			sta sprites+$700+6,x
+   150 24BD 9D 07 47			sta sprites+$700+7,x
+   151 24C0 9D 0C 47			sta sprites+$700+12,x
+   152 24C3 9D 0D 47			sta sprites+$700+13,x
+   153 24C6 A9 22			lda #34
+   154 24C8 9D 04 47			sta sprites+$700+4,x
+   155 24CB 9D 05 47			sta sprites+$700+5,x
+   156 24CE 9D 0A 47			sta sprites+$700+10,x
+   157 24D1 9D 0B 47			sta sprites+$700+11,x
+   158 24D4 A9 30			lda #48
+   159 24D6 9D 02 47			sta sprites+$700+2,x
+   160 24D9 9D 03 47			sta sprites+$700+3,x
+   161 24DC 9D 08 47			sta sprites+$700+8,x
+   162 24DF 9D 09 47			sta sprites+$700+9,x
+   163 24E2 A9 7C			lda #124
+   164 24E4 9D 0E 47			sta sprites+$700+14,x
+   165 24E7 9D 0F 47			sta sprites+$700+15,x
+   166 24EA A9 CC			lda #204
+   167 24EC 9D 02 46			sta sprites+$600+2,x
+   168 24EF 9D 03 46			sta sprites+$600+3,x
+   169 24F2 9D 04 46			sta sprites+$600+4,x
+   170 24F5 9D 05 46			sta sprites+$600+5,x
+   171 24F8 9D 08 46			sta sprites+$600+8,x
+   172 24FB 9D 09 46			sta sprites+$600+9,x
+   173 24FE 9D 0A 46			sta sprites+$600+10,x
+   174 2501 9D 0B 46			sta sprites+$600+11,x
+   175 2504 A9 F8			lda #248
+   176 2506 9D 00 46			sta sprites+$600+0,x
+   177 2509 9D 01 46			sta sprites+$600+1,x
+   178 250C 9D 06 46			sta sprites+$600+6,x
+   179 250F 9D 07 46			sta sprites+$600+7,x
+   180 2512 9D 0C 46			sta sprites+$600+12,x
+   181 2515 9D 0D 46			sta sprites+$600+13,x
+   182
+   183 2518 4C B5 4A			jmp multi.ret23
+   184 				.endl
+   185
+   186 251B			.local	shp2
+   187
+   188 251B			_01
+   189 251B A9 00			lda #0
+   190 251D 9D 00 45			sta sprites+$500+0,x
+   191 2520 9D 01 45			sta sprites+$500+1,x
+   192 2523 9D 0E 44			sta sprites+$400+14,x
+   193 2526 9D 0F 44			sta sprites+$400+15,x
+   194 2529 A9 06			lda #6
+   195 252B 9D 0C 45			sta sprites+$500+12,x
+   196 252E 9D 0D 45			sta sprites+$500+13,x
+   197 2531 A9 20			lda #32
+   198 2533 9D 06 45			sta sprites+$500+6,x
+   199 2536 9D 07 45			sta sprites+$500+7,x
+   200 2539 9D 08 45			sta sprites+$500+8,x
+   201 253C 9D 09 45			sta sprites+$500+9,x
+   202 253F 9D 0A 45			sta sprites+$500+10,x
+   203 2542 9D 0B 45			sta sprites+$500+11,x
+   204 2545 A9 26			lda #38
+   205 2547 9D 04 45			sta sprites+$500+4,x
+   206 254A 9D 05 45			sta sprites+$500+5,x
+   207 254D A9 30			lda #48
+   208 254F 9D 02 45			sta sprites+$500+2,x
+   209 2552 9D 03 45			sta sprites+$500+3,x
+   210 2555 A9 3C			lda #60
+   211 2557 9D 0E 45			sta sprites+$500+14,x
+   212 255A 9D 0F 45			sta sprites+$500+15,x
+   213 255D A9 78			lda #120
+   214 255F 9D 00 44			sta sprites+$400+0,x
+   215 2562 9D 01 44			sta sprites+$400+1,x
+   216 2565 9D 0C 44			sta sprites+$400+12,x
+   217 2568 9D 0D 44			sta sprites+$400+13,x
+   218 256B A9 C0			lda #192
+   219 256D 9D 04 44			sta sprites+$400+4,x
+   220 2570 9D 05 44			sta sprites+$400+5,x
+   221 2573 9D 06 44			sta sprites+$400+6,x
+   222 2576 9D 07 44			sta sprites+$400+7,x
+   223 2579 9D 08 44			sta sprites+$400+8,x
+   224 257C 9D 09 44			sta sprites+$400+9,x
+   225 257F A9 CC			lda #204
+   226 2581 9D 02 44			sta sprites+$400+2,x
+   227 2584 9D 03 44			sta sprites+$400+3,x
+   228 2587 9D 0A 44			sta sprites+$400+10,x
+   229 258A 9D 0B 44			sta sprites+$400+11,x
+   230
+   231 258D 4C 74 4A			jmp multi.ret01
+   232
+   233 2590			_23
+   234 2590 A9 00			lda #0
+   235 2592 9D 00 47			sta sprites+$700+0,x
+   236 2595 9D 01 47			sta sprites+$700+1,x
+   237 2598 9D 0E 46			sta sprites+$600+14,x
+   238 259B 9D 0F 46			sta sprites+$600+15,x
+   239 259E A9 06			lda #6
+   240 25A0 9D 0C 47			sta sprites+$700+12,x
+   241 25A3 9D 0D 47			sta sprites+$700+13,x
+   242 25A6 A9 20			lda #32
+   243 25A8 9D 06 47			sta sprites+$700+6,x
+   244 25AB 9D 07 47			sta sprites+$700+7,x
+   245 25AE 9D 08 47			sta sprites+$700+8,x
+   246 25B1 9D 09 47			sta sprites+$700+9,x
+   247 25B4 9D 0A 47			sta sprites+$700+10,x
+   248 25B7 9D 0B 47			sta sprites+$700+11,x
+   249 25BA A9 26			lda #38
+   250 25BC 9D 04 47			sta sprites+$700+4,x
+   251 25BF 9D 05 47			sta sprites+$700+5,x
+   252 25C2 A9 30			lda #48
+   253 25C4 9D 02 47			sta sprites+$700+2,x
+   254 25C7 9D 03 47			sta sprites+$700+3,x
+   255 25CA A9 3C			lda #60
+   256 25CC 9D 0E 47			sta sprites+$700+14,x
+   257 25CF 9D 0F 47			sta sprites+$700+15,x
+   258 25D2 A9 78			lda #120
+   259 25D4 9D 00 46			sta sprites+$600+0,x
+   260 25D7 9D 01 46			sta sprites+$600+1,x
+   261 25DA 9D 0C 46			sta sprites+$600+12,x
+   262 25DD 9D 0D 46			sta sprites+$600+13,x
+   263 25E0 A9 C0			lda #192
+   264 25E2 9D 04 46			sta sprites+$600+4,x
+   265 25E5 9D 05 46			sta sprites+$600+5,x
+   266 25E8 9D 06 46			sta sprites+$600+6,x
+   267 25EB 9D 07 46			sta sprites+$600+7,x
+   268 25EE 9D 08 46			sta sprites+$600+8,x
+   269 25F1 9D 09 46			sta sprites+$600+9,x
+   270 25F4 A9 CC			lda #204
+   271 25F6 9D 02 46			sta sprites+$600+2,x
+   272 25F9 9D 03 46			sta sprites+$600+3,x
+   273 25FC 9D 0A 46			sta sprites+$600+10,x
+   274 25FF 9D 0B 46			sta sprites+$600+11,x
+   275
+   276 2602 4C B5 4A			jmp multi.ret23
+   277 				.endl
+   278
+   279 2605			.local	shp3
+   280
+   281 2605			_01
+   282 2605 A9 00			lda #0
+   283 2607 9D 00 45			sta sprites+$500+0,x
+   284 260A 9D 01 45			sta sprites+$500+1,x
+   285 260D 9D 0E 44			sta sprites+$400+14,x
+   286 2610 9D 0F 44			sta sprites+$400+15,x
+   287 2613 A9 06			lda #6
+   288 2615 9D 0C 45			sta sprites+$500+12,x
+   289 2618 9D 0D 45			sta sprites+$500+13,x
+   290 261B A9 22			lda #34
+   291 261D 9D 04 45			sta sprites+$500+4,x
+   292 2620 9D 05 45			sta sprites+$500+5,x
+   293 2623 9D 06 45			sta sprites+$500+6,x
+   294 2626 9D 07 45			sta sprites+$500+7,x
+   295 2629 9D 08 45			sta sprites+$500+8,x
+   296 262C 9D 09 45			sta sprites+$500+9,x
+   297 262F 9D 0A 45			sta sprites+$500+10,x
+   298 2632 9D 0B 45			sta sprites+$500+11,x
+   299 2635 A9 30			lda #48
+   300 2637 9D 02 45			sta sprites+$500+2,x
+   301 263A 9D 03 45			sta sprites+$500+3,x
+   302 263D A9 7C			lda #124
+   303 263F 9D 0E 45			sta sprites+$500+14,x
+   304 2642 9D 0F 45			sta sprites+$500+15,x
+   305 2645 A9 CC			lda #204
+   306 2647 9D 02 44			sta sprites+$400+2,x
+   307 264A 9D 03 44			sta sprites+$400+3,x
+   308 264D 9D 04 44			sta sprites+$400+4,x
+   309 2650 9D 05 44			sta sprites+$400+5,x
+   310 2653 9D 06 44			sta sprites+$400+6,x
+   311 2656 9D 07 44			sta sprites+$400+7,x
+   312 2659 9D 08 44			sta sprites+$400+8,x
+   313 265C 9D 09 44			sta sprites+$400+9,x
+   314 265F 9D 0A 44			sta sprites+$400+10,x
+   315 2662 9D 0B 44			sta sprites+$400+11,x
+   316 2665 A9 F8			lda #248
+   317 2667 9D 00 44			sta sprites+$400+0,x
+   318 266A 9D 01 44			sta sprites+$400+1,x
+   319 266D 9D 0C 44			sta sprites+$400+12,x
+   320 2670 9D 0D 44			sta sprites+$400+13,x
+   321
+   322 2673 4C 74 4A			jmp multi.ret01
+   323
+   324 2676			_23
+   325 2676 A9 00			lda #0
+   326 2678 9D 00 47			sta sprites+$700+0,x
+   327 267B 9D 01 47			sta sprites+$700+1,x
+   328 267E 9D 0E 46			sta sprites+$600+14,x
+   329 2681 9D 0F 46			sta sprites+$600+15,x
+   330 2684 A9 06			lda #6
+   331 2686 9D 0C 47			sta sprites+$700+12,x
+   332 2689 9D 0D 47			sta sprites+$700+13,x
+   333 268C A9 22			lda #34
+   334 268E 9D 04 47			sta sprites+$700+4,x
+   335 2691 9D 05 47			sta sprites+$700+5,x
+   336 2694 9D 06 47			sta sprites+$700+6,x
+   337 2697 9D 07 47			sta sprites+$700+7,x
+   338 269A 9D 08 47			sta sprites+$700+8,x
+   339 269D 9D 09 47			sta sprites+$700+9,x
+   340 26A0 9D 0A 47			sta sprites+$700+10,x
+   341 26A3 9D 0B 47			sta sprites+$700+11,x
+   342 26A6 A9 30			lda #48
+   343 26A8 9D 02 47			sta sprites+$700+2,x
+   344 26AB 9D 03 47			sta sprites+$700+3,x
+   345 26AE A9 7C			lda #124
+   346 26B0 9D 0E 47			sta sprites+$700+14,x
+   347 26B3 9D 0F 47			sta sprites+$700+15,x
+   348 26B6 A9 CC			lda #204
+   349 26B8 9D 02 46			sta sprites+$600+2,x
+   350 26BB 9D 03 46			sta sprites+$600+3,x
+   351 26BE 9D 04 46			sta sprites+$600+4,x
+   352 26C1 9D 05 46			sta sprites+$600+5,x
+   353 26C4 9D 06 46			sta sprites+$600+6,x
+   354 26C7 9D 07 46			sta sprites+$600+7,x
+   355 26CA 9D 08 46			sta sprites+$600+8,x
+   356 26CD 9D 09 46			sta sprites+$600+9,x
+   357 26D0 9D 0A 46			sta sprites+$600+10,x
+   358 26D3 9D 0B 46			sta sprites+$600+11,x
+   359 26D6 A9 F8			lda #248
+   360 26D8 9D 00 46			sta sprites+$600+0,x
+   361 26DB 9D 01 46			sta sprites+$600+1,x
+   362 26DE 9D 0C 46			sta sprites+$600+12,x
+   363 26E1 9D 0D 46			sta sprites+$600+13,x
+   364
+   365 26E4 4C B5 4A			jmp multi.ret23
+   366 				.endl
+   367
+   368 26E7			.local	shp4
+   369
+   370 26E7			_01
+   371 26E7 A9 00			lda #0
+   372 26E9 9D 00 45			sta sprites+$500+0,x
+   373 26EC 9D 01 45			sta sprites+$500+1,x
+   374 26EF 9D 06 45			sta sprites+$500+6,x
+   375 26F2 9D 07 45			sta sprites+$500+7,x
+   376 26F5 9D 0C 45			sta sprites+$500+12,x
+   377 26F8 9D 0D 45			sta sprites+$500+13,x
+   378 26FB 9D 0E 44			sta sprites+$400+14,x
+   379 26FE 9D 0F 44			sta sprites+$400+15,x
+   380 2701 A9 20			lda #32
+   381 2703 9D 04 45			sta sprites+$500+4,x
+   382 2706 9D 05 45			sta sprites+$500+5,x
+   383 2709 9D 0A 45			sta sprites+$500+10,x
+   384 270C 9D 0B 45			sta sprites+$500+11,x
+   385 270F A9 3C			lda #60
+   386 2711 9D 08 45			sta sprites+$500+8,x
+   387 2714 9D 09 45			sta sprites+$500+9,x
+   388 2717 A9 3E			lda #62
+   389 2719 9D 02 45			sta sprites+$500+2,x
+   390 271C 9D 03 45			sta sprites+$500+3,x
+   391 271F A9 7E			lda #126
+   392 2721 9D 0E 45			sta sprites+$500+14,x
+   393 2724 9D 0F 45			sta sprites+$500+15,x
+   394 2727 A9 C0			lda #192
+   395 2729 9D 02 44			sta sprites+$400+2,x
+   396 272C 9D 03 44			sta sprites+$400+3,x
+   397 272F 9D 04 44			sta sprites+$400+4,x
+   398 2732 9D 05 44			sta sprites+$400+5,x
+   399 2735 9D 08 44			sta sprites+$400+8,x
+   400 2738 9D 09 44			sta sprites+$400+9,x
+   401 273B 9D 0A 44			sta sprites+$400+10,x
+   402 273E 9D 0B 44			sta sprites+$400+11,x
+   403 2741 A9 F8			lda #248
+   404 2743 9D 06 44			sta sprites+$400+6,x
+   405 2746 9D 07 44			sta sprites+$400+7,x
+   406 2749 A9 FC			lda #252
+   407 274B 9D 00 44			sta sprites+$400+0,x
+   408 274E 9D 01 44			sta sprites+$400+1,x
+   409 2751 9D 0C 44			sta sprites+$400+12,x
+   410 2754 9D 0D 44			sta sprites+$400+13,x
+   411
+   412 2757 4C 74 4A			jmp multi.ret01
+   413
+   414 275A			_23
+   415 275A A9 00			lda #0
+   416 275C 9D 00 47			sta sprites+$700+0,x
+   417 275F 9D 01 47			sta sprites+$700+1,x
+   418 2762 9D 06 47			sta sprites+$700+6,x
+   419 2765 9D 07 47			sta sprites+$700+7,x
+   420 2768 9D 0C 47			sta sprites+$700+12,x
+   421 276B 9D 0D 47			sta sprites+$700+13,x
+   422 276E 9D 0E 46			sta sprites+$600+14,x
+   423 2771 9D 0F 46			sta sprites+$600+15,x
+   424 2774 A9 20			lda #32
+   425 2776 9D 04 47			sta sprites+$700+4,x
+   426 2779 9D 05 47			sta sprites+$700+5,x
+   427 277C 9D 0A 47			sta sprites+$700+10,x
+   428 277F 9D 0B 47			sta sprites+$700+11,x
+   429 2782 A9 3C			lda #60
+   430 2784 9D 08 47			sta sprites+$700+8,x
+   431 2787 9D 09 47			sta sprites+$700+9,x
+   432 278A A9 3E			lda #62
+   433 278C 9D 02 47			sta sprites+$700+2,x
+   434 278F 9D 03 47			sta sprites+$700+3,x
+   435 2792 A9 7E			lda #126
+   436 2794 9D 0E 47			sta sprites+$700+14,x
+   437 2797 9D 0F 47			sta sprites+$700+15,x
+   438 279A A9 C0			lda #192
+   439 279C 9D 02 46			sta sprites+$600+2,x
+   440 279F 9D 03 46			sta sprites+$600+3,x
+   441 27A2 9D 04 46			sta sprites+$600+4,x
+   442 27A5 9D 05 46			sta sprites+$600+5,x
+   443 27A8 9D 08 46			sta sprites+$600+8,x
+   444 27AB 9D 09 46			sta sprites+$600+9,x
+   445 27AE 9D 0A 46			sta sprites+$600+10,x
+   446 27B1 9D 0B 46			sta sprites+$600+11,x
+   447 27B4 A9 F8			lda #248
+   448 27B6 9D 06 46			sta sprites+$600+6,x
+   449 27B9 9D 07 46			sta sprites+$600+7,x
+   450 27BC A9 FC			lda #252
+   451 27BE 9D 00 46			sta sprites+$600+0,x
+   452 27C1 9D 01 46			sta sprites+$600+1,x
+   453 27C4 9D 0C 46			sta sprites+$600+12,x
+   454 27C7 9D 0D 46			sta sprites+$600+13,x
+   455
+   456 27CA 4C B5 4A			jmp multi.ret23
+   457 				.endl
+   458
+   459 27CD			.local	shp5
+   460
+   461 27CD			_01
+   462 27CD A9 00			lda #0
+   463 27CF 9D 00 45			sta sprites+$500+0,x
+   464 27D2 9D 01 45			sta sprites+$500+1,x
+   465 27D5 9D 06 45			sta sprites+$500+6,x
+   466 27D8 9D 07 45			sta sprites+$500+7,x
+   467 27DB 9D 0E 44			sta sprites+$400+14,x
+   468 27DE 9D 0F 44			sta sprites+$400+15,x
+   469 27E1 A9 20			lda #32
+   470 27E3 9D 04 45			sta sprites+$500+4,x
+   471 27E6 9D 05 45			sta sprites+$500+5,x
+   472 27E9 9D 0A 45			sta sprites+$500+10,x
+   473 27EC 9D 0B 45			sta sprites+$500+11,x
+   474 27EF 9D 0C 45			sta sprites+$500+12,x
+   475 27F2 9D 0D 45			sta sprites+$500+13,x
+   476 27F5 A9 3C			lda #60
+   477 27F7 9D 08 45			sta sprites+$500+8,x
+   478 27FA 9D 09 45			sta sprites+$500+9,x
+   479 27FD A9 3E			lda #62
+   480 27FF 9D 02 45			sta sprites+$500+2,x
+   481 2802 9D 03 45			sta sprites+$500+3,x
+   482 2805 A9 60			lda #96
+   483 2807 9D 0E 45			sta sprites+$500+14,x
+   484 280A 9D 0F 45			sta sprites+$500+15,x
+   485 280D A9 C0			lda #192
+   486 280F 9D 02 44			sta sprites+$400+2,x
+   487 2812 9D 03 44			sta sprites+$400+3,x
+   488 2815 9D 04 44			sta sprites+$400+4,x
+   489 2818 9D 05 44			sta sprites+$400+5,x
+   490 281B 9D 08 44			sta sprites+$400+8,x
+   491 281E 9D 09 44			sta sprites+$400+9,x
+   492 2821 9D 0A 44			sta sprites+$400+10,x
+   493 2824 9D 0B 44			sta sprites+$400+11,x
+   494 2827 9D 0C 44			sta sprites+$400+12,x
+   495 282A 9D 0D 44			sta sprites+$400+13,x
+   496 282D A9 F8			lda #248
+   497 282F 9D 06 44			sta sprites+$400+6,x
+   498 2832 9D 07 44			sta sprites+$400+7,x
+   499 2835 A9 FC			lda #252
+   500 2837 9D 00 44			sta sprites+$400+0,x
+   501 283A 9D 01 44			sta sprites+$400+1,x
+   502
+   503 283D 4C 74 4A			jmp multi.ret01
+   504
+   505 2840			_23
+   506 2840 A9 00			lda #0
+   507 2842 9D 00 47			sta sprites+$700+0,x
+   508 2845 9D 01 47			sta sprites+$700+1,x
+   509 2848 9D 06 47			sta sprites+$700+6,x
+   510 284B 9D 07 47			sta sprites+$700+7,x
+   511 284E 9D 0E 46			sta sprites+$600+14,x
+   512 2851 9D 0F 46			sta sprites+$600+15,x
+   513 2854 A9 20			lda #32
+   514 2856 9D 04 47			sta sprites+$700+4,x
+   515 2859 9D 05 47			sta sprites+$700+5,x
+   516 285C 9D 0A 47			sta sprites+$700+10,x
+   517 285F 9D 0B 47			sta sprites+$700+11,x
+   518 2862 9D 0C 47			sta sprites+$700+12,x
+   519 2865 9D 0D 47			sta sprites+$700+13,x
+   520 2868 A9 3C			lda #60
+   521 286A 9D 08 47			sta sprites+$700+8,x
+   522 286D 9D 09 47			sta sprites+$700+9,x
+   523 2870 A9 3E			lda #62
+   524 2872 9D 02 47			sta sprites+$700+2,x
+   525 2875 9D 03 47			sta sprites+$700+3,x
+   526 2878 A9 60			lda #96
+   527 287A 9D 0E 47			sta sprites+$700+14,x
+   528 287D 9D 0F 47			sta sprites+$700+15,x
+   529 2880 A9 C0			lda #192
+   530 2882 9D 02 46			sta sprites+$600+2,x
+   531 2885 9D 03 46			sta sprites+$600+3,x
+   532 2888 9D 04 46			sta sprites+$600+4,x
+   533 288B 9D 05 46			sta sprites+$600+5,x
+   534 288E 9D 08 46			sta sprites+$600+8,x
+   535 2891 9D 09 46			sta sprites+$600+9,x
+   536 2894 9D 0A 46			sta sprites+$600+10,x
+   537 2897 9D 0B 46			sta sprites+$600+11,x
+   538 289A 9D 0C 46			sta sprites+$600+12,x
+   539 289D 9D 0D 46			sta sprites+$600+13,x
+   540 28A0 A9 F8			lda #248
+   541 28A2 9D 06 46			sta sprites+$600+6,x
+   542 28A5 9D 07 46			sta sprites+$600+7,x
+   543 28A8 A9 FC			lda #252
+   544 28AA 9D 00 46			sta sprites+$600+0,x
+   545 28AD 9D 01 46			sta sprites+$600+1,x
+   546
+   547 28B0 4C B5 4A			jmp multi.ret23
+   548 				.endl
+   549
+   550 28B3			.local	shp6
+   551
+   552 28B3			_01
+   553 28B3 A9 00			lda #0
+   554 28B5 9D 00 45			sta sprites+$500+0,x
+   555 28B8 9D 01 45			sta sprites+$500+1,x
+   556 28BB 9D 0E 44			sta sprites+$400+14,x
+   557 28BE 9D 0F 44			sta sprites+$400+15,x
+   558 28C1 A9 02			lda #2
+   559 28C3 9D 0C 45			sta sprites+$500+12,x
+   560 28C6 9D 0D 45			sta sprites+$500+13,x
+   561 28C9 A9 20			lda #32
+   562 28CB 9D 06 45			sta sprites+$500+6,x
+   563 28CE 9D 07 45			sta sprites+$500+7,x
+   564 28D1 A9 22			lda #34
+   565 28D3 9D 08 45			sta sprites+$500+8,x
+   566 28D6 9D 09 45			sta sprites+$500+9,x
+   567 28D9 9D 0A 45			sta sprites+$500+10,x
+   568 28DC 9D 0B 45			sta sprites+$500+11,x
+   569 28DF A9 26			lda #38
+   570 28E1 9D 04 45			sta sprites+$500+4,x
+   571 28E4 9D 05 45			sta sprites+$500+5,x
+   572 28E7 A9 30			lda #48
+   573 28E9 9D 02 45			sta sprites+$500+2,x
+   574 28EC 9D 03 45			sta sprites+$500+3,x
+   575 28EF A9 3E			lda #62
+   576 28F1 9D 0E 45			sta sprites+$500+14,x
+   577 28F4 9D 0F 45			sta sprites+$500+15,x
+   578 28F7 A9 78			lda #120
+   579 28F9 9D 00 44			sta sprites+$400+0,x
+   580 28FC 9D 01 44			sta sprites+$400+1,x
+   581 28FF A9 7C			lda #124
+   582 2901 9D 0C 44			sta sprites+$400+12,x
+   583 2904 9D 0D 44			sta sprites+$400+13,x
+   584 2907 A9 C0			lda #192
+   585 2909 9D 04 44			sta sprites+$400+4,x
+   586 290C 9D 05 44			sta sprites+$400+5,x
+   587 290F A9 CC			lda #204
+   588 2911 9D 02 44			sta sprites+$400+2,x
+   589 2914 9D 03 44			sta sprites+$400+3,x
+   590 2917 9D 08 44			sta sprites+$400+8,x
+   591 291A 9D 09 44			sta sprites+$400+9,x
+   592 291D 9D 0A 44			sta sprites+$400+10,x
+   593 2920 9D 0B 44			sta sprites+$400+11,x
+   594 2923 A9 DC			lda #220
+   595 2925 9D 06 44			sta sprites+$400+6,x
+   596 2928 9D 07 44			sta sprites+$400+7,x
+   597
+   598 292B 4C 74 4A			jmp multi.ret01
+   599
+   600 292E			_23
+   601 292E A9 00			lda #0
+   602 2930 9D 00 47			sta sprites+$700+0,x
+   603 2933 9D 01 47			sta sprites+$700+1,x
+   604 2936 9D 0E 46			sta sprites+$600+14,x
+   605 2939 9D 0F 46			sta sprites+$600+15,x
+   606 293C A9 02			lda #2
+   607 293E 9D 0C 47			sta sprites+$700+12,x
+   608 2941 9D 0D 47			sta sprites+$700+13,x
+   609 2944 A9 20			lda #32
+   610 2946 9D 06 47			sta sprites+$700+6,x
+   611 2949 9D 07 47			sta sprites+$700+7,x
+   612 294C A9 22			lda #34
+   613 294E 9D 08 47			sta sprites+$700+8,x
+   614 2951 9D 09 47			sta sprites+$700+9,x
+   615 2954 9D 0A 47			sta sprites+$700+10,x
+   616 2957 9D 0B 47			sta sprites+$700+11,x
+   617 295A A9 26			lda #38
+   618 295C 9D 04 47			sta sprites+$700+4,x
+   619 295F 9D 05 47			sta sprites+$700+5,x
+   620 2962 A9 30			lda #48
+   621 2964 9D 02 47			sta sprites+$700+2,x
+   622 2967 9D 03 47			sta sprites+$700+3,x
+   623 296A A9 3E			lda #62
+   624 296C 9D 0E 47			sta sprites+$700+14,x
+   625 296F 9D 0F 47			sta sprites+$700+15,x
+   626 2972 A9 78			lda #120
+   627 2974 9D 00 46			sta sprites+$600+0,x
+   628 2977 9D 01 46			sta sprites+$600+1,x
+   629 297A A9 7C			lda #124
+   630 297C 9D 0C 46			sta sprites+$600+12,x
+   631 297F 9D 0D 46			sta sprites+$600+13,x
+   632 2982 A9 C0			lda #192
+   633 2984 9D 04 46			sta sprites+$600+4,x
+   634 2987 9D 05 46			sta sprites+$600+5,x
+   635 298A A9 CC			lda #204
+   636 298C 9D 02 46			sta sprites+$600+2,x
+   637 298F 9D 03 46			sta sprites+$600+3,x
+   638 2992 9D 08 46			sta sprites+$600+8,x
+   639 2995 9D 09 46			sta sprites+$600+9,x
+   640 2998 9D 0A 46			sta sprites+$600+10,x
+   641 299B 9D 0B 46			sta sprites+$600+11,x
+   642 299E A9 DC			lda #220
+   643 29A0 9D 06 46			sta sprites+$600+6,x
+   644 29A3 9D 07 46			sta sprites+$600+7,x
+   645
+   646 29A6 4C B5 4A			jmp multi.ret23
+   647 				.endl
+   648
+   649 29A9			.local	shp7
+   650
+   651 29A9			_01
+   652 29A9 A9 00			lda #0
+   653 29AB 9D 00 45			sta sprites+$500+0,x
+   654 29AE 9D 01 45			sta sprites+$500+1,x
+   655 29B1 9D 0E 44			sta sprites+$400+14,x
+   656 29B4 9D 0F 44			sta sprites+$400+15,x
+   657 29B7 A9 02			lda #2
+   658 29B9 9D 06 45			sta sprites+$500+6,x
+   659 29BC 9D 07 45			sta sprites+$500+7,x
+   660 29BF A9 22			lda #34
+   661 29C1 9D 02 45			sta sprites+$500+2,x
+   662 29C4 9D 03 45			sta sprites+$500+3,x
+   663 29C7 9D 04 45			sta sprites+$500+4,x
+   664 29CA 9D 05 45			sta sprites+$500+5,x
+   665 29CD 9D 0A 45			sta sprites+$500+10,x
+   666 29D0 9D 0B 45			sta sprites+$500+11,x
+   667 29D3 9D 0C 45			sta sprites+$500+12,x
+   668 29D6 9D 0D 45			sta sprites+$500+13,x
+   669 29D9 A9 32			lda #50
+   670 29DB 9D 08 45			sta sprites+$500+8,x
+   671 29DE 9D 09 45			sta sprites+$500+9,x
+   672 29E1 A9 66			lda #102
+   673 29E3 9D 0E 45			sta sprites+$500+14,x
+   674 29E6 9D 0F 45			sta sprites+$500+15,x
+   675 29E9 A9 CC			lda #204
+   676 29EB 9D 00 44			sta sprites+$400+0,x
+   677 29EE 9D 01 44			sta sprites+$400+1,x
+   678 29F1 9D 02 44			sta sprites+$400+2,x
+   679 29F4 9D 03 44			sta sprites+$400+3,x
+   680 29F7 9D 04 44			sta sprites+$400+4,x
+   681 29FA 9D 05 44			sta sprites+$400+5,x
+   682 29FD 9D 08 44			sta sprites+$400+8,x
+   683 2A00 9D 09 44			sta sprites+$400+9,x
+   684 2A03 9D 0A 44			sta sprites+$400+10,x
+   685 2A06 9D 0B 44			sta sprites+$400+11,x
+   686 2A09 9D 0C 44			sta sprites+$400+12,x
+   687 2A0C 9D 0D 44			sta sprites+$400+13,x
+   688 2A0F A9 FC			lda #252
+   689 2A11 9D 06 44			sta sprites+$400+6,x
+   690 2A14 9D 07 44			sta sprites+$400+7,x
+   691
+   692 2A17 4C 74 4A			jmp multi.ret01
+   693
+   694 2A1A			_23
+   695 2A1A A9 00			lda #0
+   696 2A1C 9D 00 47			sta sprites+$700+0,x
+   697 2A1F 9D 01 47			sta sprites+$700+1,x
+   698 2A22 9D 0E 46			sta sprites+$600+14,x
+   699 2A25 9D 0F 46			sta sprites+$600+15,x
+   700 2A28 A9 02			lda #2
+   701 2A2A 9D 06 47			sta sprites+$700+6,x
+   702 2A2D 9D 07 47			sta sprites+$700+7,x
+   703 2A30 A9 22			lda #34
+   704 2A32 9D 02 47			sta sprites+$700+2,x
+   705 2A35 9D 03 47			sta sprites+$700+3,x
+   706 2A38 9D 04 47			sta sprites+$700+4,x
+   707 2A3B 9D 05 47			sta sprites+$700+5,x
+   708 2A3E 9D 0A 47			sta sprites+$700+10,x
+   709 2A41 9D 0B 47			sta sprites+$700+11,x
+   710 2A44 9D 0C 47			sta sprites+$700+12,x
+   711 2A47 9D 0D 47			sta sprites+$700+13,x
+   712 2A4A A9 32			lda #50
+   713 2A4C 9D 08 47			sta sprites+$700+8,x
+   714 2A4F 9D 09 47			sta sprites+$700+9,x
+   715 2A52 A9 66			lda #102
+   716 2A54 9D 0E 47			sta sprites+$700+14,x
+   717 2A57 9D 0F 47			sta sprites+$700+15,x
+   718 2A5A A9 CC			lda #204
+   719 2A5C 9D 00 46			sta sprites+$600+0,x
+   720 2A5F 9D 01 46			sta sprites+$600+1,x
+   721 2A62 9D 02 46			sta sprites+$600+2,x
+   722 2A65 9D 03 46			sta sprites+$600+3,x
+   723 2A68 9D 04 46			sta sprites+$600+4,x
+   724 2A6B 9D 05 46			sta sprites+$600+5,x
+   725 2A6E 9D 08 46			sta sprites+$600+8,x
+   726 2A71 9D 09 46			sta sprites+$600+9,x
+   727 2A74 9D 0A 46			sta sprites+$600+10,x
+   728 2A77 9D 0B 46			sta sprites+$600+11,x
+   729 2A7A 9D 0C 46			sta sprites+$600+12,x
+   730 2A7D 9D 0D 46			sta sprites+$600+13,x
+   731 2A80 A9 FC			lda #252
+   732 2A82 9D 06 46			sta sprites+$600+6,x
+   733 2A85 9D 07 46			sta sprites+$600+7,x
+   734
+   735 2A88 4C B5 4A			jmp multi.ret23
+   736 				.endl
+   181
+   182 				.endl
+   183
+   184
+   185 2A8B			.local	f1
+   186 2A8B					addShape 8, shp0
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2A8B A9 2C 8D 10 01 A9 + 	mwa #SHP0._01 shape_tab01+8*2
+     2 2A95 A9 9B 8D 10 02 A9 + 	mwa #SHP0._23 shape_tab23+8*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   187 2A9F					addShape 9, shp1
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2A9F A9 0A 8D 12 01 A9 + 	mwa #SHP1._01 shape_tab01+9*2
+     2 2AA9 A9 7F 8D 12 02 A9 + 	mwa #SHP1._23 shape_tab23+9*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   188 2AB3					addShape 10, shp2
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2AB3 A9 F4 8D 14 01 A9 + 	mwa #SHP2._01 shape_tab01+10*2
+     2 2ABD A9 69 8D 14 02 A9 + 	mwa #SHP2._23 shape_tab23+10*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   189 2AC7					addShape 11, shp3
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2AC7 A9 DE 8D 16 01 A9 + 	mwa #SHP3._01 shape_tab01+11*2
+     2 2AD1 A9 4B 8D 16 02 A9 + 	mwa #SHP3._23 shape_tab23+11*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   190 2ADB					addShape 12, shp4
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2ADB A9 B8 8D 18 01 A9 + 	mwa #SHP4._01 shape_tab01+12*2
+     2 2AE5 A9 2D 8D 18 02 A9 + 	mwa #SHP4._23 shape_tab23+12*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   191 2AEF					addShape 13, shp5
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2AEF A9 A2 8D 1A 01 A9 + 	mwa #SHP5._01 shape_tab01+13*2
+     2 2AF9 A9 17 8D 1A 02 A9 + 	mwa #SHP5._23 shape_tab23+13*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   192 2B03					addShape 14, shp6
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2B03 A9 8C 8D 1C 01 A9 + 	mwa #SHP6._01 shape_tab01+14*2
+     2 2B0D A9 FD 8D 1C 02 A9 + 	mwa #SHP6._23 shape_tab23+14*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   193 2B17					addShape 15, shp7
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 2B17 A9 6E 8D 1E 01 A9 + 	mwa #SHP7._01 shape_tab01+15*2
+     2 2B21 A9 E5 8D 1E 02 A9 + 	mwa #SHP7._23 shape_tab23+15*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   194
+   195 2B2B 60					rts
+   196
+   197 2B2C				icl '..\convert\font1.asm'
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\..\convert\font1.asm
+     1
+     2 2B2C			.local	shp0
+     3
+     4 2B2C			_01
+     5 2B2C A9 00			lda #0
+     6 2B2E 9D 00 45			sta sprites+$500+0,x
+     7 2B31 9D 01 45			sta sprites+$500+1,x
+     8 2B34 9D 0C 45			sta sprites+$500+12,x
+     9 2B37 9D 0D 45			sta sprites+$500+13,x
+    10 2B3A 9D 0E 44			sta sprites+$400+14,x
+    11 2B3D 9D 0F 44			sta sprites+$400+15,x
+    12 2B40 A9 08			lda #8
+    13 2B42 9D 04 45			sta sprites+$500+4,x
+    14 2B45 9D 05 45			sta sprites+$500+5,x
+    15 2B48 9D 06 45			sta sprites+$500+6,x
+    16 2B4B 9D 07 45			sta sprites+$500+7,x
+    17 2B4E 9D 08 45			sta sprites+$500+8,x
+    18 2B51 9D 09 45			sta sprites+$500+9,x
+    19 2B54 9D 0A 45			sta sprites+$500+10,x
+    20 2B57 9D 0B 45			sta sprites+$500+11,x
+    21 2B5A A9 30			lda #48
+    22 2B5C 9D 02 44			sta sprites+$400+2,x
+    23 2B5F 9D 03 44			sta sprites+$400+3,x
+    24 2B62 9D 04 44			sta sprites+$400+4,x
+    25 2B65 9D 05 44			sta sprites+$400+5,x
+    26 2B68 9D 06 44			sta sprites+$400+6,x
+    27 2B6B 9D 07 44			sta sprites+$400+7,x
+    28 2B6E 9D 08 44			sta sprites+$400+8,x
+    29 2B71 9D 09 44			sta sprites+$400+9,x
+    30 2B74 9D 0A 44			sta sprites+$400+10,x
+    31 2B77 9D 0B 44			sta sprites+$400+11,x
+    32 2B7A A9 4E			lda #78
+    33 2B7C 9D 02 45			sta sprites+$500+2,x
+    34 2B7F 9D 03 45			sta sprites+$500+3,x
+    35 2B82 A9 7E			lda #126
+    36 2B84 9D 0E 45			sta sprites+$500+14,x
+    37 2B87 9D 0F 45			sta sprites+$500+15,x
+    38 2B8A A9 FC			lda #252
+    39 2B8C 9D 00 44			sta sprites+$400+0,x
+    40 2B8F 9D 01 44			sta sprites+$400+1,x
+    41 2B92 9D 0C 44			sta sprites+$400+12,x
+    42 2B95 9D 0D 44			sta sprites+$400+13,x
+    43
+    44 2B98 4C 74 4A			jmp multi.ret01
+    45
+    46 2B9B			_23
+    47 2B9B A9 00			lda #0
+    48 2B9D 9D 00 47			sta sprites+$700+0,x
+    49 2BA0 9D 01 47			sta sprites+$700+1,x
+    50 2BA3 9D 0C 47			sta sprites+$700+12,x
+    51 2BA6 9D 0D 47			sta sprites+$700+13,x
+    52 2BA9 9D 0E 46			sta sprites+$600+14,x
+    53 2BAC 9D 0F 46			sta sprites+$600+15,x
+    54 2BAF A9 08			lda #8
+    55 2BB1 9D 04 47			sta sprites+$700+4,x
+    56 2BB4 9D 05 47			sta sprites+$700+5,x
+    57 2BB7 9D 06 47			sta sprites+$700+6,x
+    58 2BBA 9D 07 47			sta sprites+$700+7,x
+    59 2BBD 9D 08 47			sta sprites+$700+8,x
+    60 2BC0 9D 09 47			sta sprites+$700+9,x
+    61 2BC3 9D 0A 47			sta sprites+$700+10,x
+    62 2BC6 9D 0B 47			sta sprites+$700+11,x
+    63 2BC9 A9 30			lda #48
+    64 2BCB 9D 02 46			sta sprites+$600+2,x
+    65 2BCE 9D 03 46			sta sprites+$600+3,x
+    66 2BD1 9D 04 46			sta sprites+$600+4,x
+    67 2BD4 9D 05 46			sta sprites+$600+5,x
+    68 2BD7 9D 06 46			sta sprites+$600+6,x
+    69 2BDA 9D 07 46			sta sprites+$600+7,x
+    70 2BDD 9D 08 46			sta sprites+$600+8,x
+    71 2BE0 9D 09 46			sta sprites+$600+9,x
+    72 2BE3 9D 0A 46			sta sprites+$600+10,x
+    73 2BE6 9D 0B 46			sta sprites+$600+11,x
+    74 2BE9 A9 4E			lda #78
+    75 2BEB 9D 02 47			sta sprites+$700+2,x
+    76 2BEE 9D 03 47			sta sprites+$700+3,x
+    77 2BF1 A9 7E			lda #126
+    78 2BF3 9D 0E 47			sta sprites+$700+14,x
+    79 2BF6 9D 0F 47			sta sprites+$700+15,x
+    80 2BF9 A9 FC			lda #252
+    81 2BFB 9D 00 46			sta sprites+$600+0,x
+    82 2BFE 9D 01 46			sta sprites+$600+1,x
+    83 2C01 9D 0C 46			sta sprites+$600+12,x
+    84 2C04 9D 0D 46			sta sprites+$600+13,x
+    85
+    86 2C07 4C B5 4A			jmp multi.ret23
+    87 				.endl
+    88
+    89 2C0A			.local	shp1
+    90
+    91 2C0A			_01
+    92 2C0A A9 00			lda #0
+    93 2C0C 9D 00 45			sta sprites+$500+0,x
+    94 2C0F 9D 01 45			sta sprites+$500+1,x
+    95 2C12 9D 0E 44			sta sprites+$400+14,x
+    96 2C15 9D 0F 44			sta sprites+$400+15,x
+    97 2C18 A9 02			lda #2
+    98 2C1A 9D 04 45			sta sprites+$500+4,x
+    99 2C1D 9D 05 45			sta sprites+$500+5,x
+   100 2C20 9D 06 45			sta sprites+$500+6,x
+   101 2C23 9D 07 45			sta sprites+$500+7,x
+   102 2C26 9D 08 45			sta sprites+$500+8,x
+   103 2C29 9D 09 45			sta sprites+$500+9,x
+   104 2C2C 9D 0A 45			sta sprites+$500+10,x
+   105 2C2F 9D 0B 45			sta sprites+$500+11,x
+   106 2C32 A9 06			lda #6
+   107 2C34 9D 0C 45			sta sprites+$500+12,x
+   108 2C37 9D 0D 45			sta sprites+$500+13,x
+   109 2C3A A9 0C			lda #12
+   110 2C3C 9D 02 44			sta sprites+$400+2,x
+   111 2C3F 9D 03 44			sta sprites+$400+3,x
+   112 2C42 9D 04 44			sta sprites+$400+4,x
+   113 2C45 9D 05 44			sta sprites+$400+5,x
+   114 2C48 9D 06 44			sta sprites+$400+6,x
+   115 2C4B 9D 07 44			sta sprites+$400+7,x
+   116 2C4E 9D 08 44			sta sprites+$400+8,x
+   117 2C51 9D 09 44			sta sprites+$400+9,x
+   118 2C54 A9 3C			lda #60
+   119 2C56 9D 0E 45			sta sprites+$500+14,x
+   120 2C59 9D 0F 45			sta sprites+$500+15,x
+   121 2C5C A9 72			lda #114
+   122 2C5E 9D 02 45			sta sprites+$500+2,x
+   123 2C61 9D 03 45			sta sprites+$500+3,x
+   124 2C64 A9 78			lda #120
+   125 2C66 9D 0C 44			sta sprites+$400+12,x
+   126 2C69 9D 0D 44			sta sprites+$400+13,x
+   127 2C6C A9 CC			lda #204
+   128 2C6E 9D 0A 44			sta sprites+$400+10,x
+   129 2C71 9D 0B 44			sta sprites+$400+11,x
+   130 2C74 A9 FC			lda #252
+   131 2C76 9D 00 44			sta sprites+$400+0,x
+   132 2C79 9D 01 44			sta sprites+$400+1,x
+   133
+   134 2C7C 4C 74 4A			jmp multi.ret01
+   135
+   136 2C7F			_23
+   137 2C7F A9 00			lda #0
+   138 2C81 9D 00 47			sta sprites+$700+0,x
+   139 2C84 9D 01 47			sta sprites+$700+1,x
+   140 2C87 9D 0E 46			sta sprites+$600+14,x
+   141 2C8A 9D 0F 46			sta sprites+$600+15,x
+   142 2C8D A9 02			lda #2
+   143 2C8F 9D 04 47			sta sprites+$700+4,x
+   144 2C92 9D 05 47			sta sprites+$700+5,x
+   145 2C95 9D 06 47			sta sprites+$700+6,x
+   146 2C98 9D 07 47			sta sprites+$700+7,x
+   147 2C9B 9D 08 47			sta sprites+$700+8,x
+   148 2C9E 9D 09 47			sta sprites+$700+9,x
+   149 2CA1 9D 0A 47			sta sprites+$700+10,x
+   150 2CA4 9D 0B 47			sta sprites+$700+11,x
+   151 2CA7 A9 06			lda #6
+   152 2CA9 9D 0C 47			sta sprites+$700+12,x
+   153 2CAC 9D 0D 47			sta sprites+$700+13,x
+   154 2CAF A9 0C			lda #12
+   155 2CB1 9D 02 46			sta sprites+$600+2,x
+   156 2CB4 9D 03 46			sta sprites+$600+3,x
+   157 2CB7 9D 04 46			sta sprites+$600+4,x
+   158 2CBA 9D 05 46			sta sprites+$600+5,x
+   159 2CBD 9D 06 46			sta sprites+$600+6,x
+   160 2CC0 9D 07 46			sta sprites+$600+7,x
+   161 2CC3 9D 08 46			sta sprites+$600+8,x
+   162 2CC6 9D 09 46			sta sprites+$600+9,x
+   163 2CC9 A9 3C			lda #60
+   164 2CCB 9D 0E 47			sta sprites+$700+14,x
+   165 2CCE 9D 0F 47			sta sprites+$700+15,x
+   166 2CD1 A9 72			lda #114
+   167 2CD3 9D 02 47			sta sprites+$700+2,x
+   168 2CD6 9D 03 47			sta sprites+$700+3,x
+   169 2CD9 A9 78			lda #120
+   170 2CDB 9D 0C 46			sta sprites+$600+12,x
+   171 2CDE 9D 0D 46			sta sprites+$600+13,x
+   172 2CE1 A9 CC			lda #204
+   173 2CE3 9D 0A 46			sta sprites+$600+10,x
+   174 2CE6 9D 0B 46			sta sprites+$600+11,x
+   175 2CE9 A9 FC			lda #252
+   176 2CEB 9D 00 46			sta sprites+$600+0,x
+   177 2CEE 9D 01 46			sta sprites+$600+1,x
+   178
+   179 2CF1 4C B5 4A			jmp multi.ret23
+   180 				.endl
+   181
+   182 2CF4			.local	shp2
+   183
+   184 2CF4			_01
+   185 2CF4 A9 00			lda #0
+   186 2CF6 9D 00 45			sta sprites+$500+0,x
+   187 2CF9 9D 01 45			sta sprites+$500+1,x
+   188 2CFC 9D 0E 44			sta sprites+$400+14,x
+   189 2CFF 9D 0F 44			sta sprites+$400+15,x
+   190 2D02 A9 0C			lda #12
+   191 2D04 9D 06 45			sta sprites+$500+6,x
+   192 2D07 9D 07 45			sta sprites+$500+7,x
+   193 2D0A A9 20			lda #32
+   194 2D0C 9D 08 45			sta sprites+$500+8,x
+   195 2D0F 9D 09 45			sta sprites+$500+9,x
+   196 2D12 9D 0A 45			sta sprites+$500+10,x
+   197 2D15 9D 0B 45			sta sprites+$500+11,x
+   198 2D18 A9 22			lda #34
+   199 2D1A 9D 02 45			sta sprites+$500+2,x
+   200 2D1D 9D 03 45			sta sprites+$500+3,x
+   201 2D20 9D 0C 45			sta sprites+$500+12,x
+   202 2D23 9D 0D 45			sta sprites+$500+13,x
+   203 2D26 A9 26			lda #38
+   204 2D28 9D 04 45			sta sprites+$500+4,x
+   205 2D2B 9D 05 45			sta sprites+$500+5,x
+   206 2D2E A9 66			lda #102
+   207 2D30 9D 0E 45			sta sprites+$500+14,x
+   208 2D33 9D 0F 45			sta sprites+$500+15,x
+   209 2D36 A9 CC			lda #204
+   210 2D38 9D 00 44			sta sprites+$400+0,x
+   211 2D3B 9D 01 44			sta sprites+$400+1,x
+   212 2D3E 9D 02 44			sta sprites+$400+2,x
+   213 2D41 9D 03 44			sta sprites+$400+3,x
+   214 2D44 9D 0A 44			sta sprites+$400+10,x
+   215 2D47 9D 0B 44			sta sprites+$400+11,x
+   216 2D4A 9D 0C 44			sta sprites+$400+12,x
+   217 2D4D 9D 0D 44			sta sprites+$400+13,x
+   218 2D50 A9 D8			lda #216
+   219 2D52 9D 04 44			sta sprites+$400+4,x
+   220 2D55 9D 05 44			sta sprites+$400+5,x
+   221 2D58 9D 08 44			sta sprites+$400+8,x
+   222 2D5B 9D 09 44			sta sprites+$400+9,x
+   223 2D5E A9 F0			lda #240
+   224 2D60 9D 06 44			sta sprites+$400+6,x
+   225 2D63 9D 07 44			sta sprites+$400+7,x
+   226
+   227 2D66 4C 74 4A			jmp multi.ret01
+   228
+   229 2D69			_23
+   230 2D69 A9 00			lda #0
+   231 2D6B 9D 00 47			sta sprites+$700+0,x
+   232 2D6E 9D 01 47			sta sprites+$700+1,x
+   233 2D71 9D 0E 46			sta sprites+$600+14,x
+   234 2D74 9D 0F 46			sta sprites+$600+15,x
+   235 2D77 A9 0C			lda #12
+   236 2D79 9D 06 47			sta sprites+$700+6,x
+   237 2D7C 9D 07 47			sta sprites+$700+7,x
+   238 2D7F A9 20			lda #32
+   239 2D81 9D 08 47			sta sprites+$700+8,x
+   240 2D84 9D 09 47			sta sprites+$700+9,x
+   241 2D87 9D 0A 47			sta sprites+$700+10,x
+   242 2D8A 9D 0B 47			sta sprites+$700+11,x
+   243 2D8D A9 22			lda #34
+   244 2D8F 9D 02 47			sta sprites+$700+2,x
+   245 2D92 9D 03 47			sta sprites+$700+3,x
+   246 2D95 9D 0C 47			sta sprites+$700+12,x
+   247 2D98 9D 0D 47			sta sprites+$700+13,x
+   248 2D9B A9 26			lda #38
+   249 2D9D 9D 04 47			sta sprites+$700+4,x
+   250 2DA0 9D 05 47			sta sprites+$700+5,x
+   251 2DA3 A9 66			lda #102
+   252 2DA5 9D 0E 47			sta sprites+$700+14,x
+   253 2DA8 9D 0F 47			sta sprites+$700+15,x
+   254 2DAB A9 CC			lda #204
+   255 2DAD 9D 00 46			sta sprites+$600+0,x
+   256 2DB0 9D 01 46			sta sprites+$600+1,x
+   257 2DB3 9D 02 46			sta sprites+$600+2,x
+   258 2DB6 9D 03 46			sta sprites+$600+3,x
+   259 2DB9 9D 0A 46			sta sprites+$600+10,x
+   260 2DBC 9D 0B 46			sta sprites+$600+11,x
+   261 2DBF 9D 0C 46			sta sprites+$600+12,x
+   262 2DC2 9D 0D 46			sta sprites+$600+13,x
+   263 2DC5 A9 D8			lda #216
+   264 2DC7 9D 04 46			sta sprites+$600+4,x
+   265 2DCA 9D 05 46			sta sprites+$600+5,x
+   266 2DCD 9D 08 46			sta sprites+$600+8,x
+   267 2DD0 9D 09 46			sta sprites+$600+9,x
+   268 2DD3 A9 F0			lda #240
+   269 2DD5 9D 06 46			sta sprites+$600+6,x
+   270 2DD8 9D 07 46			sta sprites+$600+7,x
+   271
+   272 2DDB 4C B5 4A			jmp multi.ret23
+   273 				.endl
+   274
+   275 2DDE			.local	shp3
+   276
+   277 2DDE			_01
+   278 2DDE A9 00			lda #0
+   279 2DE0 9D 00 45			sta sprites+$500+0,x
+   280 2DE3 9D 01 45			sta sprites+$500+1,x
+   281 2DE6 9D 0C 45			sta sprites+$500+12,x
+   282 2DE9 9D 0D 45			sta sprites+$500+13,x
+   283 2DEC 9D 0E 44			sta sprites+$400+14,x
+   284 2DEF 9D 0F 44			sta sprites+$400+15,x
+   285 2DF2 A9 20			lda #32
+   286 2DF4 9D 02 45			sta sprites+$500+2,x
+   287 2DF7 9D 03 45			sta sprites+$500+3,x
+   288 2DFA 9D 04 45			sta sprites+$500+4,x
+   289 2DFD 9D 05 45			sta sprites+$500+5,x
+   290 2E00 9D 06 45			sta sprites+$500+6,x
+   291 2E03 9D 07 45			sta sprites+$500+7,x
+   292 2E06 9D 08 45			sta sprites+$500+8,x
+   293 2E09 9D 09 45			sta sprites+$500+9,x
+   294 2E0C 9D 0A 45			sta sprites+$500+10,x
+   295 2E0F 9D 0B 45			sta sprites+$500+11,x
+   296 2E12 A9 7E			lda #126
+   297 2E14 9D 0E 45			sta sprites+$500+14,x
+   298 2E17 9D 0F 45			sta sprites+$500+15,x
+   299 2E1A A9 C0			lda #192
+   300 2E1C 9D 00 44			sta sprites+$400+0,x
+   301 2E1F 9D 01 44			sta sprites+$400+1,x
+   302 2E22 9D 02 44			sta sprites+$400+2,x
+   303 2E25 9D 03 44			sta sprites+$400+3,x
+   304 2E28 9D 04 44			sta sprites+$400+4,x
+   305 2E2B 9D 05 44			sta sprites+$400+5,x
+   306 2E2E 9D 06 44			sta sprites+$400+6,x
+   307 2E31 9D 07 44			sta sprites+$400+7,x
+   308 2E34 9D 08 44			sta sprites+$400+8,x
+   309 2E37 9D 09 44			sta sprites+$400+9,x
+   310 2E3A 9D 0A 44			sta sprites+$400+10,x
+   311 2E3D 9D 0B 44			sta sprites+$400+11,x
+   312 2E40 A9 FC			lda #252
+   313 2E42 9D 0C 44			sta sprites+$400+12,x
+   314 2E45 9D 0D 44			sta sprites+$400+13,x
+   315
+   316 2E48 4C 74 4A			jmp multi.ret01
+   317
+   318 2E4B			_23
+   319 2E4B A9 00			lda #0
+   320 2E4D 9D 00 47			sta sprites+$700+0,x
+   321 2E50 9D 01 47			sta sprites+$700+1,x
+   322 2E53 9D 0C 47			sta sprites+$700+12,x
+   323 2E56 9D 0D 47			sta sprites+$700+13,x
+   324 2E59 9D 0E 46			sta sprites+$600+14,x
+   325 2E5C 9D 0F 46			sta sprites+$600+15,x
+   326 2E5F A9 20			lda #32
+   327 2E61 9D 02 47			sta sprites+$700+2,x
+   328 2E64 9D 03 47			sta sprites+$700+3,x
+   329 2E67 9D 04 47			sta sprites+$700+4,x
+   330 2E6A 9D 05 47			sta sprites+$700+5,x
+   331 2E6D 9D 06 47			sta sprites+$700+6,x
+   332 2E70 9D 07 47			sta sprites+$700+7,x
+   333 2E73 9D 08 47			sta sprites+$700+8,x
+   334 2E76 9D 09 47			sta sprites+$700+9,x
+   335 2E79 9D 0A 47			sta sprites+$700+10,x
+   336 2E7C 9D 0B 47			sta sprites+$700+11,x
+   337 2E7F A9 7E			lda #126
+   338 2E81 9D 0E 47			sta sprites+$700+14,x
+   339 2E84 9D 0F 47			sta sprites+$700+15,x
+   340 2E87 A9 C0			lda #192
+   341 2E89 9D 00 46			sta sprites+$600+0,x
+   342 2E8C 9D 01 46			sta sprites+$600+1,x
+   343 2E8F 9D 02 46			sta sprites+$600+2,x
+   344 2E92 9D 03 46			sta sprites+$600+3,x
+   345 2E95 9D 04 46			sta sprites+$600+4,x
+   346 2E98 9D 05 46			sta sprites+$600+5,x
+   347 2E9B 9D 06 46			sta sprites+$600+6,x
+   348 2E9E 9D 07 46			sta sprites+$600+7,x
+   349 2EA1 9D 08 46			sta sprites+$600+8,x
+   350 2EA4 9D 09 46			sta sprites+$600+9,x
+   351 2EA7 9D 0A 46			sta sprites+$600+10,x
+   352 2EAA 9D 0B 46			sta sprites+$600+11,x
+   353 2EAD A9 FC			lda #252
+   354 2EAF 9D 0C 46			sta sprites+$600+12,x
+   355 2EB2 9D 0D 46			sta sprites+$600+13,x
+   356
+   357 2EB5 4C B5 4A			jmp multi.ret23
+   358 				.endl
+   359
+   360 2EB8			.local	shp4
+   361
+   362 2EB8			_01
+   363 2EB8 A9 00			lda #0
+   364 2EBA 9D 00 45			sta sprites+$500+0,x
+   365 2EBD 9D 01 45			sta sprites+$500+1,x
+   366 2EC0 9D 0E 44			sta sprites+$400+14,x
+   367 2EC3 9D 0F 44			sta sprites+$400+15,x
+   368 2EC6 A9 01			lda #1
+   369 2EC8 9D 02 45			sta sprites+$500+2,x
+   370 2ECB 9D 03 45			sta sprites+$500+3,x
+   371 2ECE 9D 04 45			sta sprites+$500+4,x
+   372 2ED1 9D 05 45			sta sprites+$500+5,x
+   373 2ED4 A9 21			lda #33
+   374 2ED6 9D 0A 45			sta sprites+$500+10,x
+   375 2ED9 9D 0B 45			sta sprites+$500+11,x
+   376 2EDC 9D 0C 45			sta sprites+$500+12,x
+   377 2EDF 9D 0D 45			sta sprites+$500+13,x
+   378 2EE2 A9 29			lda #41
+   379 2EE4 9D 06 45			sta sprites+$500+6,x
+   380 2EE7 9D 07 45			sta sprites+$500+7,x
+   381 2EEA 9D 08 45			sta sprites+$500+8,x
+   382 2EED 9D 09 45			sta sprites+$500+9,x
+   383 2EF0 A9 63			lda #99
+   384 2EF2 9D 0E 45			sta sprites+$500+14,x
+   385 2EF5 9D 0F 45			sta sprites+$500+15,x
+   386 2EF8 A9 C6			lda #198
+   387 2EFA 9D 00 44			sta sprites+$400+0,x
+   388 2EFD 9D 01 44			sta sprites+$400+1,x
+   389 2F00 9D 08 44			sta sprites+$400+8,x
+   390 2F03 9D 09 44			sta sprites+$400+9,x
+   391 2F06 9D 0A 44			sta sprites+$400+10,x
+   392 2F09 9D 0B 44			sta sprites+$400+11,x
+   393 2F0C 9D 0C 44			sta sprites+$400+12,x
+   394 2F0F 9D 0D 44			sta sprites+$400+13,x
+   395 2F12 A9 D6			lda #214
+   396 2F14 9D 06 44			sta sprites+$400+6,x
+   397 2F17 9D 07 44			sta sprites+$400+7,x
+   398 2F1A A9 EE			lda #238
+   399 2F1C 9D 02 44			sta sprites+$400+2,x
+   400 2F1F 9D 03 44			sta sprites+$400+3,x
+   401 2F22 A9 FE			lda #254
+   402 2F24 9D 04 44			sta sprites+$400+4,x
+   403 2F27 9D 05 44			sta sprites+$400+5,x
+   404
+   405 2F2A 4C 74 4A			jmp multi.ret01
+   406
+   407 2F2D			_23
+   408 2F2D A9 00			lda #0
+   409 2F2F 9D 00 47			sta sprites+$700+0,x
+   410 2F32 9D 01 47			sta sprites+$700+1,x
+   411 2F35 9D 0E 46			sta sprites+$600+14,x
+   412 2F38 9D 0F 46			sta sprites+$600+15,x
+   413 2F3B A9 01			lda #1
+   414 2F3D 9D 02 47			sta sprites+$700+2,x
+   415 2F40 9D 03 47			sta sprites+$700+3,x
+   416 2F43 9D 04 47			sta sprites+$700+4,x
+   417 2F46 9D 05 47			sta sprites+$700+5,x
+   418 2F49 A9 21			lda #33
+   419 2F4B 9D 0A 47			sta sprites+$700+10,x
+   420 2F4E 9D 0B 47			sta sprites+$700+11,x
+   421 2F51 9D 0C 47			sta sprites+$700+12,x
+   422 2F54 9D 0D 47			sta sprites+$700+13,x
+   423 2F57 A9 29			lda #41
+   424 2F59 9D 06 47			sta sprites+$700+6,x
+   425 2F5C 9D 07 47			sta sprites+$700+7,x
+   426 2F5F 9D 08 47			sta sprites+$700+8,x
+   427 2F62 9D 09 47			sta sprites+$700+9,x
+   428 2F65 A9 63			lda #99
+   429 2F67 9D 0E 47			sta sprites+$700+14,x
+   430 2F6A 9D 0F 47			sta sprites+$700+15,x
+   431 2F6D A9 C6			lda #198
+   432 2F6F 9D 00 46			sta sprites+$600+0,x
+   433 2F72 9D 01 46			sta sprites+$600+1,x
+   434 2F75 9D 08 46			sta sprites+$600+8,x
+   435 2F78 9D 09 46			sta sprites+$600+9,x
+   436 2F7B 9D 0A 46			sta sprites+$600+10,x
+   437 2F7E 9D 0B 46			sta sprites+$600+11,x
+   438 2F81 9D 0C 46			sta sprites+$600+12,x
+   439 2F84 9D 0D 46			sta sprites+$600+13,x
+   440 2F87 A9 D6			lda #214
+   441 2F89 9D 06 46			sta sprites+$600+6,x
+   442 2F8C 9D 07 46			sta sprites+$600+7,x
+   443 2F8F A9 EE			lda #238
+   444 2F91 9D 02 46			sta sprites+$600+2,x
+   445 2F94 9D 03 46			sta sprites+$600+3,x
+   446 2F97 A9 FE			lda #254
+   447 2F99 9D 04 46			sta sprites+$600+4,x
+   448 2F9C 9D 05 46			sta sprites+$600+5,x
+   449
+   450 2F9F 4C B5 4A			jmp multi.ret23
+   451 				.endl
+   452
+   453 2FA2			.local	shp5
+   454
+   455 2FA2			_01
+   456 2FA2 A9 00			lda #0
+   457 2FA4 9D 00 45			sta sprites+$500+0,x
+   458 2FA7 9D 01 45			sta sprites+$500+1,x
+   459 2FAA 9D 0E 44			sta sprites+$400+14,x
+   460 2FAD 9D 0F 44			sta sprites+$400+15,x
+   461 2FB0 A9 02			lda #2
+   462 2FB2 9D 02 45			sta sprites+$500+2,x
+   463 2FB5 9D 03 45			sta sprites+$500+3,x
+   464 2FB8 9D 06 45			sta sprites+$500+6,x
+   465 2FBB 9D 07 45			sta sprites+$500+7,x
+   466 2FBE A9 12			lda #18
+   467 2FC0 9D 04 45			sta sprites+$500+4,x
+   468 2FC3 9D 05 45			sta sprites+$500+5,x
+   469 2FC6 A9 22			lda #34
+   470 2FC8 9D 08 45			sta sprites+$500+8,x
+   471 2FCB 9D 09 45			sta sprites+$500+9,x
+   472 2FCE 9D 0A 45			sta sprites+$500+10,x
+   473 2FD1 9D 0B 45			sta sprites+$500+11,x
+   474 2FD4 9D 0C 45			sta sprites+$500+12,x
+   475 2FD7 9D 0D 45			sta sprites+$500+13,x
+   476 2FDA A9 66			lda #102
+   477 2FDC 9D 0E 45			sta sprites+$500+14,x
+   478 2FDF 9D 0F 45			sta sprites+$500+15,x
+   479 2FE2 A9 CC			lda #204
+   480 2FE4 9D 00 44			sta sprites+$400+0,x
+   481 2FE7 9D 01 44			sta sprites+$400+1,x
+   482 2FEA 9D 0C 44			sta sprites+$400+12,x
+   483 2FED 9D 0D 44			sta sprites+$400+13,x
+   484 2FF0 A9 DC			lda #220
+   485 2FF2 9D 08 44			sta sprites+$400+8,x
+   486 2FF5 9D 09 44			sta sprites+$400+9,x
+   487 2FF8 9D 0A 44			sta sprites+$400+10,x
+   488 2FFB 9D 0B 44			sta sprites+$400+11,x
+   489 2FFE A9 EC			lda #236
+   490 3000 9D 02 44			sta sprites+$400+2,x
+   491 3003 9D 03 44			sta sprites+$400+3,x
+   492 3006 9D 04 44			sta sprites+$400+4,x
+   493 3009 9D 05 44			sta sprites+$400+5,x
+   494 300C A9 FC			lda #252
+   495 300E 9D 06 44			sta sprites+$400+6,x
+   496 3011 9D 07 44			sta sprites+$400+7,x
+   497
+   498 3014 4C 74 4A			jmp multi.ret01
+   499
+   500 3017			_23
+   501 3017 A9 00			lda #0
+   502 3019 9D 00 47			sta sprites+$700+0,x
+   503 301C 9D 01 47			sta sprites+$700+1,x
+   504 301F 9D 0E 46			sta sprites+$600+14,x
+   505 3022 9D 0F 46			sta sprites+$600+15,x
+   506 3025 A9 02			lda #2
+   507 3027 9D 02 47			sta sprites+$700+2,x
+   508 302A 9D 03 47			sta sprites+$700+3,x
+   509 302D 9D 06 47			sta sprites+$700+6,x
+   510 3030 9D 07 47			sta sprites+$700+7,x
+   511 3033 A9 12			lda #18
+   512 3035 9D 04 47			sta sprites+$700+4,x
+   513 3038 9D 05 47			sta sprites+$700+5,x
+   514 303B A9 22			lda #34
+   515 303D 9D 08 47			sta sprites+$700+8,x
+   516 3040 9D 09 47			sta sprites+$700+9,x
+   517 3043 9D 0A 47			sta sprites+$700+10,x
+   518 3046 9D 0B 47			sta sprites+$700+11,x
+   519 3049 9D 0C 47			sta sprites+$700+12,x
+   520 304C 9D 0D 47			sta sprites+$700+13,x
+   521 304F A9 66			lda #102
+   522 3051 9D 0E 47			sta sprites+$700+14,x
+   523 3054 9D 0F 47			sta sprites+$700+15,x
+   524 3057 A9 CC			lda #204
+   525 3059 9D 00 46			sta sprites+$600+0,x
+   526 305C 9D 01 46			sta sprites+$600+1,x
+   527 305F 9D 0C 46			sta sprites+$600+12,x
+   528 3062 9D 0D 46			sta sprites+$600+13,x
+   529 3065 A9 DC			lda #220
+   530 3067 9D 08 46			sta sprites+$600+8,x
+   531 306A 9D 09 46			sta sprites+$600+9,x
+   532 306D 9D 0A 46			sta sprites+$600+10,x
+   533 3070 9D 0B 46			sta sprites+$600+11,x
+   534 3073 A9 EC			lda #236
+   535 3075 9D 02 46			sta sprites+$600+2,x
+   536 3078 9D 03 46			sta sprites+$600+3,x
+   537 307B 9D 04 46			sta sprites+$600+4,x
+   538 307E 9D 05 46			sta sprites+$600+5,x
+   539 3081 A9 FC			lda #252
+   540 3083 9D 06 46			sta sprites+$600+6,x
+   541 3086 9D 07 46			sta sprites+$600+7,x
+   542
+   543 3089 4C B5 4A			jmp multi.ret23
+   544 				.endl
+   545
+   546 308C			.local	shp6
+   547
+   548 308C			_01
+   549 308C A9 00			lda #0
+   550 308E 9D 00 45			sta sprites+$500+0,x
+   551 3091 9D 01 45			sta sprites+$500+1,x
+   552 3094 9D 0E 44			sta sprites+$400+14,x
+   553 3097 9D 0F 44			sta sprites+$400+15,x
+   554 309A A9 06			lda #6
+   555 309C 9D 0C 45			sta sprites+$500+12,x
+   556 309F 9D 0D 45			sta sprites+$500+13,x
+   557 30A2 A9 22			lda #34
+   558 30A4 9D 04 45			sta sprites+$500+4,x
+   559 30A7 9D 05 45			sta sprites+$500+5,x
+   560 30AA 9D 06 45			sta sprites+$500+6,x
+   561 30AD 9D 07 45			sta sprites+$500+7,x
+   562 30B0 9D 08 45			sta sprites+$500+8,x
+   563 30B3 9D 09 45			sta sprites+$500+9,x
+   564 30B6 9D 0A 45			sta sprites+$500+10,x
+   565 30B9 9D 0B 45			sta sprites+$500+11,x
+   566 30BC A9 30			lda #48
+   567 30BE 9D 02 45			sta sprites+$500+2,x
+   568 30C1 9D 03 45			sta sprites+$500+3,x
+   569 30C4 A9 3C			lda #60
+   570 30C6 9D 0E 45			sta sprites+$500+14,x
+   571 30C9 9D 0F 45			sta sprites+$500+15,x
+   572 30CC A9 78			lda #120
+   573 30CE 9D 00 44			sta sprites+$400+0,x
+   574 30D1 9D 01 44			sta sprites+$400+1,x
+   575 30D4 9D 0C 44			sta sprites+$400+12,x
+   576 30D7 9D 0D 44			sta sprites+$400+13,x
+   577 30DA A9 CC			lda #204
+   578 30DC 9D 02 44			sta sprites+$400+2,x
+   579 30DF 9D 03 44			sta sprites+$400+3,x
+   580 30E2 9D 04 44			sta sprites+$400+4,x
+   581 30E5 9D 05 44			sta sprites+$400+5,x
+   582 30E8 9D 06 44			sta sprites+$400+6,x
+   583 30EB 9D 07 44			sta sprites+$400+7,x
+   584 30EE 9D 08 44			sta sprites+$400+8,x
+   585 30F1 9D 09 44			sta sprites+$400+9,x
+   586 30F4 9D 0A 44			sta sprites+$400+10,x
+   587 30F7 9D 0B 44			sta sprites+$400+11,x
+   588
+   589 30FA 4C 74 4A			jmp multi.ret01
+   590
+   591 30FD			_23
+   592 30FD A9 00			lda #0
+   593 30FF 9D 00 47			sta sprites+$700+0,x
+   594 3102 9D 01 47			sta sprites+$700+1,x
+   595 3105 9D 0E 46			sta sprites+$600+14,x
+   596 3108 9D 0F 46			sta sprites+$600+15,x
+   597 310B A9 06			lda #6
+   598 310D 9D 0C 47			sta sprites+$700+12,x
+   599 3110 9D 0D 47			sta sprites+$700+13,x
+   600 3113 A9 22			lda #34
+   601 3115 9D 04 47			sta sprites+$700+4,x
+   602 3118 9D 05 47			sta sprites+$700+5,x
+   603 311B 9D 06 47			sta sprites+$700+6,x
+   604 311E 9D 07 47			sta sprites+$700+7,x
+   605 3121 9D 08 47			sta sprites+$700+8,x
+   606 3124 9D 09 47			sta sprites+$700+9,x
+   607 3127 9D 0A 47			sta sprites+$700+10,x
+   608 312A 9D 0B 47			sta sprites+$700+11,x
+   609 312D A9 30			lda #48
+   610 312F 9D 02 47			sta sprites+$700+2,x
+   611 3132 9D 03 47			sta sprites+$700+3,x
+   612 3135 A9 3C			lda #60
+   613 3137 9D 0E 47			sta sprites+$700+14,x
+   614 313A 9D 0F 47			sta sprites+$700+15,x
+   615 313D A9 78			lda #120
+   616 313F 9D 00 46			sta sprites+$600+0,x
+   617 3142 9D 01 46			sta sprites+$600+1,x
+   618 3145 9D 0C 46			sta sprites+$600+12,x
+   619 3148 9D 0D 46			sta sprites+$600+13,x
+   620 314B A9 CC			lda #204
+   621 314D 9D 02 46			sta sprites+$600+2,x
+   622 3150 9D 03 46			sta sprites+$600+3,x
+   623 3153 9D 04 46			sta sprites+$600+4,x
+   624 3156 9D 05 46			sta sprites+$600+5,x
+   625 3159 9D 06 46			sta sprites+$600+6,x
+   626 315C 9D 07 46			sta sprites+$600+7,x
+   627 315F 9D 08 46			sta sprites+$600+8,x
+   628 3162 9D 09 46			sta sprites+$600+9,x
+   629 3165 9D 0A 46			sta sprites+$600+10,x
+   630 3168 9D 0B 46			sta sprites+$600+11,x
+   631
+   632 316B 4C B5 4A			jmp multi.ret23
+   633 				.endl
+   634
+   635 316E			.local	shp7
+   636
+   637 316E			_01
+   638 316E A9 00			lda #0
+   639 3170 9D 00 45			sta sprites+$500+0,x
+   640 3173 9D 01 45			sta sprites+$500+1,x
+   641 3176 9D 0E 44			sta sprites+$400+14,x
+   642 3179 9D 0F 44			sta sprites+$400+15,x
+   643 317C A9 06			lda #6
+   644 317E 9D 08 45			sta sprites+$500+8,x
+   645 3181 9D 09 45			sta sprites+$500+9,x
+   646 3184 A9 20			lda #32
+   647 3186 9D 0C 45			sta sprites+$500+12,x
+   648 3189 9D 0D 45			sta sprites+$500+13,x
+   649 318C A9 22			lda #34
+   650 318E 9D 04 45			sta sprites+$500+4,x
+   651 3191 9D 05 45			sta sprites+$500+5,x
+   652 3194 9D 06 45			sta sprites+$500+6,x
+   653 3197 9D 07 45			sta sprites+$500+7,x
+   654 319A A9 30			lda #48
+   655 319C 9D 02 45			sta sprites+$500+2,x
+   656 319F 9D 03 45			sta sprites+$500+3,x
+   657 31A2 A9 3C			lda #60
+   658 31A4 9D 0A 45			sta sprites+$500+10,x
+   659 31A7 9D 0B 45			sta sprites+$500+11,x
+   660 31AA A9 60			lda #96
+   661 31AC 9D 0E 45			sta sprites+$500+14,x
+   662 31AF 9D 0F 45			sta sprites+$500+15,x
+   663 31B2 A9 C0			lda #192
+   664 31B4 9D 0A 44			sta sprites+$400+10,x
+   665 31B7 9D 0B 44			sta sprites+$400+11,x
+   666 31BA 9D 0C 44			sta sprites+$400+12,x
+   667 31BD 9D 0D 44			sta sprites+$400+13,x
+   668 31C0 A9 CC			lda #204
+   669 31C2 9D 02 44			sta sprites+$400+2,x
+   670 31C5 9D 03 44			sta sprites+$400+3,x
+   671 31C8 9D 04 44			sta sprites+$400+4,x
+   672 31CB 9D 05 44			sta sprites+$400+5,x
+   673 31CE 9D 06 44			sta sprites+$400+6,x
+   674 31D1 9D 07 44			sta sprites+$400+7,x
+   675 31D4 A9 F8			lda #248
+   676 31D6 9D 00 44			sta sprites+$400+0,x
+   677 31D9 9D 01 44			sta sprites+$400+1,x
+   678 31DC 9D 08 44			sta sprites+$400+8,x
+   679 31DF 9D 09 44			sta sprites+$400+9,x
+   680
+   681 31E2 4C 74 4A			jmp multi.ret01
+   682
+   683 31E5			_23
+   684 31E5 A9 00			lda #0
+   685 31E7 9D 00 47			sta sprites+$700+0,x
+   686 31EA 9D 01 47			sta sprites+$700+1,x
+   687 31ED 9D 0E 46			sta sprites+$600+14,x
+   688 31F0 9D 0F 46			sta sprites+$600+15,x
+   689 31F3 A9 06			lda #6
+   690 31F5 9D 08 47			sta sprites+$700+8,x
+   691 31F8 9D 09 47			sta sprites+$700+9,x
+   692 31FB A9 20			lda #32
+   693 31FD 9D 0C 47			sta sprites+$700+12,x
+   694 3200 9D 0D 47			sta sprites+$700+13,x
+   695 3203 A9 22			lda #34
+   696 3205 9D 04 47			sta sprites+$700+4,x
+   697 3208 9D 05 47			sta sprites+$700+5,x
+   698 320B 9D 06 47			sta sprites+$700+6,x
+   699 320E 9D 07 47			sta sprites+$700+7,x
+   700 3211 A9 30			lda #48
+   701 3213 9D 02 47			sta sprites+$700+2,x
+   702 3216 9D 03 47			sta sprites+$700+3,x
+   703 3219 A9 3C			lda #60
+   704 321B 9D 0A 47			sta sprites+$700+10,x
+   705 321E 9D 0B 47			sta sprites+$700+11,x
+   706 3221 A9 60			lda #96
+   707 3223 9D 0E 47			sta sprites+$700+14,x
+   708 3226 9D 0F 47			sta sprites+$700+15,x
+   709 3229 A9 C0			lda #192
+   710 322B 9D 0A 46			sta sprites+$600+10,x
+   711 322E 9D 0B 46			sta sprites+$600+11,x
+   712 3231 9D 0C 46			sta sprites+$600+12,x
+   713 3234 9D 0D 46			sta sprites+$600+13,x
+   714 3237 A9 CC			lda #204
+   715 3239 9D 02 46			sta sprites+$600+2,x
+   716 323C 9D 03 46			sta sprites+$600+3,x
+   717 323F 9D 04 46			sta sprites+$600+4,x
+   718 3242 9D 05 46			sta sprites+$600+5,x
+   719 3245 9D 06 46			sta sprites+$600+6,x
+   720 3248 9D 07 46			sta sprites+$600+7,x
+   721 324B A9 F8			lda #248
+   722 324D 9D 00 46			sta sprites+$600+0,x
+   723 3250 9D 01 46			sta sprites+$600+1,x
+   724 3253 9D 08 46			sta sprites+$600+8,x
+   725 3256 9D 09 46			sta sprites+$600+9,x
+   726
+   727 3259 4C B5 4A			jmp multi.ret23
+   728 				.endl
+   198
+   199 				.endl
+   200
+   201
+   202 325C			.local	f2
+   203 325C					addShape 16, shp0
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 325C A9 FD 8D 20 01 A9 + 	mwa #SHP0._01 shape_tab01+16*2
+     2 3266 A9 72 8D 20 02 A9 + 	mwa #SHP0._23 shape_tab23+16*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   204 3270					addShape 17, shp1
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 3270 A9 E7 8D 22 01 A9 + 	mwa #SHP1._01 shape_tab01+17*2
+     2 327A A9 5E 8D 22 02 A9 + 	mwa #SHP1._23 shape_tab23+17*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   205 3284					addShape 18, shp2
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 3284 A9 D5 8D 24 01 A9 + 	mwa #SHP2._01 shape_tab01+18*2
+     2 328E A9 4C 8D 24 02 A9 + 	mwa #SHP2._23 shape_tab23+18*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   206 3298					addShape 19, shp3
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 3298 A9 C3 8D 26 01 A9 + 	mwa #SHP3._01 shape_tab01+19*2
+     2 32A2 A9 32 8D 26 02 A9 + 	mwa #SHP3._23 shape_tab23+19*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   207 32AC					addShape 20, shp4
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 32AC A9 A1 8D 28 01 A9 + 	mwa #SHP4._01 shape_tab01+20*2
+     2 32B6 A9 10 8D 28 02 A9 + 	mwa #SHP4._23 shape_tab23+20*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   208 32C0					addShape 21, shp5
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 32C0 A9 7F 8D 2A 01 A9 + 	mwa #SHP5._01 shape_tab01+21*2
+     2 32CA A9 F2 8D 2A 02 A9 + 	mwa #SHP5._23 shape_tab23+21*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   209 32D4					addShape 22, shp6
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 32D4 A9 65 8D 2C 01 A9 + 	mwa #SHP6._01 shape_tab01+22*2
+     2 32DE A9 DC 8D 2C 02 A9 + 	mwa #SHP6._23 shape_tab23+22*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   210 32E8					addShape 23, shp7
+Macro: ADDSHAPE [Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm]
+     1 32E8 A9 53 8D 2E 01 A9 + 	mwa #SHP7._01 shape_tab01+23*2
+     2 32F2 A9 C4 8D 2E 02 A9 + 	mwa #SHP7._23 shape_tab23+23*2
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\test.asm
+   211
+   212 32FC 60					rts
+   213
+   214 32FD				icl '..\convert\font2.asm'
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\..\convert\font2.asm
+     1
+     2 32FD			.local	shp0
+     3
+     4 32FD			_01
+     5 32FD A9 00			lda #0
+     6 32FF 9D 00 45			sta sprites+$500+0,x
+     7 3302 9D 01 45			sta sprites+$500+1,x
+     8 3305 9D 0E 44			sta sprites+$400+14,x
+     9 3308 9D 0F 44			sta sprites+$400+15,x
+    10 330B A9 02			lda #2
+    11 330D 9D 0C 45			sta sprites+$500+12,x
+    12 3310 9D 0D 45			sta sprites+$500+13,x
+    13 3313 A9 22			lda #34
+    14 3315 9D 04 45			sta sprites+$500+4,x
+    15 3318 9D 05 45			sta sprites+$500+5,x
+    16 331B 9D 06 45			sta sprites+$500+6,x
+    17 331E 9D 07 45			sta sprites+$500+7,x
+    18 3321 9D 08 45			sta sprites+$500+8,x
+    19 3324 9D 09 45			sta sprites+$500+9,x
+    20 3327 9D 0A 45			sta sprites+$500+10,x
+    21 332A 9D 0B 45			sta sprites+$500+11,x
+    22 332D A9 30			lda #48
+    23 332F 9D 02 45			sta sprites+$500+2,x
+    24 3332 9D 03 45			sta sprites+$500+3,x
+    25 3335 A9 3E			lda #62
+    26 3337 9D 0E 45			sta sprites+$500+14,x
+    27 333A 9D 0F 45			sta sprites+$500+15,x
+    28 333D A9 78			lda #120
+    29 333F 9D 00 44			sta sprites+$400+0,x
+    30 3342 9D 01 44			sta sprites+$400+1,x
+    31 3345 A9 7C			lda #124
+    32 3347 9D 0C 44			sta sprites+$400+12,x
+    33 334A 9D 0D 44			sta sprites+$400+13,x
+    34 334D A9 CC			lda #204
+    35 334F 9D 02 44			sta sprites+$400+2,x
+    36 3352 9D 03 44			sta sprites+$400+3,x
+    37 3355 9D 04 44			sta sprites+$400+4,x
+    38 3358 9D 05 44			sta sprites+$400+5,x
+    39 335B 9D 06 44			sta sprites+$400+6,x
+    40 335E 9D 07 44			sta sprites+$400+7,x
+    41 3361 9D 0A 44			sta sprites+$400+10,x
+    42 3364 9D 0B 44			sta sprites+$400+11,x
+    43 3367 A9 DC			lda #220
+    44 3369 9D 08 44			sta sprites+$400+8,x
+    45 336C 9D 09 44			sta sprites+$400+9,x
+    46
+    47 336F 4C 74 4A			jmp multi.ret01
+    48
+    49 3372			_23
+    50 3372 A9 00			lda #0
+    51 3374 9D 00 47			sta sprites+$700+0,x
+    52 3377 9D 01 47			sta sprites+$700+1,x
+    53 337A 9D 0E 46			sta sprites+$600+14,x
+    54 337D 9D 0F 46			sta sprites+$600+15,x
+    55 3380 A9 02			lda #2
+    56 3382 9D 0C 47			sta sprites+$700+12,x
+    57 3385 9D 0D 47			sta sprites+$700+13,x
+    58 3388 A9 22			lda #34
+    59 338A 9D 04 47			sta sprites+$700+4,x
+    60 338D 9D 05 47			sta sprites+$700+5,x
+    61 3390 9D 06 47			sta sprites+$700+6,x
+    62 3393 9D 07 47			sta sprites+$700+7,x
+    63 3396 9D 08 47			sta sprites+$700+8,x
+    64 3399 9D 09 47			sta sprites+$700+9,x
+    65 339C 9D 0A 47			sta sprites+$700+10,x
+    66 339F 9D 0B 47			sta sprites+$700+11,x
+    67 33A2 A9 30			lda #48
+    68 33A4 9D 02 47			sta sprites+$700+2,x
+    69 33A7 9D 03 47			sta sprites+$700+3,x
+    70 33AA A9 3E			lda #62
+    71 33AC 9D 0E 47			sta sprites+$700+14,x
+    72 33AF 9D 0F 47			sta sprites+$700+15,x
+    73 33B2 A9 78			lda #120
+    74 33B4 9D 00 46			sta sprites+$600+0,x
+    75 33B7 9D 01 46			sta sprites+$600+1,x
+    76 33BA A9 7C			lda #124
+    77 33BC 9D 0C 46			sta sprites+$600+12,x
+    78 33BF 9D 0D 46			sta sprites+$600+13,x
+    79 33C2 A9 CC			lda #204
+    80 33C4 9D 02 46			sta sprites+$600+2,x
+    81 33C7 9D 03 46			sta sprites+$600+3,x
+    82 33CA 9D 04 46			sta sprites+$600+4,x
+    83 33CD 9D 05 46			sta sprites+$600+5,x
+    84 33D0 9D 06 46			sta sprites+$600+6,x
+    85 33D3 9D 07 46			sta sprites+$600+7,x
+    86 33D6 9D 0A 46			sta sprites+$600+10,x
+    87 33D9 9D 0B 46			sta sprites+$600+11,x
+    88 33DC A9 DC			lda #220
+    89 33DE 9D 08 46			sta sprites+$600+8,x
+    90 33E1 9D 09 46			sta sprites+$600+9,x
+    91
+    92 33E4 4C B5 4A			jmp multi.ret23
+    93 				.endl
+    94
+    95 33E7			.local	shp1
+    96
+    97 33E7			_01
+    98 33E7 A9 00			lda #0
+    99 33E9 9D 00 45			sta sprites+$500+0,x
+   100 33EC 9D 01 45			sta sprites+$500+1,x
+   101 33EF 9D 0E 44			sta sprites+$400+14,x
+   102 33F2 9D 0F 44			sta sprites+$400+15,x
+   103 33F5 A9 06			lda #6
+   104 33F7 9D 08 45			sta sprites+$500+8,x
+   105 33FA 9D 09 45			sta sprites+$500+9,x
+   106 33FD A9 20			lda #32
+   107 33FF 9D 0C 45			sta sprites+$500+12,x
+   108 3402 9D 0D 45			sta sprites+$500+13,x
+   109 3405 A9 22			lda #34
+   110 3407 9D 04 45			sta sprites+$500+4,x
+   111 340A 9D 05 45			sta sprites+$500+5,x
+   112 340D 9D 06 45			sta sprites+$500+6,x
+   113 3410 9D 07 45			sta sprites+$500+7,x
+   114 3413 A9 24			lda #36
+   115 3415 9D 0A 45			sta sprites+$500+10,x
+   116 3418 9D 0B 45			sta sprites+$500+11,x
+   117 341B A9 30			lda #48
+   118 341D 9D 02 45			sta sprites+$500+2,x
+   119 3420 9D 03 45			sta sprites+$500+3,x
+   120 3423 A9 66			lda #102
+   121 3425 9D 0E 45			sta sprites+$500+14,x
+   122 3428 9D 0F 45			sta sprites+$500+15,x
+   123 342B A9 CC			lda #204
+   124 342D 9D 02 44			sta sprites+$400+2,x
+   125 3430 9D 03 44			sta sprites+$400+3,x
+   126 3433 9D 04 44			sta sprites+$400+4,x
+   127 3436 9D 05 44			sta sprites+$400+5,x
+   128 3439 9D 06 44			sta sprites+$400+6,x
+   129 343C 9D 07 44			sta sprites+$400+7,x
+   130 343F 9D 0C 44			sta sprites+$400+12,x
+   131 3442 9D 0D 44			sta sprites+$400+13,x
+   132 3445 A9 D8			lda #216
+   133 3447 9D 0A 44			sta sprites+$400+10,x
+   134 344A 9D 0B 44			sta sprites+$400+11,x
+   135 344D A9 F8			lda #248
+   136 344F 9D 00 44			sta sprites+$400+0,x
+   137 3452 9D 01 44			sta sprites+$400+1,x
+   138 3455 9D 08 44			sta sprites+$400+8,x
+   139 3458 9D 09 44			sta sprites+$400+9,x
+   140
+   141 345B 4C 74 4A			jmp multi.ret01
+   142
+   143 345E			_23
+   144 345E A9 00			lda #0
+   145 3460 9D 00 47			sta sprites+$700+0,x
+   146 3463 9D 01 47			sta sprites+$700+1,x
+   147 3466 9D 0E 46			sta sprites+$600+14,x
+   148 3469 9D 0F 46			sta sprites+$600+15,x
+   149 346C A9 06			lda #6
+   150 346E 9D 08 47			sta sprites+$700+8,x
+   151 3471 9D 09 47			sta sprites+$700+9,x
+   152 3474 A9 20			lda #32
+   153 3476 9D 0C 47			sta sprites+$700+12,x
+   154 3479 9D 0D 47			sta sprites+$700+13,x
+   155 347C A9 22			lda #34
+   156 347E 9D 04 47			sta sprites+$700+4,x
+   157 3481 9D 05 47			sta sprites+$700+5,x
+   158 3484 9D 06 47			sta sprites+$700+6,x
+   159 3487 9D 07 47			sta sprites+$700+7,x
+   160 348A A9 24			lda #36
+   161 348C 9D 0A 47			sta sprites+$700+10,x
+   162 348F 9D 0B 47			sta sprites+$700+11,x
+   163 3492 A9 30			lda #48
+   164 3494 9D 02 47			sta sprites+$700+2,x
+   165 3497 9D 03 47			sta sprites+$700+3,x
+   166 349A A9 66			lda #102
+   167 349C 9D 0E 47			sta sprites+$700+14,x
+   168 349F 9D 0F 47			sta sprites+$700+15,x
+   169 34A2 A9 CC			lda #204
+   170 34A4 9D 02 46			sta sprites+$600+2,x
+   171 34A7 9D 03 46			sta sprites+$600+3,x
+   172 34AA 9D 04 46			sta sprites+$600+4,x
+   173 34AD 9D 05 46			sta sprites+$600+5,x
+   174 34B0 9D 06 46			sta sprites+$600+6,x
+   175 34B3 9D 07 46			sta sprites+$600+7,x
+   176 34B6 9D 0C 46			sta sprites+$600+12,x
+   177 34B9 9D 0D 46			sta sprites+$600+13,x
+   178 34BC A9 D8			lda #216
+   179 34BE 9D 0A 46			sta sprites+$600+10,x
+   180 34C1 9D 0B 46			sta sprites+$600+11,x
+   181 34C4 A9 F8			lda #248
+   182 34C6 9D 00 46			sta sprites+$600+0,x
+   183 34C9 9D 01 46			sta sprites+$600+1,x
+   184 34CC 9D 08 46			sta sprites+$600+8,x
+   185 34CF 9D 09 46			sta sprites+$600+9,x
+   186
+   187 34D2 4C B5 4A			jmp multi.ret23
+   188 				.endl
+   189
+   190 34D5			.local	shp2
+   191
+   192 34D5			_01
+   193 34D5 A9 00			lda #0
+   194 34D7 9D 00 45			sta sprites+$500+0,x
+   195 34DA 9D 01 45			sta sprites+$500+1,x
+   196 34DD 9D 06 45			sta sprites+$500+6,x
+   197 34E0 9D 07 45			sta sprites+$500+7,x
+   198 34E3 9D 0E 44			sta sprites+$400+14,x
+   199 34E6 9D 0F 44			sta sprites+$400+15,x
+   200 34E9 A9 02			lda #2
+   201 34EB 9D 0A 45			sta sprites+$500+10,x
+   202 34EE 9D 0B 45			sta sprites+$500+11,x
+   203 34F1 A9 06			lda #6
+   204 34F3 9D 0C 45			sta sprites+$500+12,x
+   205 34F6 9D 0D 45			sta sprites+$500+13,x
+   206 34F9 A9 0C			lda #12
+   207 34FB 9D 08 44			sta sprites+$400+8,x
+   208 34FE 9D 09 44			sta sprites+$400+9,x
+   209 3501 A9 26			lda #38
+   210 3503 9D 04 45			sta sprites+$500+4,x
+   211 3506 9D 05 45			sta sprites+$500+5,x
+   212 3509 A9 30			lda #48
+   213 350B 9D 02 45			sta sprites+$500+2,x
+   214 350E 9D 03 45			sta sprites+$500+3,x
+   215 3511 9D 08 45			sta sprites+$500+8,x
+   216 3514 9D 09 45			sta sprites+$500+9,x
+   217 3517 A9 3C			lda #60
+   218 3519 9D 0E 45			sta sprites+$500+14,x
+   219 351C 9D 0F 45			sta sprites+$500+15,x
+   220 351F A9 78			lda #120
+   221 3521 9D 00 44			sta sprites+$400+0,x
+   222 3524 9D 01 44			sta sprites+$400+1,x
+   223 3527 9D 06 44			sta sprites+$400+6,x
+   224 352A 9D 07 44			sta sprites+$400+7,x
+   225 352D 9D 0C 44			sta sprites+$400+12,x
+   226 3530 9D 0D 44			sta sprites+$400+13,x
+   227 3533 A9 C0			lda #192
+   228 3535 9D 04 44			sta sprites+$400+4,x
+   229 3538 9D 05 44			sta sprites+$400+5,x
+   230 353B A9 CC			lda #204
+   231 353D 9D 02 44			sta sprites+$400+2,x
+   232 3540 9D 03 44			sta sprites+$400+3,x
+   233 3543 9D 0A 44			sta sprites+$400+10,x
+   234 3546 9D 0B 44			sta sprites+$400+11,x
+   235
+   236 3549 4C 74 4A			jmp multi.ret01
+   237
+   238 354C			_23
+   239 354C A9 00			lda #0
+   240 354E 9D 00 47			sta sprites+$700+0,x
+   241 3551 9D 01 47			sta sprites+$700+1,x
+   242 3554 9D 06 47			sta sprites+$700+6,x
+   243 3557 9D 07 47			sta sprites+$700+7,x
+   244 355A 9D 0E 46			sta sprites+$600+14,x
+   245 355D 9D 0F 46			sta sprites+$600+15,x
+   246 3560 A9 02			lda #2
+   247 3562 9D 0A 47			sta sprites+$700+10,x
+   248 3565 9D 0B 47			sta sprites+$700+11,x
+   249 3568 A9 06			lda #6
+   250 356A 9D 0C 47			sta sprites+$700+12,x
+   251 356D 9D 0D 47			sta sprites+$700+13,x
+   252 3570 A9 0C			lda #12
+   253 3572 9D 08 46			sta sprites+$600+8,x
+   254 3575 9D 09 46			sta sprites+$600+9,x
+   255 3578 A9 26			lda #38
+   256 357A 9D 04 47			sta sprites+$700+4,x
+   257 357D 9D 05 47			sta sprites+$700+5,x
+   258 3580 A9 30			lda #48
+   259 3582 9D 02 47			sta sprites+$700+2,x
+   260 3585 9D 03 47			sta sprites+$700+3,x
+   261 3588 9D 08 47			sta sprites+$700+8,x
+   262 358B 9D 09 47			sta sprites+$700+9,x
+   263 358E A9 3C			lda #60
+   264 3590 9D 0E 47			sta sprites+$700+14,x
+   265 3593 9D 0F 47			sta sprites+$700+15,x
+   266 3596 A9 78			lda #120
+   267 3598 9D 00 46			sta sprites+$600+0,x
+   268 359B 9D 01 46			sta sprites+$600+1,x
+   269 359E 9D 06 46			sta sprites+$600+6,x
+   270 35A1 9D 07 46			sta sprites+$600+7,x
+   271 35A4 9D 0C 46			sta sprites+$600+12,x
+   272 35A7 9D 0D 46			sta sprites+$600+13,x
+   273 35AA A9 C0			lda #192
+   274 35AC 9D 04 46			sta sprites+$600+4,x
+   275 35AF 9D 05 46			sta sprites+$600+5,x
+   276 35B2 A9 CC			lda #204
+   277 35B4 9D 02 46			sta sprites+$600+2,x
+   278 35B7 9D 03 46			sta sprites+$600+3,x
+   279 35BA 9D 0A 46			sta sprites+$600+10,x
+   280 35BD 9D 0B 46			sta sprites+$600+11,x
+   281
+   282 35C0 4C B5 4A			jmp multi.ret23
+   283 				.endl
+   284
+   285 35C3			.local	shp3
+   286
+   287 35C3			_01
+   288 35C3 A9 00			lda #0
+   289 35C5 9D 00 45			sta sprites+$500+0,x
+   290 35C8 9D 01 45			sta sprites+$500+1,x
+   291 35CB 9D 0E 44			sta sprites+$400+14,x
+   292 35CE 9D 0F 44			sta sprites+$400+15,x
+   293 35D1 A9 08			lda #8
+   294 35D3 9D 04 45			sta sprites+$500+4,x
+   295 35D6 9D 05 45			sta sprites+$500+5,x
+   296 35D9 9D 06 45			sta sprites+$500+6,x
+   297 35DC 9D 07 45			sta sprites+$500+7,x
+   298 35DF 9D 08 45			sta sprites+$500+8,x
+   299 35E2 9D 09 45			sta sprites+$500+9,x
+   300 35E5 9D 0A 45			sta sprites+$500+10,x
+   301 35E8 9D 0B 45			sta sprites+$500+11,x
+   302 35EB 9D 0C 45			sta sprites+$500+12,x
+   303 35EE 9D 0D 45			sta sprites+$500+13,x
+   304 35F1 A9 18			lda #24
+   305 35F3 9D 0E 45			sta sprites+$500+14,x
+   306 35F6 9D 0F 45			sta sprites+$500+15,x
+   307 35F9 A9 30			lda #48
+   308 35FB 9D 02 44			sta sprites+$400+2,x
+   309 35FE 9D 03 44			sta sprites+$400+3,x
+   310 3601 9D 04 44			sta sprites+$400+4,x
+   311 3604 9D 05 44			sta sprites+$400+5,x
+   312 3607 9D 06 44			sta sprites+$400+6,x
+   313 360A 9D 07 44			sta sprites+$400+7,x
+   314 360D 9D 08 44			sta sprites+$400+8,x
+   315 3610 9D 09 44			sta sprites+$400+9,x
+   316 3613 9D 0A 44			sta sprites+$400+10,x
+   317 3616 9D 0B 44			sta sprites+$400+11,x
+   318 3619 9D 0C 44			sta sprites+$400+12,x
+   319 361C 9D 0D 44			sta sprites+$400+13,x
+   320 361F A9 4E			lda #78
+   321 3621 9D 02 45			sta sprites+$500+2,x
+   322 3624 9D 03 45			sta sprites+$500+3,x
+   323 3627 A9 FC			lda #252
+   324 3629 9D 00 44			sta sprites+$400+0,x
+   325 362C 9D 01 44			sta sprites+$400+1,x
+   326
+   327 362F 4C 74 4A			jmp multi.ret01
+   328
+   329 3632			_23
+   330 3632 A9 00			lda #0
+   331 3634 9D 00 47			sta sprites+$700+0,x
+   332 3637 9D 01 47			sta sprites+$700+1,x
+   333 363A 9D 0E 46			sta sprites+$600+14,x
+   334 363D 9D 0F 46			sta sprites+$600+15,x
+   335 3640 A9 08			lda #8
+   336 3642 9D 04 47			sta sprites+$700+4,x
+   337 3645 9D 05 47			sta sprites+$700+5,x
+   338 3648 9D 06 47			sta sprites+$700+6,x
+   339 364B 9D 07 47			sta sprites+$700+7,x
+   340 364E 9D 08 47			sta sprites+$700+8,x
+   341 3651 9D 09 47			sta sprites+$700+9,x
+   342 3654 9D 0A 47			sta sprites+$700+10,x
+   343 3657 9D 0B 47			sta sprites+$700+11,x
+   344 365A 9D 0C 47			sta sprites+$700+12,x
+   345 365D 9D 0D 47			sta sprites+$700+13,x
+   346 3660 A9 18			lda #24
+   347 3662 9D 0E 47			sta sprites+$700+14,x
+   348 3665 9D 0F 47			sta sprites+$700+15,x
+   349 3668 A9 30			lda #48
+   350 366A 9D 02 46			sta sprites+$600+2,x
+   351 366D 9D 03 46			sta sprites+$600+3,x
+   352 3670 9D 04 46			sta sprites+$600+4,x
+   353 3673 9D 05 46			sta sprites+$600+5,x
+   354 3676 9D 06 46			sta sprites+$600+6,x
+   355 3679 9D 07 46			sta sprites+$600+7,x
+   356 367C 9D 08 46			sta sprites+$600+8,x
+   357 367F 9D 09 46			sta sprites+$600+9,x
+   358 3682 9D 0A 46			sta sprites+$600+10,x
+   359 3685 9D 0B 46			sta sprites+$600+11,x
+   360 3688 9D 0C 46			sta sprites+$600+12,x
+   361 368B 9D 0D 46			sta sprites+$600+13,x
+   362 368E A9 4E			lda #78
+   363 3690 9D 02 47			sta sprites+$700+2,x
+   364 3693 9D 03 47			sta sprites+$700+3,x
+   365 3696 A9 FC			lda #252
+   366 3698 9D 00 46			sta sprites+$600+0,x
+   367 369B 9D 01 46			sta sprites+$600+1,x
+   368
+   369 369E 4C B5 4A			jmp multi.ret23
+   370 				.endl
+   371
+   372 36A1			.local	shp4
+   373
+   374 36A1			_01
+   375 36A1 A9 00			lda #0
+   376 36A3 9D 00 45			sta sprites+$500+0,x
+   377 36A6 9D 01 45			sta sprites+$500+1,x
+   378 36A9 9D 0E 44			sta sprites+$400+14,x
+   379 36AC 9D 0F 44			sta sprites+$400+15,x
+   380 36AF A9 06			lda #6
+   381 36B1 9D 0C 45			sta sprites+$500+12,x
+   382 36B4 9D 0D 45			sta sprites+$500+13,x
+   383 36B7 A9 22			lda #34
+   384 36B9 9D 02 45			sta sprites+$500+2,x
+   385 36BC 9D 03 45			sta sprites+$500+3,x
+   386 36BF 9D 04 45			sta sprites+$500+4,x
+   387 36C2 9D 05 45			sta sprites+$500+5,x
+   388 36C5 9D 06 45			sta sprites+$500+6,x
+   389 36C8 9D 07 45			sta sprites+$500+7,x
+   390 36CB 9D 08 45			sta sprites+$500+8,x
+   391 36CE 9D 09 45			sta sprites+$500+9,x
+   392 36D1 9D 0A 45			sta sprites+$500+10,x
+   393 36D4 9D 0B 45			sta sprites+$500+11,x
+   394 36D7 A9 3C			lda #60
+   395 36D9 9D 0E 45			sta sprites+$500+14,x
+   396 36DC 9D 0F 45			sta sprites+$500+15,x
+   397 36DF A9 78			lda #120
+   398 36E1 9D 0C 44			sta sprites+$400+12,x
+   399 36E4 9D 0D 44			sta sprites+$400+13,x
+   400 36E7 A9 CC			lda #204
+   401 36E9 9D 00 44			sta sprites+$400+0,x
+   402 36EC 9D 01 44			sta sprites+$400+1,x
+   403 36EF 9D 02 44			sta sprites+$400+2,x
+   404 36F2 9D 03 44			sta sprites+$400+3,x
+   405 36F5 9D 04 44			sta sprites+$400+4,x
+   406 36F8 9D 05 44			sta sprites+$400+5,x
+   407 36FB 9D 06 44			sta sprites+$400+6,x
+   408 36FE 9D 07 44			sta sprites+$400+7,x
+   409 3701 9D 08 44			sta sprites+$400+8,x
+   410 3704 9D 09 44			sta sprites+$400+9,x
+   411 3707 9D 0A 44			sta sprites+$400+10,x
+   412 370A 9D 0B 44			sta sprites+$400+11,x
+   413
+   414 370D 4C 74 4A			jmp multi.ret01
+   415
+   416 3710			_23
+   417 3710 A9 00			lda #0
+   418 3712 9D 00 47			sta sprites+$700+0,x
+   419 3715 9D 01 47			sta sprites+$700+1,x
+   420 3718 9D 0E 46			sta sprites+$600+14,x
+   421 371B 9D 0F 46			sta sprites+$600+15,x
+   422 371E A9 06			lda #6
+   423 3720 9D 0C 47			sta sprites+$700+12,x
+   424 3723 9D 0D 47			sta sprites+$700+13,x
+   425 3726 A9 22			lda #34
+   426 3728 9D 02 47			sta sprites+$700+2,x
+   427 372B 9D 03 47			sta sprites+$700+3,x
+   428 372E 9D 04 47			sta sprites+$700+4,x
+   429 3731 9D 05 47			sta sprites+$700+5,x
+   430 3734 9D 06 47			sta sprites+$700+6,x
+   431 3737 9D 07 47			sta sprites+$700+7,x
+   432 373A 9D 08 47			sta sprites+$700+8,x
+   433 373D 9D 09 47			sta sprites+$700+9,x
+   434 3740 9D 0A 47			sta sprites+$700+10,x
+   435 3743 9D 0B 47			sta sprites+$700+11,x
+   436 3746 A9 3C			lda #60
+   437 3748 9D 0E 47			sta sprites+$700+14,x
+   438 374B 9D 0F 47			sta sprites+$700+15,x
+   439 374E A9 78			lda #120
+   440 3750 9D 0C 46			sta sprites+$600+12,x
+   441 3753 9D 0D 46			sta sprites+$600+13,x
+   442 3756 A9 CC			lda #204
+   443 3758 9D 00 46			sta sprites+$600+0,x
+   444 375B 9D 01 46			sta sprites+$600+1,x
+   445 375E 9D 02 46			sta sprites+$600+2,x
+   446 3761 9D 03 46			sta sprites+$600+3,x
+   447 3764 9D 04 46			sta sprites+$600+4,x
+   448 3767 9D 05 46			sta sprites+$600+5,x
+   449 376A 9D 06 46			sta sprites+$600+6,x
+   450 376D 9D 07 46			sta sprites+$600+7,x
+   451 3770 9D 08 46			sta sprites+$600+8,x
+   452 3773 9D 09 46			sta sprites+$600+9,x
+   453 3776 9D 0A 46			sta sprites+$600+10,x
+   454 3779 9D 0B 46			sta sprites+$600+11,x
+   455
+   456 377C 4C B5 4A			jmp multi.ret23
+   457 				.endl
+   458
+   459 377F			.local	shp5
+   460
+   461 377F			_01
+   462 377F A9 00			lda #0
+   463 3781 9D 00 45			sta sprites+$500+0,x
+   464 3784 9D 01 45			sta sprites+$500+1,x
+   465 3787 9D 0E 44			sta sprites+$400+14,x
+   466 378A 9D 0F 44			sta sprites+$400+15,x
+   467 378D A9 06			lda #6
+   468 378F 9D 0A 45			sta sprites+$500+10,x
+   469 3792 9D 0B 45			sta sprites+$500+11,x
+   470 3795 A9 0C			lda #12
+   471 3797 9D 0C 45			sta sprites+$500+12,x
+   472 379A 9D 0D 45			sta sprites+$500+13,x
+   473 379D A9 18			lda #24
+   474 379F 9D 0E 45			sta sprites+$500+14,x
+   475 37A2 9D 0F 45			sta sprites+$500+15,x
+   476 37A5 A9 22			lda #34
+   477 37A7 9D 02 45			sta sprites+$500+2,x
+   478 37AA 9D 03 45			sta sprites+$500+3,x
+   479 37AD 9D 04 45			sta sprites+$500+4,x
+   480 37B0 9D 05 45			sta sprites+$500+5,x
+   481 37B3 9D 06 45			sta sprites+$500+6,x
+   482 37B6 9D 07 45			sta sprites+$500+7,x
+   483 37B9 9D 08 45			sta sprites+$500+8,x
+   484 37BC 9D 09 45			sta sprites+$500+9,x
+   485 37BF A9 30			lda #48
+   486 37C1 9D 0C 44			sta sprites+$400+12,x
+   487 37C4 9D 0D 44			sta sprites+$400+13,x
+   488 37C7 A9 78			lda #120
+   489 37C9 9D 0A 44			sta sprites+$400+10,x
+   490 37CC 9D 0B 44			sta sprites+$400+11,x
+   491 37CF A9 CC			lda #204
+   492 37D1 9D 00 44			sta sprites+$400+0,x
+   493 37D4 9D 01 44			sta sprites+$400+1,x
+   494 37D7 9D 02 44			sta sprites+$400+2,x
+   495 37DA 9D 03 44			sta sprites+$400+3,x
+   496 37DD 9D 04 44			sta sprites+$400+4,x
+   497 37E0 9D 05 44			sta sprites+$400+5,x
+   498 37E3 9D 06 44			sta sprites+$400+6,x
+   499 37E6 9D 07 44			sta sprites+$400+7,x
+   500 37E9 9D 08 44			sta sprites+$400+8,x
+   501 37EC 9D 09 44			sta sprites+$400+9,x
+   502
+   503 37EF 4C 74 4A			jmp multi.ret01
+   504
+   505 37F2			_23
+   506 37F2 A9 00			lda #0
+   507 37F4 9D 00 47			sta sprites+$700+0,x
+   508 37F7 9D 01 47			sta sprites+$700+1,x
+   509 37FA 9D 0E 46			sta sprites+$600+14,x
+   510 37FD 9D 0F 46			sta sprites+$600+15,x
+   511 3800 A9 06			lda #6
+   512 3802 9D 0A 47			sta sprites+$700+10,x
+   513 3805 9D 0B 47			sta sprites+$700+11,x
+   514 3808 A9 0C			lda #12
+   515 380A 9D 0C 47			sta sprites+$700+12,x
+   516 380D 9D 0D 47			sta sprites+$700+13,x
+   517 3810 A9 18			lda #24
+   518 3812 9D 0E 47			sta sprites+$700+14,x
+   519 3815 9D 0F 47			sta sprites+$700+15,x
+   520 3818 A9 22			lda #34
+   521 381A 9D 02 47			sta sprites+$700+2,x
+   522 381D 9D 03 47			sta sprites+$700+3,x
+   523 3820 9D 04 47			sta sprites+$700+4,x
+   524 3823 9D 05 47			sta sprites+$700+5,x
+   525 3826 9D 06 47			sta sprites+$700+6,x
+   526 3829 9D 07 47			sta sprites+$700+7,x
+   527 382C 9D 08 47			sta sprites+$700+8,x
+   528 382F 9D 09 47			sta sprites+$700+9,x
+   529 3832 A9 30			lda #48
+   530 3834 9D 0C 46			sta sprites+$600+12,x
+   531 3837 9D 0D 46			sta sprites+$600+13,x
+   532 383A A9 78			lda #120
+   533 383C 9D 0A 46			sta sprites+$600+10,x
+   534 383F 9D 0B 46			sta sprites+$600+11,x
+   535 3842 A9 CC			lda #204
+   536 3844 9D 00 46			sta sprites+$600+0,x
+   537 3847 9D 01 46			sta sprites+$600+1,x
+   538 384A 9D 02 46			sta sprites+$600+2,x
+   539 384D 9D 03 46			sta sprites+$600+3,x
+   540 3850 9D 04 46			sta sprites+$600+4,x
+   541 3853 9D 05 46			sta sprites+$600+5,x
+   542 3856 9D 06 46			sta sprites+$600+6,x
+   543 3859 9D 07 46			sta sprites+$600+7,x
+   544 385C 9D 08 46			sta sprites+$600+8,x
+   545 385F 9D 09 46			sta sprites+$600+9,x
+   546
+   547 3862 4C B5 4A			jmp multi.ret23
+   548 				.endl
+   549
+   550 3865			.local	shp6
+   551
+   552 3865			_01
+   553 3865 A9 00			lda #0
+   554 3867 9D 00 45			sta sprites+$500+0,x
+   555 386A 9D 01 45			sta sprites+$500+1,x
+   556 386D 9D 0E 44			sta sprites+$400+14,x
+   557 3870 9D 0F 44			sta sprites+$400+15,x
+   558 3873 A9 01			lda #1
+   559 3875 9D 08 45			sta sprites+$500+8,x
+   560 3878 9D 09 45			sta sprites+$500+9,x
+   561 387B A9 11			lda #17
+   562 387D 9D 0A 45			sta sprites+$500+10,x
+   563 3880 9D 0B 45			sta sprites+$500+11,x
+   564 3883 A9 21			lda #33
+   565 3885 9D 02 45			sta sprites+$500+2,x
+   566 3888 9D 03 45			sta sprites+$500+3,x
+   567 388B 9D 04 45			sta sprites+$500+4,x
+   568 388E 9D 05 45			sta sprites+$500+5,x
+   569 3891 9D 06 45			sta sprites+$500+6,x
+   570 3894 9D 07 45			sta sprites+$500+7,x
+   571 3897 A9 31			lda #49
+   572 3899 9D 0C 45			sta sprites+$500+12,x
+   573 389C 9D 0D 45			sta sprites+$500+13,x
+   574 389F A9 63			lda #99
+   575 38A1 9D 0E 45			sta sprites+$500+14,x
+   576 38A4 9D 0F 45			sta sprites+$500+15,x
+   577 38A7 A9 C6			lda #198
+   578 38A9 9D 00 44			sta sprites+$400+0,x
+   579 38AC 9D 01 44			sta sprites+$400+1,x
+   580 38AF 9D 02 44			sta sprites+$400+2,x
+   581 38B2 9D 03 44			sta sprites+$400+3,x
+   582 38B5 9D 04 44			sta sprites+$400+4,x
+   583 38B8 9D 05 44			sta sprites+$400+5,x
+   584 38BB 9D 0C 44			sta sprites+$400+12,x
+   585 38BE 9D 0D 44			sta sprites+$400+13,x
+   586 38C1 A9 D6			lda #214
+   587 38C3 9D 06 44			sta sprites+$400+6,x
+   588 38C6 9D 07 44			sta sprites+$400+7,x
+   589 38C9 A9 EE			lda #238
+   590 38CB 9D 0A 44			sta sprites+$400+10,x
+   591 38CE 9D 0B 44			sta sprites+$400+11,x
+   592 38D1 A9 FE			lda #254
+   593 38D3 9D 08 44			sta sprites+$400+8,x
+   594 38D6 9D 09 44			sta sprites+$400+9,x
+   595
+   596 38D9 4C 74 4A			jmp multi.ret01
+   597
+   598 38DC			_23
+   599 38DC A9 00			lda #0
+   600 38DE 9D 00 47			sta sprites+$700+0,x
+   601 38E1 9D 01 47			sta sprites+$700+1,x
+   602 38E4 9D 0E 46			sta sprites+$600+14,x
+   603 38E7 9D 0F 46			sta sprites+$600+15,x
+   604 38EA A9 01			lda #1
+   605 38EC 9D 08 47			sta sprites+$700+8,x
+   606 38EF 9D 09 47			sta sprites+$700+9,x
+   607 38F2 A9 11			lda #17
+   608 38F4 9D 0A 47			sta sprites+$700+10,x
+   609 38F7 9D 0B 47			sta sprites+$700+11,x
+   610 38FA A9 21			lda #33
+   611 38FC 9D 02 47			sta sprites+$700+2,x
+   612 38FF 9D 03 47			sta sprites+$700+3,x
+   613 3902 9D 04 47			sta sprites+$700+4,x
+   614 3905 9D 05 47			sta sprites+$700+5,x
+   615 3908 9D 06 47			sta sprites+$700+6,x
+   616 390B 9D 07 47			sta sprites+$700+7,x
+   617 390E A9 31			lda #49
+   618 3910 9D 0C 47			sta sprites+$700+12,x
+   619 3913 9D 0D 47			sta sprites+$700+13,x
+   620 3916 A9 63			lda #99
+   621 3918 9D 0E 47			sta sprites+$700+14,x
+   622 391B 9D 0F 47			sta sprites+$700+15,x
+   623 391E A9 C6			lda #198
+   624 3920 9D 00 46			sta sprites+$600+0,x
+   625 3923 9D 01 46			sta sprites+$600+1,x
+   626 3926 9D 02 46			sta sprites+$600+2,x
+   627 3929 9D 03 46			sta sprites+$600+3,x
+   628 392C 9D 04 46			sta sprites+$600+4,x
+   629 392F 9D 05 46			sta sprites+$600+5,x
+   630 3932 9D 0C 46			sta sprites+$600+12,x
+   631 3935 9D 0D 46			sta sprites+$600+13,x
+   632 3938 A9 D6			lda #214
+   633 393A 9D 06 46			sta sprites+$600+6,x
+   634 393D 9D 07 46			sta sprites+$600+7,x
+   635 3940 A9 EE			lda #238
+   636 3942 9D 0A 46			sta sprites+$600+10,x
+   637 3945 9D 0B 46			sta sprites+$600+11,x
+   638 3948 A9 FE			lda #254
+   639 394A 9D 08 46			sta sprites+$600+8,x
+   640 394D 9D 09 46			sta sprites+$600+9,x
+   641
+   642 3950 4C B5 4A			jmp multi.ret23
+   643 				.endl
+   644
+   645 3953			.local	shp7
+   646
+   647 3953			_01
+   648 3953 A9 00			lda #0
+   649 3955 9D 00 45			sta sprites+$500+0,x
+   650 3958 9D 01 45			sta sprites+$500+1,x
+   651 395B 9D 0E 44			sta sprites+$400+14,x
+   652 395E 9D 0F 44			sta sprites+$400+15,x
+   653 3961 A9 06			lda #6
+   654 3963 9D 06 45			sta sprites+$500+6,x
+   655 3966 9D 07 45			sta sprites+$500+7,x
+   656 3969 A9 22			lda #34
+   657 396B 9D 02 45			sta sprites+$500+2,x
+   658 396E 9D 03 45			sta sprites+$500+3,x
+   659 3971 9D 04 45			sta sprites+$500+4,x
+   660 3974 9D 05 45			sta sprites+$500+5,x
+   661 3977 9D 0A 45			sta sprites+$500+10,x
+   662 397A 9D 0B 45			sta sprites+$500+11,x
+   663 397D 9D 0C 45			sta sprites+$500+12,x
+   664 3980 9D 0D 45			sta sprites+$500+13,x
+   665 3983 A9 30			lda #48
+   666 3985 9D 08 45			sta sprites+$500+8,x
+   667 3988 9D 09 45			sta sprites+$500+9,x
+   668 398B A9 66			lda #102
+   669 398D 9D 0E 45			sta sprites+$500+14,x
+   670 3990 9D 0F 45			sta sprites+$500+15,x
+   671 3993 A9 78			lda #120
+   672 3995 9D 06 44			sta sprites+$400+6,x
+   673 3998 9D 07 44			sta sprites+$400+7,x
+   674 399B A9 CC			lda #204
+   675 399D 9D 00 44			sta sprites+$400+0,x
+   676 39A0 9D 01 44			sta sprites+$400+1,x
+   677 39A3 9D 02 44			sta sprites+$400+2,x
+   678 39A6 9D 03 44			sta sprites+$400+3,x
+   679 39A9 9D 04 44			sta sprites+$400+4,x
+   680 39AC 9D 05 44			sta sprites+$400+5,x
+   681 39AF 9D 08 44			sta sprites+$400+8,x
+   682 39B2 9D 09 44			sta sprites+$400+9,x
+   683 39B5 9D 0A 44			sta sprites+$400+10,x
+   684 39B8 9D 0B 44			sta sprites+$400+11,x
+   685 39BB 9D 0C 44			sta sprites+$400+12,x
+   686 39BE 9D 0D 44			sta sprites+$400+13,x
+   687
+   688 39C1 4C 74 4A			jmp multi.ret01
+   689
+   690 39C4			_23
+   691 39C4 A9 00			lda #0
+   692 39C6 9D 00 47			sta sprites+$700+0,x
+   693 39C9 9D 01 47			sta sprites+$700+1,x
+   694 39CC 9D 0E 46			sta sprites+$600+14,x
+   695 39CF 9D 0F 46			sta sprites+$600+15,x
+   696 39D2 A9 06			lda #6
+   697 39D4 9D 06 47			sta sprites+$700+6,x
+   698 39D7 9D 07 47			sta sprites+$700+7,x
+   699 39DA A9 22			lda #34
+   700 39DC 9D 02 47			sta sprites+$700+2,x
+   701 39DF 9D 03 47			sta sprites+$700+3,x
+   702 39E2 9D 04 47			sta sprites+$700+4,x
+   703 39E5 9D 05 47			sta sprites+$700+5,x
+   704 39E8 9D 0A 47			sta sprites+$700+10,x
+   705 39EB 9D 0B 47			sta sprites+$700+11,x
+   706 39EE 9D 0C 47			sta sprites+$700+12,x
+   707 39F1 9D 0D 47			sta sprites+$700+13,x
+   708 39F4 A9 30			lda #48
+   709 39F6 9D 08 47			sta sprites+$700+8,x
+   710 39F9 9D 09 47			sta sprites+$700+9,x
+   711 39FC A9 66			lda #102
+   712 39FE 9D 0E 47			sta sprites+$700+14,x
+   713 3A01 9D 0F 47			sta sprites+$700+15,x
+   714 3A04 A9 78			lda #120
+   715 3A06 9D 06 46			sta sprites+$600+6,x
+   716 3A09 9D 07 46			sta sprites+$600+7,x
+   717 3A0C A9 CC			lda #204
+   718 3A0E 9D 00 46			sta sprites+$600+0,x
+   719 3A11 9D 01 46			sta sprites+$600+1,x
+   720 3A14 9D 02 46			sta sprites+$600+2,x
+   721 3A17 9D 03 46			sta sprites+$600+3,x
+   722 3A1A 9D 04 46			sta sprites+$600+4,x
+   723 3A1D 9D 05 46			sta sprites+$600+5,x
+   724 3A20 9D 08 46			sta sprites+$600+8,x
+   725 3A23 9D 09 46			sta sprites+$600+9,x
+   726 3A26 9D 0A 46			sta sprites+$600+10,x
+   727 3A29 9D 0B 46			sta sprites+$600+11,x
+   728 3A2C 9D 0C 46			sta sprites+$600+12,x
+   729 3A2F 9D 0D 46			sta sprites+$600+13,x
+   730
+   731 3A32 4C B5 4A			jmp multi.ret23
+   732 				.endl
+   215
+   216 				.endl
+   217
+   218
+   219 3A35				.align
+   220
+   221 3B00				icl 'track002_l.asm'		; track0, track1
+Source: D:\!Delphi\mads\examples\sprites\shanti\example\track002_l.asm
+     1 				; Length: 256
+     2 				; Lissajous (80,80,6,4,90,90,0.047)
+     3
+     4 				track0 dta b\
+     5 				 ($A0,$A0,$9F,$9E,$9D,$9B,$98,$96,$92,$8F,$8B,$87,$83,$7E,$79,$74,$6E,$69,$63,$5D,$58,$52,$4C,$46,$40,$3A,$35,$2F,$2A,$25,$20,$1B\
+     6 				 ,$17,$13,$0F,$0C,$09,$07,$04,$03,$01,$01,$00,$00,$00,$01,$03,$04,$06,$09,$0C,$0F,$13,$17,$1B,$1F,$24,$29,$2F,$34,$3A,$3F,$45,$4B\
+     7 				 ,$51,$57,$5D,$63,$68,$6E,$73,$78,$7D,$82,$87,$8B,$8F,$92,$95,$98,$9A,$9C,$9E,$9F,$A0,$A0,$A0,$9F,$9E,$9D,$9B,$99,$96,$93,$8F,$8C\
+     8 				 ,$87,$83,$7E,$79,$74,$6F,$69,$64,$5E,$58,$52,$4C,$46,$41,$3B,$35,$30,$2A,$25,$20,$1C,$18,$13,$10,$0C,$09,$07,$05,$03,$02,$01,$00\
+     9 				 ,$00,$00,$01,$02,$04,$06,$09,$0B,$0F,$12,$16,$1A,$1F,$24,$29,$2E,$33,$39,$3F,$45,$4A,$50,$56,$5C,$62,$68,$6D,$73,$78,$7D,$82,$86\
+    10 				 ,$8A,$8E,$92,$95,$98,$9A,$9C,$9E,$9F,$A0,$A0,$A0,$9F,$9E,$9D,$9B,$99,$96,$93,$90,$8C,$88,$84,$7F,$7A,$75,$70,$6A,$64,$5F,$59,$53\
+    11 				 ,$4D,$47,$41,$3B,$36,$30,$2B,$26,$21,$1C,$18,$14,$10,$0D,$0A,$07,$05,$03,$02,$01,$00,$00,$00,$01,$02,$04,$06,$08,$0B,$0E,$12,$16\
+    12 				 ,$1A,$1E,$23,$28,$2D,$33,$38,$3E,$44,$4A,$50,$56,$5C,$61,$67,$6D,$72,$77,$7C,$81,$86,$8A,$8E,$91,$95,$97,$9A,$9C,$9E,$9F,$A0,$A0)
+    12 3B00-3CFF> A0 A0 9F 9E + TRACK0 DTA B ($A0,$A0,$9F,$9E,$9D,$9B,$98,$96,$92,$8F,$8B,$87,$83,$7E,$79,$74,$6E,$69,$63,$5D,$58,$52,$4C,$46,$40,$3A,$35,$2F,$2A,$25,$20,$1B ,$17,$13,$0F,$0C,$09,$07,$04,$03,$01,$01,$00,$00,$00,$01,$03,$04,$06,$09,$0C,$0F,$13,$17,$1B,$1F,$24,$29,$2F,$34,$3A,$3F,$45,$4B ,$51,$57,$5D,$63,$68,$6E,$73,$78,$7D,$82,$87,$8B,$8F,$92,$95,$98,$9A,$9C,$9E,$9F,$A0,$A0,$A0,$9F,$9E,$9D,$9B,$99,$96,$93,$8F,$8C ,$87,$83,$7E,$79,$74,$6F,$69,$64,$5E,$58,$52,$4C,$46,$41,$3B,$35,$30,$2A,$25,$20,$1C,$18,$13,$10,$0C,$09,$07,$05,$03,$02,$01,$00 ,$00,$00,$01,$02,$04,$06,$09,$0B,$0F,$12,$16,$1A,$1F,$24,$29,$2E,$33,$39,$3F,$45,$4A,$50,$56,$5C,$62,$68,$6D,$73,$78,$7D,$82,$86 ,$8A,$8E,$92,$95,$98,$9A,$9C,$9E,$9F,$A0,$A0,$A0,$9F,$9E,$9D,$9B,$99,$96,$93,$90,$8C,$88,$84,$7F,$7A,$75,$70,$6A,$64,$5F,$59,$53 ,$4D,$47,$41,$3B,$36,$30,$2B,$26,$21,$1C,$18,$14,$10,$0D,$0A,$07,$05,$03,$02,$01,$00,$00,$00,$01,$02,$04,$06,$08,$0B,$0E,$12,$16 ,$1A,$1E,$23,$28,$2D,$33,$38,$3E,$44,$4A,$50,$56,$5C,$61,$67,$6D,$72,$77,$7C,$81,$86,$8A,$8E,$91,$95,$97,$9A,$9C,$9E,$9F,$A0,$A0)
+    13
+    14 				track1 dta b\
+    15 				 ($50,$54,$58,$5C,$60,$63,$67,$6B,$6F,$72,$76,$79,$7D,$80,$83,$86,$89,$8B,$8E,$90,$93,$95,$97,$98,$9A,$9B,$9D,$9E,$9F,$9F,$A0,$A0\
+    16 				 ,$A0,$A0,$A0,$9F,$9E,$9E,$9C,$9B,$9A,$98,$96,$94,$92,$90,$8E,$8B,$88,$85,$82,$7F,$7C,$79,$75,$72,$6E,$6A,$67,$63,$5F,$5B,$57,$53\
+    17 				 ,$4F,$4B,$47,$44,$40,$3C,$38,$34,$31,$2D,$2A,$26,$23,$20,$1D,$1A,$17,$14,$12,$0F,$0D,$0B,$09,$07,$06,$04,$03,$02,$01,$01,$00,$00\
+    18 				 ,$00,$00,$00,$01,$02,$03,$04,$05,$07,$08,$0A,$0C,$0E,$10,$13,$16,$18,$1B,$1E,$21,$25,$28,$2B,$2F,$33,$36,$3A,$3E,$42,$46,$49,$4D\
+    19 				 ,$51,$55,$59,$5D,$61,$65,$69,$6C,$70,$73,$77,$7A,$7E,$81,$84,$87,$8A,$8C,$8F,$91,$93,$95,$97,$99,$9B,$9C,$9D,$9E,$9F,$9F,$A0,$A0\
+    20 				 ,$A0,$A0,$9F,$9F,$9E,$9D,$9C,$9B,$99,$98,$96,$94,$92,$8F,$8D,$8A,$87,$84,$81,$7E,$7B,$77,$74,$70,$6D,$69,$65,$62,$5E,$5A,$56,$52\
+    21 				 ,$4E,$4A,$46,$42,$3E,$3B,$37,$33,$2F,$2C,$28,$25,$22,$1F,$1C,$19,$16,$13,$11,$0E,$0C,$0A,$08,$07,$05,$04,$03,$02,$01,$01,$00,$00\
+    22 				 ,$00,$00,$01,$01,$02,$03,$04,$06,$07,$09,$0B,$0D,$0F,$11,$14,$16,$19,$1C,$1F,$22,$26,$29,$2D,$30,$34,$38,$3B,$3F,$43,$47,$4B,$4F)
+    22 3C00 50 54 58 5C 60 63 + TRACK1 DTA B ($50,$54,$58,$5C,$60,$63,$67,$6B,$6F,$72,$76,$79,$7D,$80,$83,$86,$89,$8B,$8E,$90,$93,$95,$97,$98,$9A,$9B,$9D,$9E,$9F,$9F,$A0,$A0 ,$A0,$A0,$A0,$9F,$9E,$9E,$9C,$9B,$9A,$98,$96,$94,$92,$90,$8E,$8B,$88,$85,$82,$7F,$7C,$79,$75,$72,$6E,$6A,$67,$63,$5F,$5B,$57,$53 ,$4F,$4B,$47,$44,$40,$3C,$38,$34,$31,$2D,$2A,$26,$23,$20,$1D,$1A,$17,$14,$12,$0F,$0D,$0B,$09,$07,$06,$04,$03,$02,$01,$01,$00,$00 ,$00,$00,$00,$01,$02,$03,$04,$05,$07,$08,$0A,$0C,$0E,$10,$13,$16,$18,$1B,$1E,$21,$25,$28,$2B,$2F,$33,$36,$3A,$3E,$42,$46,$49,$4D ,$51,$55,$59,$5D,$61,$65,$69,$6C,$70,$73,$77,$7A,$7E,$81,$84,$87,$8A,$8C,$8F,$91,$93,$95,$97,$99,$9B,$9C,$9D,$9E,$9F,$9F,$A0,$A0 ,$A0,$A0,$9F,$9F,$9E,$9D,$9C,$9B,$99,$98,$96,$94,$92,$8F,$8D,$8A,$87,$84,$81,$7E,$7B,$77,$74,$70,$6D,$69,$65,$62,$5E,$5A,$56,$52 ,$4E,$4A,$46,$42,$3E,$3B,$37,$33,$2F,$2C,$28,$25,$22,$1F,$1C,$19,$16,$13,$11,$0E,$0C,$0A,$08,$07,$05,$04,$03,$02,$01,$01,$00,$00 ,$00,$00,$01,$01,$02,$03,$04,$06,$07,$09,$0B,$0D,$0F,$11,$14,$16,$19,$1C,$1F,$22,$26,$29,$2D,$30,$34,$38,$3B,$3F,$43,$47,$4B,$4F)
+   222
+   223
+   224 				; ------------------------------------------------------------------
+   225
+   226 3D00				.align $0800
+   227
+   228 4000-4D2C> 00 00 00 00 + 	.link '..\src\engine.obx'
+   229
+   230 02E0-02E1> 52 20			run main

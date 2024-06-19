@@ -1,0 +1,3 @@
+# trims trailing whitespace for all files; filter like [*.{json,xml}]
+[*]
+trim_trailing_whitespace = true
