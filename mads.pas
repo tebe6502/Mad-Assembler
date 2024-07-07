@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2024-05-25                                                   *)
+(*  last change: 2024-07-07                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -5008,12 +5008,13 @@ LOOP:
                 '%': war := war mod iarg;
                end;
 
-         '=': war := ord(war=iarg);
-         'A': war := ord(war<>iarg);
-         'B': war := ord(war<=iarg);
-         '<': war := ord(war<iarg);
-         'C': war := ord(war>=iarg);
-         '>': war := ord(war>iarg);
+         '=': war := ord(integer(war) = integer(iarg));
+         'A': war := ord(integer(war) <> integer(iarg));
+         'B': war := ord(integer(war) <= integer(iarg));
+         '<': war := ord(integer(war) < integer(iarg));
+         'C': war := ord(integer(war) >= integer(iarg));
+         '>': war := ord(integer(war) > integer(iarg));
+	 
          'D': war := war shl iarg;
          'E': war := war shr iarg;
          'F': war := ord(war<>0) and ord(iarg<>0);
