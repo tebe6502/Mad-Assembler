@@ -752,7 +752,7 @@ var
       '-','t','[',':','f','i','l','e','n','a','m','e',']',#9,'G','e','n','e','r','a','t','e',' ','"','.','l','a','b','"',' ','l','a','b','e','l','s',' ','f','i','l','e',#13,#10,
       '-','u',#9,#9,'D','i','s','p','l','a','y',' ','w','a','r','n','i','n','g','s',' ','f','o','r',' ','u','n','u','s','e','d',' ','l','a','b','e','l','s',#13,#10,
       '-','v','u',#9,#9,'V','e','r','i','f','y',' ','c','o','d','e',' ','i','n','s','i','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',#13,#10,
-      '-','x',#9,#9,'E','x','c','l','u','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',' ','f','r','o','m',' ','c','o','d','e',' ','g','e','n','e','r','a','t','i','o','n',#13,#10,      
+      '-','x',#9,#9,'E','x','c','l','u','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',' ','f','r','o','m',' ','c','o','d','e',' ','g','e','n','e','r','a','t','i','o','n',#13,#10,
       '-','x','p',#9,#9,'D','i','s','p','l','a','y',' ','w','a','r','n','i','n','g','s',' ','f','o','r',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',
 
 {131} chr($80),
@@ -1296,13 +1296,13 @@ begin
 
   case a of
         8: txt:=txt+'?';
-	
+
       109: txt:=txt+'$'+HEX(zpvar,4);
-      
+
    69,115,120,121,125,126,129: txt:=txt+str_blad;
-   
+
        70: txt:=txt+'$'+HEX(adres,4);
-       
+
       118: begin
             while pos(#9,txt)>0 do begin
              i:=pos(#9,txt);
@@ -1316,7 +1316,7 @@ begin
              __W: txt:=txt+'WRITE';
             end;
            end;
-	   
+
       119: begin
             txt:=txt+infinite.lab;
             lin:=infinite.lin;
@@ -1327,8 +1327,8 @@ begin
   warning_mes:=show_full_name(nam,full_name,false)+' ('+IntToStr(lin)+') WARNING: '+txt;
 
   if warning_mes<>warning_old then begin
-  
-   if a = 129 then 
+
+   if a = 129 then
     TextColor(YELLOW)
    else
     TextColor(LIGHTCYAN);
@@ -2076,7 +2076,7 @@ begin
 
    if not(proc) and (ba<256) then begin
 
-    if list_hhh and (ba=0) then begin
+    if list_hhh and (ba=0) and not (a[1] in ['0'..'9']) then begin
      tmp:=a;
 
      while pos('.',tmp)>0 do tmp[pos('.',tmp)]:='_';
@@ -5014,7 +5014,7 @@ LOOP:
          '<': war := ord(integer(war) < integer(iarg));
          'C': war := ord(integer(war) >= integer(iarg));
          '>': war := ord(integer(war) > integer(iarg));
-	 
+
          'D': war := war shl iarg;
          'E': war := war shr iarg;
          'F': war := ord(war<>0) and ord(iarg<>0);
