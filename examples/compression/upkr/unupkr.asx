@@ -1,0 +1,328 @@
+; unupkr.asx - Upkr unpacker
+;
+; This code is licensed under the standard zlib license.
+;
+; Copyright (C) 2024 Piotr '0xF' Fusik
+;
+; This software is provided 'as-is', without any express or implied
+; warranty.  In no event will the authors be held liable for any damages
+; arising from the use of this software.
+;
+; Permission is granted to anyone to use this software for any purpose,
+; including commercial applications, and to alter it and redistribute it
+; freely, subject to the following restrictions:
+;
+; 1. The origin of this software must not be misrepresented; you must not
+;    claim that you wrote the original software. If you use this software
+;    in a product, an acknowledgment in the product documentation would be
+;    appreciated but is not required.
+;
+; 2. Altered source versions must be plainly marked as such, and must not be
+;    misrepresented as being the original software.
+;
+; 3. This notice may not be removed or altered from any source distribution.
+
+	opt	?+
+unupkr
+
+?OFFSET_BITS	equ	16
+?LENGTH_BITS	equ	16
+?OFFSET_PROBS	equ	?OFFSET_BITS*2-1
+?LENGTH_PROBS	equ	?LENGTH_BITS*2-1
+?PROBS_LEN	equ	1+255+1+?OFFSET_PROBS+?LENGTH_PROBS
+
+	ift	unupkr_mul>0
+	ert	unupkr_mul&$ff
+?sqr1lo	equ	unupkr_mul
+?sqr1hi	equ	unupkr_mul+$200
+?sqr2lo	equ	unupkr_mul+$400
+?sqr2hi	equ	unupkr_mul+$600
+	eif
+
+	ift	unupkr_mul==-1989||unupkr_mul==-$5a22||unupkr_mul==-65
+?65c02	equ	1
+	opt	c+
+	els
+?65c02	equ	0
+	eif
+
+?src	equ	unupkr_zp
+?dest	equ	unupkr_zp+2
+?prev	equ	unupkr_zp+4
+?len	equ	unupkr_zp+6
+?probs	equ	unupkr_zp+8
+?state	equ	unupkr_zp+10
+?bitBuf	equ	unupkr_zp+12
+?wasLiteral	equ	unupkr_zp+13
+	ift	unupkr_mul==0
+?prob	equ	unupkr_zp+14
+	eif
+
+	ldx	#[?PROBS_LEN+1]/2
+	lda	#$80
+?init
+	sta	unupkr_probs-1,x
+	sta	unupkr_probs+?PROBS_LEN/2-1,x
+	dex
+	bne	?init
+	sta	?bitBuf
+	stx	?state
+	stx	?state+1
+	ift	<unupkr_probs==0
+	stx	?probs
+	eli	<unupkr_probs==$80
+	sta	?probs
+	els
+	mva	#<unupkr_probs	?probs
+	eif
+
+	ift	unupkr_mul==-65	; https://x65.zone
+	stx	$ffc1	; operand A high
+	stx	$ffc3	; operand B high
+
+	eli	unupkr_mul>0
+; initialize fast multiplication lookup tables
+	txa
+	tay
+	sta	?sqr1hi-1
+	clc
+?initSqr
+	dey
+	sta	?sqr1lo,x
+	sta	?sqr2lo,y
+	sta	?sqr2lo+$ff,x
+	lda	#0
+	adc	?sqr1hi-1,x
+	sta	?sqr1hi,x
+	sta	?sqr2hi,y
+	sta	?sqr2hi+$ff,x
+	txa
+	lsr	@
+	pha
+	lda	#0
+	ror	@
+	adc	?sqr1lo,x	; C=0
+	sta	?sqr1lo+$100,x
+	pla
+	adc	#$40
+	adc	?sqr1hi,x	; C=0
+	sta	?sqr1hi+$100,x
+	txa
+	lsr	@
+	adc	?sqr1lo,x
+	inx
+	bne	?initSqr
+	eif
+
+	ift	unupkr_mul>0||<unupkr_probs==0||<unupkr_probs==$80
+	beq	?loop	; jmp
+	els
+	bne	?loop	; jmp
+	eif
+
+?unpackCopy
+	inc	?probs+1
+	lsr	?wasLiteral
+	bcc	?getOffset
+	dey
+	jsr	?getBit
+	bcs	?sameOffset	; --invert-new-offset-bit
+?getOffset
+	sec
+	jsr	?getLen
+	lda	#1
+	sbc	?len	; C=1
+	sta	?prev
+:?65c02	lda	#0
+:!?65c02	txa	; #0
+	sbc	?len+1
+	bcs	?eof
+	adc	?dest+1	; C=0
+	sta	?prev+1
+:?65c02	stz	?len
+:!?65c02	stx	?len	; X=0
+:?65c02	stz	?len+1
+:!?65c02	stx	?len+1
+?sameOffset
+	ldy	#1+?OFFSET_PROBS
+	jsr	?getLen	; C=1
+	seq:inc	?len+1
+?copy
+	ldy	?dest
+	lda	(?prev),y
+?store
+:?65c02	sta	(?dest)
+:!?65c02	sta	(?dest,x)	; X=0
+	inc	?dest
+	bne	?samePage
+	inc	?dest+1
+	inc	?prev+1
+?samePage
+	dec	?len
+	bne	?copy
+	dec	?len+1
+	bne	?copy
+
+?loop
+	ldy	#0
+	mva	#>unupkr_probs	?probs+1
+	jsr	?getBit
+	bcs	?unpackCopy
+
+	sty	?len	; Y=1
+	sty	?len+1
+	sty	?wasLiteral
+?getLiteral
+	jsr	?getBit
+	rol	@
+	tay
+	bcc	?getLiteral
+	bcs	?store	; jmp
+
+?fetchLen
+	jsr	?getBit
+?getLen
+	ror	?len+1
+	ror	?len
+	jsr	?getBit
+	bcc	?fetchLen
+; --invert-continue-value-bit
+?padLen
+	ror	?len+1
+	ror	?len
+	bcc	?padLen
+?eof
+	rts
+
+?fetchBit
+; --big-endian-bitstream
+	asl	?bitBuf
+	bne	?rolState
+:?65c02	lda	(?src)
+:!?65c02	lda	(?src,x)	; X=0
+	inw	?src
+	rol	@	; C=1
+	sta	?bitBuf
+?rolState
+	rol	?state
+	rol	?state+1
+?getBit
+; -b
+	lda	?state+1
+	bpl	?fetchBit
+
+	ift	unupkr_mul==-1989
+	sta	$fc52	; MATHD
+	eli	unupkr_mul==-$5a22
+	sta	$4202	; WRMPYA
+	eli	unupkr_mul==-65
+	sta	$ffc0	; operand A low
+	eli	unupkr_mul>0
+	sta	?mul1lo+1
+	sta	?mul1hi+1
+	eor	#$ff
+	sta	?mul2lo+1
+	sta	?mul2hi+1
+	eif
+
+	lda	(?probs),y
+	tax
+	eor	#$ff
+	dex
+	cpx	?state
+	scs:tax
+:unupkr_mul==0	stx	?prob
+:unupkr_mul!=0	inx
+	ift	unupkr_mul==-1989
+; Atari Lynx
+	stx	$fc54	; MATHB
+	stz	$fc55	; MATHA
+	eli	unupkr_mul==-$5a22
+; SNES
+	stx	$4203	; WRMPYB
+	eif
+	php
+
+; --simplified-prob-update
+	ror	@
+:3	lsr	@
+	adc	#$f0
+	add:sta	(?probs),y
+
+	ift	unupkr_mul==0
+; slow multiplication
+	lda	#0
+	ldx	#8
+?mul
+	asl	?state
+	rol	@
+	rol	?state+1
+	bcc	?mulNot
+	adc	?prob	; C=1
+	scc:inc	?state+1
+?mulNot
+	dex
+	bne	?mul
+	plp
+	bcs	?bit1b
+	sec
+	adc	?prob
+	scs:dec	?state+1
+	clc
+?bit1b
+	sta	?state
+
+	els
+
+	ift	unupkr_mul==-1989
+; Atari Lynx
+;	bit:rmi	$fc92	; SPRSYS - no need to check since the mul is started early enough
+	lda	$fc60	; MATHH
+	add:sta	?state
+	lda	$fc61	; MATHG
+
+	eli	unupkr_mul==-$5a22
+; SNES
+	lda	$4216	; RDMPYL
+	add:sta	?state
+	lda	$4217	; RDMPYH
+
+	eli	unupkr_mul==-65
+; https://x65.zone
+	stx	$ffc2	; operand B low
+	lda	$ffc4	; multiplication result low
+	add:sta	?state
+	lda	$ffc5	; multiplication result high
+
+	els
+; lookup table
+	sec
+?mul1lo
+	lda ?sqr1lo,x
+?mul2lo
+	sbc ?sqr2lo,x
+	php
+	add:sta	?state
+?mul1hi
+	lda ?sqr1hi,x
+?mul2hi
+	sbc ?sqr2hi,x
+	plp
+	eif
+
+	adc	#0
+	sta	?state+1
+:!?65c02	txa
+:!?65c02	ldx	#0
+	plp
+	bcs	?retBit
+:?65c02	txa
+	adc:sta	?state	; C=0
+	scs:dec	?state+1
+	clc
+?retBit
+	eif
+
+	tya
+	iny
+	rts

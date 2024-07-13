@@ -13579,7 +13579,10 @@ JUMP:
            'R': regAXY_opty := (ch='+');
            'S': v:=opt_S;
            'T': v:=opt_T;
-           '?': mae_labels := (ch='+');
+           '?': begin
+	          mae_labels := (ch='+');
+		  if mae_labels = false then lokal_name:='';
+		end;
           else
            blad(zm,16);
           end;
@@ -15800,7 +15803,6 @@ begin
    while _i <= length(t) do begin
 
    case UpCase(t[_i]) of
-
 
     'C': case_used    := true;
     'P': full_name    := true;

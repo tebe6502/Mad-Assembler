@@ -1,0 +1,39 @@
+unupkr_mul	equ	0
+; unupkr_mul	equ	$6000	; fast with 2 KB lookup tables
+unupkr_probs	equ	$3e00
+unupkr_zp	equ	$80
+
+	org	$3000
+main
+	lda	20
+	cmp:req	20
+	mwa	#dl	$230
+	mwa	#packed	unupkr_zp
+	mwa	#unpacked	unupkr_zp+2
+	jsr	unupkr
+	lda	20
+	ldx	19
+	jmp	*
+
+	icl	'unupkr.asx'
+unupkr_len	equ	*-unupkr
+
+	opt ?-
+
+packed
+	ins	'conan.upk'
+
+	org	$4000
+dl
+:3	dta	$70
+	dta	$4e,a(unpacked)
+:95	dta	$0e
+	dta	$4e,a(unpacked+$f00)
+:95	dta	$0e
+	dta	$41,a(dl)
+
+unpacked	equ	$4100
+;	org	unpacked
+;	ins	'conan.gfx'
+
+	run	main
