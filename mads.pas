@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2024-07-07                                                   *)
+(*  last change: 2024-07-16                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -3378,8 +3378,38 @@ begin
 
  Result:='';
 
- while (i<=length(a)) and _dec(a[i]) do begin Result:=Result+a[i]; inc(i) {__inc(i,a)} end;
+ while (i<=length(a)) and _dec(a[i]) do begin Result:=Result+a[i]; inc(i) end;
 
+end;
+
+
+function read_QUA(var i:integer; var a,old: string): string;
+(*----------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
+var digit: byte;
+    decimalValue: cardinal;
+
+begin
+ inc(i);
+
+ Result:=''; 
+
+ decimalValue := 0;
+ while (i<=length(a)) and (a[i] in ['0'..'3']) do begin 
+ 
+  digit := Ord(a[i]) - Ord('0');
+  decimalValue := decimalValue shl 2 + digit; 
+
+  Result:=Result + a[i]; 
+  
+  inc(i);
+
+ end;
+
+ if not(test_param(i,a)) then
+  if Result='' then blad(old,8,a[i]);
+  
+ Result:=IntToStr(decimalValue);
 end;
 
 
@@ -4029,7 +4059,14 @@ LOOP:
    '0'..'9':
         begin
          if value or ReadEnum then blad(old,4);
+	 
 
+         if (i<length(a)) and (UpCase(a[i+1])='Q') and (a[i]='0') then begin  // 0q...
+
+          inc(i);
+          tmp:=read_QUA(i,a,old);
+
+         end else 
          if (i<length(a)) and (UpCase(a[i+1])='X') and (a[i]='0') then begin  // 0x...
 
           inc(i);

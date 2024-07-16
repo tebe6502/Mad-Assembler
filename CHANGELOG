@@ -1,3 +1,10 @@
+2024-07-16
+- możliwość wprowadzania wartości w systemie czwórkowym, '0q' 0q0123
+
+2024-07-12
+- poprawione działanie ?-, kasuje 'lokal_name'
+- poprawiony zapis pliku '.h' -hc, pomija etykiety '@'
+
 2024-05-25
 - nowy przełącznik '-xp Display warnings for unreferenced procedures'
 
