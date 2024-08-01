@@ -1,3 +1,6 @@
+2024-07-31
+- zastąpienie kodów końca linii #13#10 wartościami zależnymi od systemu (LineEnding)
+
 2024-07-16
 - możliwość wprowadzania wartości w systemie czwórkowym, '0q' 0q0123
 
