@@ -30,5 +30,6 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [5dots](https://gitlab.com/bocianu/5dots)
 * [Raiders of the Lost Ark](https://forums.atariage.com/topic/260558-raiders-of-the-lost-ark/)
 * [Pad](https://forums.atariage.com/topic/191864-pad-15-beta/?do=findComment&comment=4011355)
+* [LK Avalon sources](https://github.com/NowinskiK/lkavalon-atari)
 
 
