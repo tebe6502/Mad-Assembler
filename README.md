@@ -10,9 +10,6 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 # Free Pascal Compiler http://www.freepascal.org/
 # Compile: fpc -Mdelphi -vh -O3 mads.pas
 
-``` title="mads-usage"
---8<-- "mads-usage.txt"
-```
 
 ## Projects in Mad-Assembler
 
