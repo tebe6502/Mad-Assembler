@@ -18,3 +18,4 @@ Syntax: mads source [options]
 -u		Display warnings for unused labels
 -vu		Verify code inside unreferenced procedures
 -x		Exclude unreferenced procedures from code generation
+-xp             Display warnings for unreferenced procedures
