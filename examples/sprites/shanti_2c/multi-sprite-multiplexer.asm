@@ -36,18 +36,10 @@
 ; changes: 18.03.2024 Tebe/Madteam
 
 
-pmadr=$B000
+pmadr = $B000
 
 
 	.align
-
-tab_clear_sprite_0	dta a(cls0,cls1,cls2,cls3,cls4,cls5,cls6,cls7)
-
-tab_clear_sprite_1	dta a(cls0b,cls1b,cls2b,cls3b,cls4b,cls5b,cls6b,cls7b)
-
-tab_clear_sprite_2	dta a(cls0c,cls1c,cls2c,cls3c,cls4c,cls5c,cls6c,cls7c)
-
-tab_clear_sprite_3	dta a(cls0d,cls1d,cls2d,cls3d,cls4d,cls5d,cls6d,cls7d)
 
 block_c0     .ds 32    ; Sprite color 0
 block_c1     .ds 32
@@ -56,6 +48,8 @@ block_c3     .ds 32
 
 block_x0     .ds 32    ; Sprite Positionen 0
 block_x1     .ds 32    ; Sprite Positionen 1
+block_x2     .ds 32    ; Sprite Positionen 2
+block_x3     .ds 32    ; Sprite Positionen 3
 
 	ert <*<>0
 
@@ -80,9 +74,6 @@ tab_print_sprite
 
 block_status .ds 32    ; help table for determining the occupation of sprites
 
-block_x2     .ds 32    ; Sprite Positionen 2
-block_x3     .ds 32    ; Sprite Positionen 3
-
 
 @sprite_x
  .DS MAX_SPRITES
@@ -97,7 +88,8 @@ block_x3     .ds 32    ; Sprite Positionen 3
  .DS MAX_SPRITES
 
 
-.print 'data: ',*-tab_clear_sprite_0
+.print 'data: ',*-block_c0
+
 
 
 ; Sprite initialization
@@ -117,6 +109,7 @@ loop2
     bne loop2
 
     rts
+
 
 ;
 ;     OO                                                    OO    OO
@@ -157,13 +150,15 @@ there_are_more_sprites
     cpy last_sprite: #$00
     bne loop3
 
-
     lda spr_flag: #$00
     beq no_start
     sta last_sprite
 
 no_start
     rts
+
+
+branch_y dta $00,$1f,$34,$46,$55,$61,$6a,$70
 
 
 ; Draw a sprite. current number [0 to MAX_SPRITE-1] in Y register
@@ -178,21 +173,42 @@ print_sprite
 ;    cmp #POSY_MAX
 ;    bcs quit
 
-; We have block lines (each 8 real lines high) in here a sprite is moving
     sta block_y
+
+    and #7
+    tax
+    lda branch_y,x
+
+    pha                ; line within a block
+    
+    bne no_dex
+    
+    lda block_y
     lsr
     lsr
     lsr
     tax                ; first block number
 
-    lda block_y: #$00
-    and #7
-    asl @
-    sta block_dy       ; line within a block
-
-    bne no_dex
     dex                ; if dy == 0, then decrement the number of the first block
+
+    lda block_status,x
+    ora block_status+1,x
+    ora block_status+2,x
+
+    asl @
+    sta print_+1
+
+print_
+    jmp (tab_print_sprite)
+
+
+; We have block lines (each 8 real lines high) in here a sprite is moving
 no_dex
+    lda block_y: #$00
+    lsr
+    lsr
+    lsr
+    tax                ; first block number
 
     lda block_status,x
     ora block_status+1,x
@@ -203,6 +219,7 @@ no_dex
 
 print
     jmp (tab_print_sprite)
+
 
 ;    lsr
 ;    bcc print_sprite_0
@@ -215,6 +232,8 @@ print
 
 print_sprite_null
 
+    pla
+
 ; here it is not possible to draw a sprite
     lda spr_flag
     bne quit
@@ -222,9 +241,13 @@ print_sprite_null
 quit
     rts
 
+
 ; Y register contains sprite number [0 bis MAX_SPRITES-1]
 ; X register contains current Y position on the screen (*8 for real height)
 print_sprite_0
+    pla
+    sta clear_sprite_0+1
+
     inc block_status,x
     inc block_status+2,x
 
@@ -246,11 +269,7 @@ shape_0
     ldx block_y                   ; Y position in screen
 
 set_sprite_0
-    ____player0a                  ; draw the sprite
-
-    lda block_dy: #$00
-;    ora <tab_clear_sprite_0	  ; =0
-    sta clear_sprite_0+1
+    ____player $0400              ; draw the sprite
 
     ;ldy nr_sprite
 
@@ -258,132 +277,14 @@ set_sprite_0
 ;    ldx block_y                  ; Y position in screen
     lda #0
 clear_sprite_0
-    jmp (tab_clear_sprite_0)      ; jump to the clear routine
+    beq cls0                      ; jump to the clear routine
 
-
-print_sprite_1
-    lda #2
-    ora block_status,x    ; Claim the selected sprite in status
-    sta block_status,x
-    lda #2
-    ora block_status+2,x
-    sta block_status+2,x
-
-
-    lda block_x1+3,x
-    bne no_inc2
-    inc block_x1+3,x
-no_inc2
-    lda @sprite_x,y        ; sprite 1
-    sta block_x1,x
-
-    lda @sprite_color,y
-    sta block_c1,x
-
-    lda @sprite_shape,y
-
-shape_1
-;    sty nr_sprite
-    ldx block_y
-
-set_sprite_1
-    ____player1a
-
-    lda block_dy
-    ora <tab_clear_sprite_1
-    sta clear_sprite_1+1
-
-;    ldy nr_sprite
-;    ldx block_y                   ; Y position in screen
-    lda #0
-
-clear_sprite_1
-    jmp (tab_clear_sprite_1)
-
-
-print_sprite_2
-    lda #4
-    ora block_status,x    ;Claim the selected sprite in status
-    sta block_status,x
-    lda #4
-    ora block_status+2,x
-    sta block_status+2,x
-
-
-    lda block_x2+3,x
-    bne no_inc3
-    inc block_x2+3,x
-no_inc3
-    lda @sprite_x,y        ; sprite 2
-    sta block_x2,x
-
-    lda @sprite_color,y
-    sta block_c2,x
-
-    lda @sprite_shape,y
-
-shape_2
-;    sty nr_sprite
-    ldx block_y
-
-set_sprite_2
-    ____player2a
-
-    lda block_dy
-    ora <tab_clear_sprite_2
-    sta clear_sprite_2+1
-
-;    ldy nr_sprite
-;    ldx block_y                   ; Y position in screen
-    lda #0
-
-clear_sprite_2
-    jmp (tab_clear_sprite_2)
-
-
-print_sprite_3
-    lda #8
-    ora block_status,x    ;Claim the selected sprite in status
-    sta block_status,x
-    lda #8
-    ora block_status+2,x
-    sta block_status+2,x
-
-
-    lda block_x3+3,x
-    bne no_inc4
-    inc block_x3+3,x
-no_inc4
-    lda @sprite_x,y        ; sprite 3
-    sta block_x3,x
-
-    lda @sprite_color,y
-    sta block_c3,x
-
-    lda @sprite_shape,y
-
-shape_3
-;    sty nr_sprite
-    ldx block_y
-
-set_sprite_3
-    ____player3a
-
-    lda block_dy
-    ora <tab_clear_sprite_3
-    sta clear_sprite_3+1
-
-;    ldy nr_sprite
-;    ldx block_y
-    lda #0
-
-clear_sprite_3
-    jmp (tab_clear_sprite_3)
-
-
+    .pages
 ; very fast clear functions due to unroll loops
 
 cls0
+    sta pmadr+$400+$11,x
+
     sta pmadr+$400+$10,x
 
     sta pmadr+$400-8,x
@@ -429,8 +330,6 @@ cls4
 
 
 cls5
-;    cpx #POSY_MAX-32
-;    bcs cls7_12
     sta pmadr+$400+$13,x
     sta pmadr+$400+$14,x
     jmp cls7_12
@@ -460,6 +359,48 @@ cls7_36
     sta pmadr+$400+$12,x
     rts
 
+    .endpg
+
+
+print_sprite_1
+    pla
+    sta clear_sprite_1+1
+
+    lda #2
+    ora block_status,x     ; Claim the selected sprite in status
+    sta block_status,x
+    lda #2
+    ora block_status+2,x
+    sta block_status+2,x
+
+
+    lda block_x1+3,x
+    bne no_inc2
+    inc block_x1+3,x
+no_inc2
+    lda @sprite_x,y        ; sprite 1
+    sta block_x1,x
+
+    lda @sprite_color,y
+    sta block_c1,x
+
+    lda @sprite_shape,y
+
+shape_1
+;    sty nr_sprite
+    ldx block_y
+
+set_sprite_1
+    ____player $0500
+
+;    ldy nr_sprite
+;    ldx block_y                   ; Y position in screen
+    lda #0
+clear_sprite_1
+    beq cls0b
+
+    .pages
+; very fast clear functions due to unroll loops
 
 cls0b
     sta pmadr+$500+$11,x
@@ -474,7 +415,6 @@ cls0b
     sta pmadr+$500-3,x
     sta pmadr+$500-2,x
     sta pmadr+$500-1,x
-
 
     rts
 
@@ -510,8 +450,6 @@ cls4b
     jmp cls7b_18
 
 cls5b
-;    cpx #POSY_MAX-32
-;    bcs cls7b_12
     sta pmadr+$500+$13,x
     sta pmadr+$500+$14,x
     jmp cls7b_12
@@ -541,6 +479,49 @@ cls7b_36
     sta pmadr+$500+$12,x
     rts
 
+    .endpg
+
+
+print_sprite_2
+    pla
+    sta clear_sprite_2+1
+
+    lda #4
+    ora block_status,x    ;Claim the selected sprite in status
+    sta block_status,x
+    lda #4
+    ora block_status+2,x
+    sta block_status+2,x
+
+
+    lda block_x2+3,x
+    bne no_inc3
+    inc block_x2+3,x
+no_inc3
+    lda @sprite_x,y        ; sprite 2
+    sta block_x2,x
+
+    lda @sprite_color,y
+    sta block_c2,x
+
+    lda @sprite_shape,y
+
+shape_2
+;    sty nr_sprite
+    ldx block_y
+
+set_sprite_2
+    ____player $0600
+
+;    ldy nr_sprite
+;    ldx block_y                   ; Y position in screen
+    lda #0
+clear_sprite_2
+    beq cls0c
+
+
+    .pages
+; very fast clear functions due to unroll loops
 
 cls0c
     sta pmadr+$600+$11,x
@@ -555,7 +536,6 @@ cls0c
     sta pmadr+$600-3,x
     sta pmadr+$600-2,x
     sta pmadr+$600-1,x
-
 
     rts
 
@@ -591,8 +571,6 @@ cls4c
     jmp cls7c_18
 
 cls5c
-;    cpx #POSY_MAX-32
-;    ccs cls7c_12
     sta pmadr+$600+$13,x
     sta pmadr+$600+$14,x
     jmp cls7c_12
@@ -622,6 +600,49 @@ cls7c_36
     sta pmadr+$600+$12,x
     rts
 
+    .endpg
+
+
+print_sprite_3
+    pla
+    sta clear_sprite_3+1
+
+    lda #8
+    ora block_status,x     ;Claim the selected sprite in status
+    sta block_status,x
+    lda #8
+    ora block_status+2,x
+    sta block_status+2,x
+
+
+    lda block_x3+3,x
+    bne no_inc4
+    inc block_x3+3,x
+no_inc4
+    lda @sprite_x,y        ; sprite 3
+    sta block_x3,x
+
+    lda @sprite_color,y
+    sta block_c3,x
+
+    lda @sprite_shape,y
+
+shape_3
+;    sty nr_sprite
+    ldx block_y
+
+set_sprite_3
+    ____player $0700
+
+;    ldy nr_sprite
+;    ldx block_y
+    lda #0
+clear_sprite_3
+    beq cls0d
+
+
+    .pages
+; very fast clear functions due to unroll loops
 
 cls0d
     sta pmadr+$700+$11,x
@@ -636,7 +657,6 @@ cls0d
     sta pmadr+$700-3,x
     sta pmadr+$700-2,x
     sta pmadr+$700-1,x
-
 
     rts
 
@@ -672,8 +692,6 @@ cls4d
     jmp cls7d_18
 
 cls5d
-;    cpx #POSY_MAX-32
-;    ccs cls7d_12
     sta pmadr+$700+$13,x
     sta pmadr+$700+$14,x
     jmp cls7d_12
@@ -703,47 +721,16 @@ cls7d_36
     sta pmadr+$700+$12,x
     rts
 
+    .endpg
+
 
 ; Very fast data copy functions due to unroll loops
 
-.macro	____player0a
+.macro	____player (player)
  sty nr_sprite+1
  tay
 
- :+16 mva data+#*$100,y pmadr+$400+#,x
-
-nr_sprite
- ldy #$00
-.endm
-
-
-.macro	____player1a
- sty nr_sprite+1
- tay
-
- :+16 mva data+#*$100,y pmadr+$500+#,x
-
-nr_sprite
- ldy #$00
-.endm
-
-
-.macro ____player2a
- sty nr_sprite+1
- tay
-
- :+16 mva data+#*$100,y pmadr+$600+#,x
-
-nr_sprite
- ldy #$00
-.endm
-
-
-.macro	____player3a
- sty nr_sprite+1
- tay
-
- :+16 mva data+#*$100,y pmadr+$700+#,x
+ :+16 mva data+#*$100,y pmadr+:player+#,x
 
 nr_sprite
  ldy #$00

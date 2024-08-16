@@ -4,7 +4,7 @@
 
 DEBUG = 1
 
-MAX_SPRITES = 16
+MAX_SPRITES = 24
 
 PM_X_OFFSET = 48
 PM_Y_OFFSET = 32
@@ -69,8 +69,8 @@ main
 	jsr @init_sprites
 
 
-	.rept MAX_SPRITES
-	lda #$0a+#*16
+	.rept 18
+	lda #[$0a+#*16]&$FF
 	sta @sprite_color+#
 
 	lda #[#]
@@ -92,7 +92,7 @@ lp	lda:cmp:req 20
 	and #3
 	jne skp
 
-	.rept 16
+	.rept 18
 	
 	inc @sprite_shape+#
 	lda @sprite_shape+#
