@@ -1,4 +1,0 @@
-mads 2.1.7 build 4 (3 Oct 23)
-Source: D:\!Delphi\mads\examples\demoscene\Knight_src\knight.asm
-     1 02E2-02E3> 00 35		 .link "src\checks.obx"
-     2 02E0-02E1> 00 35		 .link "src\demomain.obx"
