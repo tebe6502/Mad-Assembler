@@ -33,3 +33,4 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [LK Avalon sources](https://github.com/NowinskiK/lkavalon-atari)
 * [Intel 8080 Emulator](https://github.com/ivop/atari8080)
 * [EdVenture](https://github.com/EdSalisbury/edventure)
+* [VUPlayer-LZSS](https://github.com/VinsCool/VUPlayer-LZSS)
