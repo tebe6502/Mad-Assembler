@@ -36,4 +36,3 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [VUPlayer-LZSS](https://github.com/VinsCool/VUPlayer-LZSS)
 * [DUMB-PONG](https://github.com/VinsCool/DUMB-PONG)
 * [Rainbox](https://github.com/fredlcore/1K-RainBox)
-* 
