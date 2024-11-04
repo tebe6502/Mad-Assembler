@@ -28,7 +28,7 @@ uses
 	crt, sysutils;
 
 type
- 
+
     t_Dirop  = (_unknown, _r=1, _or, _lo, _hi, _get, _wget, _lget, _dget, _and, _xor, _not,
 		_len, _adr, _def, _filesize, _sizeof, _zpvar, _rnd, _asize, _isize,
 		_fileexists, _array);
@@ -266,7 +266,7 @@ type
 
 
 const
-  
+
   opt_H = 1;
   opt_O = 2;
   opt_L = 4;
@@ -752,119 +752,119 @@ CR,
 {$ENDIF}
 LF,
       '-','b',':','a','d','d','r','e','s','s',TAB,'G','e','n','e','r','a','t','e',' ','b','i','n','a','r','y',' ','f','i','l','e',' ','a','t',' ','s','p','e','c','i','f','i','e','d',' ','a','d','d','r','e','s','s',' ','<','a','d','d','r','e','s','s','>',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','b','c',TAB,TAB,'A','c','t','i','v','a','t','e',' ','b','r','a','n','c','h',' ','c','o','n','d','i','t','i','o','n',' ','t','e','s','t',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','c',TAB,TAB,'A','c','t','i','v','a','t','e',' ','c','a','s','e',' ','s','e','n','s','i','t','i','v','i','t','y',' ','f','o','r',' ','l','a','b','e','l','s',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','d',':','l','a','b','e','l','=','v','a','l','u','e',TAB,'D','e','f','i','n','e',' ','a',' ','l','a','b','e','l',' ','a','n','d',' ','s','e','t',' ','i','t',' ','t','o',' ','<','v','a','l','u','e','>',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','f',TAB,TAB,'A','l','l','o','w',' ','m','n','e','m','o','n','i','c','s',' ','a','t',' ','t','h','e',' ','f','i','r','s','t',' ','c','o','l','u','m','n',' ','o','f',' ','a',' ','l','i','n','e',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','f','v',':','v','a','l','u','e',TAB,'S','e','t',' ','r','a','w',' ','b','i','n','a','r','y',' ','f','i','l','l',' ','b','y','t','e',' ','t','o',' ','<','v','a','l','u','e','>',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','h','c','[',':','f','i','l','e','n','a','m','e',']',TAB,'G','e','n','e','r','a','t','e',' ','"','.','h','"',' ','h','e','a','d','e','r',' ','f','i','l','e',' ','f','o','r',' ','C','A','6','5',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','h','m','[',':','f','i','l','e','n','a','m','e',']',TAB,'G','e','n','e','r','a','t','e',' ','"','.','h','e','a','"',' ','h','e','a','d','e','r',' ','f','i','l','e',' ','f','o','r',' ','M','A','D','S',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','i',':','p','a','t','h',TAB,TAB,'U','s','e',' ','a','d','d','i','t','i','o','n','a','l',' ','i','n','c','l','u','d','e',' ','d','i','r','e','c','t','o','r','y',',',' ','c','a','n',' ','b','e',' ','s','p','e','c','i','f','i','e','d',' ','m','u','l','t','i','p','l','e',' ','t','i','m','e','s',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','l','[',':','f','i','l','e','n','a','m','e',']',TAB,'G','e','n','e','r','a','t','e',' ','"','.','l','s','t','"',' ','l','i','s','t','i','n','g',' ','f','i','l','e',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','m',':','f','i','l','e','n','a','m','e',TAB,'I','n','c','l','u','d','e',' ','m','a','c','r','o',' ','d','e','f','i','n','i','t','i','o','n','s',' ','f','r','o','m',' ','f','i','l','e',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','m','l',':','v','a','l','u','e',TAB,'S','e','t',' ','l','e','f','t',' ','m','a','r','g','i','n',' ','f','o','r',' ','l','i','s','t','i','n','g',' ','t','o',' ','<','v','a','l','u','e','>',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','o',':','f','i','l','e','n','a','m','e',TAB,'S','e','t',' ','o','b','j','e','c','t',' ','f','i','l','e',' ','n','a','m','e',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','p',TAB,TAB,'D','i','s','p','l','a','y',' ','f','u','l','l','y',' ','q','u','a','l','i','f','i','e','d',' ','f','i','l','e',' ','n','a','m','e','s',' ','i','n',' ','l','i','s','t','i','n','g',' ','a','n','d',' ','e','r','r','o','r',' ','m','e','s','s','a','g','e','s',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','s',TAB,TAB,'S','u','p','p','r','e','s','s',' ','i','n','f','o',' ','m','e','s','s','a','g','e','s',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','t','[',':','f','i','l','e','n','a','m','e',']',TAB,'G','e','n','e','r','a','t','e',' ','"','.','l','a','b','"',' ','l','a','b','e','l','s',' ','f','i','l','e',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','u',TAB,TAB,'D','i','s','p','l','a','y',' ','w','a','r','n','i','n','g','s',' ','f','o','r',' ','u','n','u','s','e','d',' ','l','a','b','e','l','s',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','v','u',TAB,TAB,'V','e','r','i','f','y',' ','c','o','d','e',' ','i','n','s','i','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','x',TAB,TAB,'E','x','c','l','u','d','e',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',' ','f','r','o','m',' ','c','o','d','e',' ','g','e','n','e','r','a','t','i','o','n',
-      
+
 {$IFDEF WINDOWS}
 CR,
 {$ENDIF}
-LF,      
+LF,
       '-','x','p',TAB,TAB,'D','i','s','p','l','a','y',' ','w','a','r','n','i','n','g','s',' ','f','o','r',' ','u','n','r','e','f','e','r','e','n','c','e','d',' ','p','r','o','c','e','d','u','r','e','s',
 
 {131} chr($80),
@@ -1595,7 +1595,7 @@ begin
     if b>0 then begin
      writeln(mmm);
      writeln(mmm,' lmb #',b,#9#9,'; BANK #',b);
-    end; 
+    end;
 
     txt:='CONSTANS';   madH_save(b,txt);   // constans
     txt:='VARIABLES';  madH_save(b,txt);   // variables
@@ -3507,23 +3507,23 @@ var digit: byte;
 begin
  inc(i);
 
- Result:=''; 
+ Result:='';
 
  decimalValue := 0;
- while (i<=length(a)) and (a[i] in ['0'..'3']) do begin 
- 
-  digit := Ord(a[i]) - Ord('0');
-  decimalValue := decimalValue shl 2 + digit; 
+ while (i<=length(a)) and (a[i] in ['0'..'3']) do begin
 
-  Result:=Result + a[i]; 
-  
+  digit := Ord(a[i]) - Ord('0');
+  decimalValue := decimalValue shl 2 + digit;
+
+  Result:=Result + a[i];
+
   inc(i);
 
  end;
 
  if not(test_param(i,a)) then
   if Result='' then blad(old,8,a[i]);
-  
+
  Result:=IntToStr(decimalValue);
 end;
 
@@ -4174,14 +4174,14 @@ LOOP:
    '0'..'9':
         begin
          if value or ReadEnum then blad(old,4);
-	 
+
 
          if (i<length(a)) and (UpCase(a[i+1])='Q') and (a[i]='0') then begin  // 0q...
 
           inc(i);
           tmp:=read_QUA(i,a,old);
 
-         end else 
+         end else
          if (i<length(a)) and (UpCase(a[i+1])='X') and (a[i]='0') then begin  // 0x...
 
           inc(i);
@@ -15765,6 +15765,7 @@ procedure Syntax;
 (*  wyswietlamy informacje na temat przelacznikow, konfiguracji MADS'a        *)
 (*----------------------------------------------------------------------------*)
 begin
+
  TextColor(WHITE);
  Writeln(Tab2Space(load_mes(mads_version)) + ' (' + {$i %DATE%} + ')');
 
