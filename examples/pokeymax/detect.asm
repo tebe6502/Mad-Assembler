@@ -1,3 +1,6 @@
+; PokeyMax detect 2020/03/11: revision 0.14: Melody and POKEY-MAX support (preliminary)
+; Mono/Tristesse
+
 EOL = $9B
 
 POKEYMAX_BASE = $D200
@@ -157,3 +160,4 @@ pokeymaxver .ds 8
 
 
 	.link 'printf.obx'
+
