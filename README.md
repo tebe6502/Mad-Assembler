@@ -16,6 +16,7 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [Infocom Z-Machine interpreter](https://github.com/jindroush/atari-inform-interpreter)
 * [TurboBasic XL v1.5 disassembly](https://github.com/dmsc/turbo-dis)
 * [BW-DOS](https://github.com/dmsc/bwdos-mads)
+* [APX logo](https://github.com/dmsc/apx-logo)
 * [Last Squadron](https://github.com/shanti77atari/lsquadron)
 * [Commando](https://github.com/shanti77atari/commando)
 * [Bosconian 5200](https://github.com/shanti77atari/bosconian5200)
