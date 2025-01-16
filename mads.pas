@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2024-07-31                                                   *)
+(*  last change: 2025-01-15                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -283,7 +283,7 @@ const
 
 
 var
-    OutBuf: array [0..100000] of char;
+//    OutBuf: array [0..100000] of char;
 
     lst, lab, hhh, mmm: textfile;
     dst: file;
@@ -3930,6 +3930,8 @@ var j, t: integer;
     tmp: string;
 begin
 
+ par:=Default(_strArray);
+
  omin_spacje(k, a);
 
  if a[k] in AllowStringBrackets then begin
@@ -4039,6 +4041,8 @@ const
  ('D','E','&','|','^','/','*','%','+',{'-',}'=','A','B','<','C','>','F','G');
 
 begin
+
+ tmp:='';
 
  if a='' then blad(old,23);
 
@@ -6184,6 +6188,11 @@ const
  );
 
 begin
+
+ par:=Default(_strArray);
+ 
+ zm:='';
+
  Result.l:=0;
 
  if a='' then blad(old,12);
@@ -8536,6 +8545,8 @@ var txt, ety, str, tmp: string;
     old_sizm0, old_sizm1: rSizTab;
 begin
 
+ str:='';
+
  if dreloc.sdx then exit;
 
  if pub_idx>0 then begin
@@ -9044,6 +9055,8 @@ var k, l, nr_param, j: integer;
     all : _typStrREG;
 
 begin
+	   all := Default(_typStrREG);
+
            reserved_word(ety,zm);               // sprawdz czy nazwa .PROC jest dozwolona
 
            old_bool  := run_macro;
@@ -10107,6 +10120,8 @@ var k, j: integer;
     par: _strArray;
 begin
 
+ par:=Default(_strArray);
+
  j:=i;
 
  get_parameters(i,zm, par, false, #0,#0);
@@ -10528,6 +10543,15 @@ var g: file;
     label JUMP, LOOP, LOOP2, JUMP_2;
 begin
 
+  par:=Default(_strArray);
+  
+  txt:='';
+  tmp:='';
+  tmpZM:='';
+  
+  idx:=0;
+  v:=0;
+  r:=0;
 
 LOOP2:
 
