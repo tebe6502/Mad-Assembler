@@ -118,9 +118,8 @@ p_tis = .ZPVAR
 
 // ---------------------------------------------------
 
-	jmp rmt_play
-
 	jmp rmt_init
+	jmp rmt_play
 	jmp rmt_p3
 	jmp rmt_silence
 	jmp SetPokey
@@ -380,7 +379,7 @@ oo1a
 	lda reg1
 	IFT FEAT_GLOBALVOLUMEFADE
 	sec
-	sbc RMTGLOBALVOLUMEFADE:: #$00
+	sbc RMTGLOBALVOLUMEFADE
 	bcs voig
 	lda #0
 voig
@@ -453,7 +452,7 @@ rmt_sfx
 	IFT FEAT_BASS16
 	sta trackn_outnote,x
 	EIF
-	lda RMTSFXVOLUME:: #$00
+	lda RMTSFXVOLUME
 ;	lda #$f0			;* sfx note volume*16
 ;RMTSFXVOLUME equ *-1			;* label for sfx note volume parameter overwriting
 	sta trackn_volume,x
@@ -1680,13 +1679,13 @@ track_variables
 
 track_endvariables
 
-;	IFT FEAT_GLOBALVOLUMEFADE
-;	.var .byte RMTGLOBALVOLUMEFADE
-;	EIF
+	IFT FEAT_GLOBALVOLUMEFADE
+	.var .byte RMTGLOBALVOLUMEFADE
+	EIF
 
-;	IFT FEAT_SFX
-;	.var .byte RMTSFXVOLUME
-;	EIF
+	IFT FEAT_SFX
+	.var .byte RMTSFXVOLUME
+	EIF
 
 	IFT FEAT_PATCH
 	.var .byte RMTPATCH
