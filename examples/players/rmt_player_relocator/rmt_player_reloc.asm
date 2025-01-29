@@ -95,8 +95,8 @@ INSTRPAR	equ 12
 
 FEAT_EFFECTS equ FEAT_EFFECTVIBRATO||FEAT_EFFECTFSHIFT
 
-FEAT_RECALCADDR = 0
-FEAT_PATCH = 0
+;FEAT_RECALCADDR = 0
+;FEAT_PATCH = 0
 
 RMT_STANDARD = 0	;standard RMT 1.28
 RMT_PATCH0A = 1		;16-bit bass 0a patch
@@ -117,6 +117,8 @@ p_tis = .ZPVAR
 	EIF
 
 // ---------------------------------------------------
+
+RASTERMUSICTRACKER
 
 	jmp rmt_init
 	jmp rmt_play
