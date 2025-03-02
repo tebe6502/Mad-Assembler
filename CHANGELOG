@@ -1,3 +1,7 @@
+2025-03-02
+- poprawione generowanie kodu dla 'mwa (zp),y $c8'
+- zwiększona liczba maksymalnych przebiegów do 30 (PASS_MAX)
+
 2024-07-31
 - zastąpienie kodów końca linii #13#10 wartościami zależnymi od systemu (LineEnding)
 

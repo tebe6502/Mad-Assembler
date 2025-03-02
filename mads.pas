@@ -1,12 +1,12 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.1.7 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.8 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*  https://github.com/tebe6502/Mad-Assembler                                 *)
 (*                                                                            *)
 (*  Supports 6502, WDC 65816, Sparta DOS X, virtual banks                     *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2025-01-15                                                   *)
+(*  last change: 2025-03-02                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -871,7 +871,7 @@ LF,
 
 // version
 
-{132} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','7',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{132} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','8',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80)
  ];
@@ -907,7 +907,7 @@ const
 
   PathDelim  = {$IFDEF MSWINDOWS} '\'; {$ELSE} '/'; {$ENDIF}
 
-  pass_max = 20;        // maksymalna mozliwa liczba przebiegow asemblacji
+  pass_max = 30;        // maksymalna mozliwa liczba przebiegow asemblacji
 
   __equ    = $80;       // kody pseudo rozkazow
   __opt    = $81;
@@ -5800,7 +5800,7 @@ procedure addResult(var hlp, Res: int5);
 (*----------------------------------------------------------------------------*)
 var i: integer;
 begin
-  for i:=0 to hlp.l-1 do Res.h[Res.l+i]:=hlp.h[i];
+  for i:=0 to hlp.l-1 do Res.h[Res.l+i]:=hlp.h[i];  
   inc(Res.l, hlp.l);
 end;
 
@@ -6189,13 +6189,14 @@ const
 
 begin
 
+ if a='' then blad(old,12);
+ 
  par:=Default(_strArray);
  
+ Result:=Default(int5);
+ //Result.l:=0;
+ 
  zm:='';
-
- Result.l:=0;
-
- if a='' then blad(old,12);
 
  op_:=''; siz:=' '; op:=' ';
 
@@ -6797,11 +6798,11 @@ if k in [__cpbcpd..__jskip] then begin
 
      end else begin                    // $C8 = INY
 
-      if Result.h[Result.l-1]<>$c8 then begin
+//      if Result.h[Result.l-1]<>$c8 then begin
        pom:='iny';                     // tylko w ten sposob przez ASM_MNEMO
        hlp:=asm_mnemo(pom, old);       // inaczej nie bedzie relokowalnosci
        addResult(hlp,Result);
-      end;
+//      end;
 
       test:=true;
      end;
@@ -15777,9 +15778,9 @@ begin
 
  end;
 
- if pass>pass_max then warning(119);
+ if pass>pass_max then blad(a, 119);
 
- // jesli nie wystapil zaden blad i mamy 16 przebiegow to na pewno nastapila petla bez konca
+ // jesli nie wystapil zaden blad i mamy PASS_MAX przebiegow to na pewno nastapila petla bez konca
 
 end;
 
