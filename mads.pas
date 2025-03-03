@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2025-03-02                                                   *)
+(*  last change: 2025-03-03                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -3881,6 +3881,8 @@ begin
     while not(test_char(j,str, sep1,sep2)) do begin
 
       txt:=get_dat(j,str,',',true);   // TRUE - konczy gdy napotka biala spacje
+      
+      if txt = '' then blad(str, 58);
 
       i:=length(txt);                 // wyjatek jesli odczytal ciag znakow zakonczony
                                       // znakiem '=', np. 'label='
@@ -5800,7 +5802,7 @@ procedure addResult(var hlp, Res: int5);
 (*----------------------------------------------------------------------------*)
 var i: integer;
 begin
-  for i:=0 to hlp.l-1 do Res.h[Res.l+i]:=hlp.h[i];  
+  for i:=0 to hlp.l-1 do Res.h[Res.l+i]:=hlp.h[i];
   inc(Res.l, hlp.l);
 end;
 
@@ -6190,12 +6192,12 @@ const
 begin
 
  if a='' then blad(old,12);
- 
+
  par:=Default(_strArray);
- 
+
  Result:=Default(int5);
  //Result.l:=0;
- 
+
  zm:='';
 
  op_:=''; siz:=' '; op:=' ';
@@ -10545,11 +10547,11 @@ var g: file;
 begin
 
   par:=Default(_strArray);
-  
+
   txt:='';
   tmp:='';
   tmpZM:='';
-  
+
   idx:=0;
   v:=0;
   r:=0;
@@ -12346,8 +12348,12 @@ JUMP:
 
            str:=ety;                          // czysta nazwa makra
 
-
            omin_spacje(i,zm);
+
+
+	   if test_char(i,zm) = false then
+	    if not(UpCase(zm[i]) in AllowLabelChars + AllowStringBrackets) then blad(zm, 4);
+
 
            if zm[i] in AllowStringBrackets then
             tmp:=ciag_ograniczony(i,zm,true)
