@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2025-03-03                                                   *)
+(*  last change: 2025-03-04                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -3881,7 +3881,7 @@ begin
     while not(test_char(j,str, sep1,sep2)) do begin
 
       txt:=get_dat(j,str,',',true);   // TRUE - konczy gdy napotka biala spacje
-      
+
       if txt = '' then blad(str, 58);
 
       i:=length(txt);                 // wyjatek jesli odczytal ciag znakow zakonczony
@@ -12352,7 +12352,7 @@ JUMP:
 
 
 	   if test_char(i,zm) = false then
-	    if not(UpCase(zm[i]) in AllowLabelChars + AllowStringBrackets) then blad(zm, 4);
+	    if not(UpCase(zm[i]) in AllowLabelChars + AllowStringBrackets + AllowQuotes) then blad(zm, 4);
 
 
            if zm[i] in AllowStringBrackets then
