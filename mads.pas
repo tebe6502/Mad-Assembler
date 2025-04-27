@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2025-03-04                                                   *)
+(*  last change: 2025-04-27                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -16166,6 +16166,14 @@ begin
  if plik_hm  = '' then plik_hm  := path + NewFileExt(name,'hea');
 
  t:=load_mes(mads_version);
+ 
+ {$IFDEF WINDOWS}
+ t:=t + CR;
+{$ENDIF}
+ t:=t + LF;
+ 
+ for x:=1 to ParamCount do t:=t + ParamStr(x) + ' ';
+  
 
 // if not(silent) then new_message(t);
 
