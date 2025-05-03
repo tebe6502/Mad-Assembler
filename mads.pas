@@ -15797,12 +15797,12 @@ procedure Syntax;
 (*----------------------------------------------------------------------------*)
 begin
 
- TextColor(WHITE);
+ //TextColor(WHITE);
  Writeln(Tab2Space(load_mes(mads_version)) + ' (' + {$i %DATE%} + ')');
 
  Flush(Output);
 
- TextColor(DARKGRAY);
+ //TextColor(DARKGRAY);
  Writeln(Tab2Space(load_mes(mads_version-2)));
 
  Flush(Output);
