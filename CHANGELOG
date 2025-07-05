@@ -1,3 +1,6 @@
+2025-07-05
+- dla 'opt F+' i nagłówka 'CART' generowana jest na wyjściu suma kontrolna CART_CRC 
+
 2025-04-27
 - do pliku LST dodana informacja o parametrach assemblacji
 

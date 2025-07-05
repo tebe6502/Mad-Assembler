@@ -306,7 +306,7 @@ var
     fvalue	: byte = $ff;
 
     __link_stack_pointer_old, __link_stack_address_old, __link_proc_vars_adr_old: cardinal;
-    __link_stack_pointer, __link_stack_address, __link_proc_vars_adr: cardinal;
+    __link_stack_pointer, __link_stack_address, __link_proc_vars_adr, carsum: cardinal;
 
     bank, blok, proc_lokal, fill, proc_idx, anonymous_idx: integer;
     whi_idx, while_nr, ora_nr, test_nr, test_idx, sym_idx, org_ofset: integer;
@@ -399,7 +399,7 @@ var
                   end;
 
     raw          : record
-                    use: Boolean;
+                    use, car: Boolean;
                     old: integer;
                    end;
 
@@ -1277,14 +1277,23 @@ begin
    v := fvalue;
 
    while fill > 0 do begin
+
+    if raw.car then inc(carsum, v);
+
     blockwrite(dst, v, 1);
     dec(fill);
    end;
 
   end;
 
+  if raw.car then inc(carsum, a);
+
   t_buf[buf_i]:=a; inc(buf_i);
-  if buf_i>=sizeof(t_buf) then flush_dst;
+
+  if raw.use and (raw.car = false) and (buf_i > 15) then
+   if chr(t_buf[0])+chr(t_buf[1])+chr(t_buf[2])+chr(t_buf[3]) = 'CART' then raw.car:=true;
+
+  if buf_i >= sizeof(t_buf) then flush_dst;
 end;
 
 
@@ -1526,12 +1535,12 @@ begin
    for a:=0 to high(t_prc)-1 do
     if t_prc[a].use = false then warning(129, t_prc[a].nam);
 
-
-
   Flush_dst;
 
   a:=integer( FileSize(dst) );
   CloseFile(dst);
+
+  if carsum <> 0 then writeln('cart_crc: ',hexStr(carsum,8));
 
 
   if list_lab then begin
@@ -15708,6 +15717,7 @@ begin
 
   inc(pass);
 
+
  // jesli NEXT_PASS = TRUE to zwieksz liczbe przebiegow
   if (pass>=pass_end) or (pass<1) then
    if next_pass then inc(pass_end);
@@ -15735,7 +15745,7 @@ begin
   array_used.max:=0;
 
   hea_i:=0; bank:=0; ifelse:=0; blok:=0; rel_ofs:=0; org_ofset:=0;
-  proc_idx:=0; proc_nr:=0; lokal_nr:=0; lc_nr:=0; fill:=0;
+  proc_idx:=0; proc_nr:=0; lokal_nr:=0; lc_nr:=0; fill:=0; //carsum:=0;
   line_add:=0; struct.id:=0; wyw_idx:=0; rel_idx:=0;
   ext_idx:=0; extn_idx:=0; smb_idx:=0; sym_idx:=0; skip_idx:=0;
   pag_idx:=0; end_idx:=0; pub_idx:=0; usi_idx:=0; segment:=0;
@@ -15766,7 +15776,7 @@ begin
   put_used:=false; ext_used.use:=false; dreloc.use:=false; dreloc.sdx:=false;
   rel_used:=false; blocked:=false; dlink.stc:=false;
   blokuj_zapis:=false; overflow:=false; test_symbols:=false;
-  lst_off:=false; noWarning:=false; raw.use:=false; variable:=false;
+  lst_off:=false; noWarning:=false; raw.use:=false; raw.car:=false; variable:=false;
 
   komentarz:=false; org:=false; runini.use:=false;
 
@@ -15783,6 +15793,7 @@ begin
   end;
 
  end;
+
 
  if pass>pass_max then blad(a, 119);
 
@@ -16166,14 +16177,14 @@ begin
  if plik_hm  = '' then plik_hm  := path + NewFileExt(name,'hea');
 
  t:=load_mes(mads_version);
- 
+
  {$IFDEF WINDOWS}
  t:=t + CR;
 {$ENDIF}
  t:=t + LF;
- 
+
  for x:=1 to ParamCount do t:=t + ParamStr(x) + ' ';
-  
+
 
 // if not(silent) then new_message(t);
 
