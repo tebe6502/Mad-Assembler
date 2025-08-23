@@ -43,9 +43,9 @@
 
 	org $2000
 	
-	.link 'mads\sam_reloc.obx'
+	.link 'sam_reloc.obx'
 
-	.link 'mads\reciter_reloc.obx'
+	.link 'reciter_reloc.obx'
 
 ; ----------------------------------------------------------------------------
 
