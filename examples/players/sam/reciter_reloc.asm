@@ -1,3 +1,4 @@
+// https://github.com/sidneycadot/sam/blob/main/assembly/reciter.s
 
 ; Source code for the SAM reciter.
 ;
@@ -54,7 +55,7 @@ RECITER_BUFFER	:256 brk
 
 ; ----------------------------------------------------------------------------
 
-        dta c'COPYRIGHT 1982 DON''T ASK'
+;        dta c'COPYRIGHT 1982 DON''T ASK'
 
 ; ----------------------------------------------------------------------------
 
@@ -1053,7 +1054,7 @@ PTAB_INDEX_HI:                  ; MSB of starting address of pronunciation rules
         dta h(PTAB_N,PTAB_O,PTAB_P,PTAB_Q,PTAB_R,PTAB_S,PTAB_T,PTAB_U,PTAB_V,PTAB_W,PTAB_X,PTAB_Y,PTAB_Z)
 
 ; ----------------------------------------------------------------------------
-
+/*
         ; This is the startup code.
         ; RUNAD will point here after opening the file, so exection starts here.
 
@@ -1068,7 +1069,7 @@ _start: lda     <TRAILER
         lda     #0                               ; Reset WARMST to zero.
         sta     WARMST
         rts
-
+*/
 ; ----------------------------------------------------------------------------
 
                        ; List of the 442 pronunciation rules.
@@ -6027,9 +6028,10 @@ PTAB_Z:		; pronunciation_index    "Z"
 	.he  29 
 	.he  3D 
 	.he  DA 
-
+/*
 ; ----------------------------------------------------------------------------
 
 TRAILER: .byte   $EA,$A0                         ; Trailing bytes -- probably not important. MEMLO is set to TRAILER on start.
 
 ; ----------------------------------------------------------------------------
+*/

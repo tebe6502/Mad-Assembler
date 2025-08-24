@@ -1,3 +1,4 @@
+// https://github.com/sidneycadot/sam/blob/main/assembly/sam.s
 
 ; ----------------------------------------------------------------------------
 
@@ -222,11 +223,11 @@ SAM_SAY_PHONEMES:
         beq     @lights_off                     ;
 
         lda     #1                              ; Lights on: Initialize self-modifying code values.
-        sta     PLAY_SAMPLES_REALTIME_SUB_2.SMC_42DF                        ;
+        sta     SMC_42DF                        ;
         sta     SMC_4210                        ;
-        sta     PLAY_SAMPLES_REALTIME_SUB_2.SMC_42B0                        ;
+        sta     SMC_42B0                        ;
         lda     PITCH_L1                        ;
-        sta     PLAY_SAMPLES_REALTIME_LOOP.SMC_PITCH                       ;
+        sta     SMC_PITCH                       ;
         lda     SPEED_L1                        ;
         sta     SMC_SPEED                       ;
         jmp     @join                           ;
@@ -239,11 +240,11 @@ SAM_SAY_PHONEMES:
         lda     #16                             ; Initialize self-modifying code values.
         sta     SMC_4210                        ;
         lda     #13                             ;
-        sta     PLAY_SAMPLES_REALTIME_SUB_2.SMC_42B0                        ;
+        sta     SMC_42B0                        ;
         lda     #12                             ;
-        sta     PLAY_SAMPLES_REALTIME_SUB_2.SMC_42DF                        ;
+        sta     SMC_42DF                        ;
         lda     PITCH_L0                        ;
-        sta     PLAY_SAMPLES_REALTIME_LOOP.SMC_PITCH                       ;
+        sta     SMC_PITCH                       ;
         lda     SPEED_L0                        ;
         sta     SMC_SPEED                       ;
 
@@ -1219,7 +1220,7 @@ ZEROPAGE_SAVE_RANGE_BUFFER:
         .byte   $02,$04,$04,$80,$05,$00,$00,$20,$00,$06,$66,$00,$FE,$9B,$2E,$2C
 
 ; ----------------------------------------------------------------------------
-
+/*
         ; It seems as if the area from 0x2A6F .. 0x2AD9 is not used (?)
 
         ; (97 bytes)
@@ -1237,7 +1238,7 @@ L2AD0:  sta     D2A6F,x                         ; Nobody jumps here.
 ; ----------------------------------------------------------------------------
 
         dta c'COPYRIGHT 1982 DON''T ASK - ALL RIGHTS '
-
+*/
 ; ----------------------------------------------------------------------------
 
         ; Read-only table at $2B00.
@@ -1748,7 +1749,7 @@ L3FE3:  ldy     ZP_RT_TEMP9                     ;
         sta     ZP_F5                           ;
         cmp     #$FF                            ;
         bne     @+                              ;
-        jmp     PLAY_SAMPLES_REALTIME_LOOP.L404E;
+        jmp     L404E                           ;
 
 ; ----------------------------------------------------------------------------
 
@@ -1762,7 +1763,7 @@ L3FE3:  ldy     ZP_RT_TEMP9                     ;
 
 ; ----------------------------------------------------------------------------
 
-PLAY_SAMPLES_REALTIME_LOOP	.local
+PLAY_SAMPLES_REALTIME_LOOP
 
         lda     D3EFC,y                         ;
         sta     ZP_RT_TEMP8                     ;
@@ -1774,7 +1775,7 @@ PLAY_SAMPLES_REALTIME_LOOP	.local
         sta     ZP_RT_TEMP8                     ;
         ldy     ZP_F5                           ;
 
-@1:     lda     FTAB1,y                         ;
+@       lda     FTAB1,y                         ;
         sta     XTAB1,x                         ;
         lda     FTAB2,y                         ;
         sta     XTAB2,x                         ;
@@ -1797,7 +1798,7 @@ PLAY_SAMPLES_REALTIME_LOOP	.local
         sta     D2E00,x                         ;
         inx                                     ;
         dec     ZP_RT_TEMP7                     ;
-        bne     @1                              ;
+        bne     @-                              ;
         inc     ZP_RT_TEMP9                     ;
         bne     L3FE3                           ;
 
@@ -1809,10 +1810,10 @@ L404E:  lda     #0                              ;
         inx                                     ;
         lda     D3EC0,x                         ;
         cmp     #$FF                            ;
-        bne     @100                            ;
+        bne     @+                              ;
         jmp     @600                            ;
 
-@100:   tax                                     ;
+@       tax                                     ;
         lda     FTAB11,x                        ;
         sta     ZP_F5                           ;
         lda     FTAB11,y                        ;
@@ -2006,8 +2007,6 @@ L404E:  lda     #0                              ;
         sta     ZP_RT_TEMP3                     ;
         jmp     L41CE                           ;
 
-		.endl
-
 ; ----------------------------------------------------------------------------
 
 L41C2:  jsr     PLAY_SAMPLES_REALTIME_SUB_2     ;
@@ -2058,7 +2057,7 @@ L41CE:  lda     UTAB,y                          ;
         ora     #$10                            ;
         sta     AUDC1                           ;
 
-        ldx SMC_4210: #$10                      ;  [SMC_4210 points to the argument of this ldx #imm]
+        ldx     SMC_4210: #$10                  ;  [SMC_4210 points to the argument of this ldx #imm]
 @100:   dex                                     ;
         bne     @100                            ;
         dec     ZP_RT_TEMP10                    ;
@@ -2120,7 +2119,7 @@ L424F:  clc                                     ;
 ;SMC_42B0 = PLAY_SAMPLES_REALTIME_SUB_2 + 70
 ;SMC_42DF = PLAY_SAMPLES_REALTIME_SUB_2 + 117
 
-PLAY_SAMPLES_REALTIME_SUB_2	.local
+PLAY_SAMPLES_REALTIME_SUB_2
 
         sty     ZP_RT_TEMP12                    ;
         lda     ZP_RT_TEMP4                     ;
@@ -2139,73 +2138,71 @@ PLAY_SAMPLES_REALTIME_SUB_2	.local
         sta     ZP_RT_PTR_LO                    ;
         tya                                     ;
         and     #$F8                            ;
-        bne     @1                              ;
+        bne     l1                              ;
         ldy     ZP_RT_TEMP12                    ;
         lda     D2E00,y                         ;
         lsr     @                               ;
         lsr     @                               ;
         lsr     @                               ;
         lsr     @                               ;
-        jmp     @6                              ;
+        jmp     l6                              ;
 
-@1:     eor     #$FF                            ;
+l1      eor     #$FF                            ;
         tay                                     ;
-@2:     lda     #8                              ;
+l2      lda     #8                              ;
         sta     ZP_F5                           ;
         lda     (ZP_RT_PTR),y                   ;
-@3:     asl     @                               ;
-        bcc     @4                              ;
+l3      asl     @                               ;
+        bcc     l4                              ;
         ldx     ZP_RT_TEMP16                    ;
         stx     AUDC1                           ;
-        bne     @5                              ;
-@4:     ldx     #$15                            ;
+        bne     l5                              ;
+l4      ldx     #$15                            ;
         stx     AUDC1                           ;
         nop                                     ;
-@5:
+l5
 
-        ldx SMC_42B0: #13                       ; [SMC_42B0 points to the argument of this ldx #imm]
+        ldx     SMC_42B0: #13                   ; [SMC_42B0 points to the argument of this ldx #imm]
 @wait:  dex                                     ;
         bne     @wait                           ;
         dec     ZP_F5                           ;
-        bne     @3                              ;
+        bne     l3                              ;
         iny                                     ;
-        bne     @2                              ;
+        bne     l2                              ;
         lda     #1                              ;
         sta     ZP_RT_TEMP9                     ;
         ldy     ZP_RT_TEMP12                    ;
         rts                                     ;
 
-@6:     eor     #$FF                            ;
+l6      eor     #$FF                            ;
         sta     ZP_RT_TEMP8                     ;
         ldy     ZP_FF                           ;
-@7:     lda     #8                              ;
+l7      lda     #8                              ;
         sta     ZP_F5                           ;
         lda     (ZP_RT_PTR),y                   ;
-@8:     asl     @                               ;
-        bcc     @9                              ;
+l8      asl     @                               ;
+        bcc     l9                              ;
         ldx     #$1A                            ;
         stx     AUDC1                           ;
-        bne     @10                             ;
-@9:     ldx     #$16                            ;
+        bne     l10                             ;
+l9      ldx     #$16                            ;
         stx     AUDC1                           ;
         nop                                     ;
-@10:
+l10
 
-        ldx SMC_42DF: #12                       ; [SMC_42DF points to the argument of this ldx #imm]
-@11:    dex                                     ;
-        bne     @11                             ;
+        ldx     SMC_42DF: #12                   ; [SMC_42DF points to the argument of this ldx #imm]
+l11     dex                                     ;
+        bne     l11                             ;
         dec     ZP_F5                           ;
-        bne     @8                              ;
+        bne     l8                              ;
         iny                                     ;
         inc     ZP_RT_TEMP8                     ;
-        bne     @7                              ;
+        bne     l7                              ;
         lda     #1                              ;
         sta     ZP_RT_TEMP9                     ;
         sty     ZP_FF                           ;
         ldy     ZP_RT_TEMP12                    ;
         rts                                     ;
-
-				.endl
 
 ; ----------------------------------------------------------------------------
 
@@ -2577,7 +2574,7 @@ SAM_ERROR_SOUND	.local
 		.endl
 
 ; ----------------------------------------------------------------------------
-
+/*
         ; The data below (38 bytes) is probably garbage.
 
         .byte   $A9
@@ -2617,3 +2614,4 @@ _start: lda     <D4586                          ;
         :11 dta 0                              ; Trailing nonsense.
 
 ; ----------------------------------------------------------------------------
+*/
