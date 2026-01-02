@@ -43,3 +43,4 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [DUMB-PONG](https://github.com/VinsCool/DUMB-PONG)
 * [Rainbox](https://github.com/fredlcore/1K-RainBox)
 * [Jatari cart](https://github.com/jhusak/jataricart/tree/master)
+* [Władca](https://github.com/old8bitpl/atari-wladca-src)
