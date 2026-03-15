@@ -1,3 +1,6 @@
+2026-03-15
+- poprawione generowanie nagłówka dla OPT O-, gdy adres ostatniego bajtu pokrywa się z nowym ORG po OPT O-
+
 2025-07-05
 - dla 'opt F+' i nagłówka 'CART' generowana jest na wyjściu suma kontrolna CART_CRC 
 

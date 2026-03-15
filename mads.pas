@@ -14034,7 +14034,17 @@ JUMP:
          end;
 
 
-         if (adres<>idx) or (_odd>=0) then begin
+{ !!! ((adres=idx) and (opt and opt_O = 0)) !!!
+
+	org $2000
+	:5 dta $10
+
+	opt o-
+	org $2005
+	:10 dta $20
+}
+
+         if (adres<>idx) or (_odd>=0) or ((adres=idx) and (opt and opt_O = 0)) then begin
 
            save_hea;
 
