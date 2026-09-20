@@ -1,12 +1,12 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.1.8 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.9 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*  https://github.com/tebe6502/Mad-Assembler                                 *)
 (*                                                                            *)
 (*  Supports 6502, WDC 65816, Sparta DOS X, virtual banks                     *)
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2025-04-27                                                   *)
+(*  last change: 2026-09-20                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -871,7 +871,7 @@ LF,
 
 // version
 
-{132} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','8',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{132} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','9',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80)
  ];
@@ -6169,7 +6169,7 @@ const
  (kod:$44; ads:$00000004),	// MVP
  (kod:$60; ads:$00000010),	// PER = PEA rell (push effective address relative)
  (kod:$C3; ads:$00001000),	// PEI = PEA (zp) (push effective address indirect)
- (kod:$62; ads:$04001090),	// PEA = PEA
+ (kod:$F4; ads:$04001090),	// PEA = PEA 
  (kod:$8B; ads:$00000000),	// PHB
  (kod:$0B; ads:$00000000),	// PHD
  (kod:$4B; ads:$00000000),	// PHK
@@ -7235,11 +7235,12 @@ end;
  end;
 
  omin_spacje(i,a);
+ 
 
  // wyjatki dla ktorych rozmiar rejestru jest staly
- if (opt and opt_C>0) and (op='#') then
+ if (opt and opt_C > 0) and (op = '#') then
   case code of
-    98: test_siz(a,siz,'Q',pomin);		// PEA #Q
+   $F4: blad(old,14);				// PEA #
    254: test_siz(a,siz,'Z',pomin);		// COP #Z
    190: test_siz(a,siz,'Z',pomin);		// REP #Z
    222: test_siz(a,siz,'Z',pomin);		// SEP #Z
@@ -7421,42 +7422,51 @@ end;
 
  if branch_run then begin
 
-   op_:='B';
+   op_ := 'B';  
 
-   if siz<>' ' then
-    if siz='Q' then op_:='W' else
-     if siz<>'Z' then blad(old,31);
+   if siz <> ' ' then
+    if siz = 'Q' then op_:='W' else
+     if siz <> 'Z' then blad(old,31);
 
-   j:=adrMode(op_);                  // dowiemy sie ktory to tryb adresowania
+   j := adrMode(op_);	// dowiemy sie ktory to tryb adresowania
 
-   war:=war-2-adres;
+   test := false;
 
-
-   if tryb and maska[j]=2 then
-
-     idx:=128
-
+   
+   if code = $F4 then	// PEA
+   
+     op_ := 'W'
+   
    else begin
 
-     op_:='W';
+     war:=war-2-adres;
 
-     if siz<>' ' then
-      if siz<>'Q' then blad(old,31);
+     if tryb and maska[j] = 2 then
 
-     dec(war);
+       idx := 128
 
-     idx:=65536;
+     else begin
+
+       op_ := 'W';
+
+       if siz <> ' ' then
+        if siz <> 'Q' then blad(old,31);
+
+       dec(war);
+
+       idx:=65536;
+
+     end;
+     
+
+     if (war<0) and (abs(war)-idx>0) then begin war:=abs(war)-idx; test:=true end;
+
+     if (war>0) and (war-idx+1>0) then begin war:=war-idx+1; test:=true end;
+
+     if (pass=pass_end) and test then blad(old,integer(-war));
 
    end;
 
-
-   test:=false;
-
-   if (war<0) and (abs(war)-idx>0) then begin war:=abs(war)-idx; test:=true end;
-
-   if (war>0) and (war-idx+1>0) then begin war:=war-idx+1; test:=true end;
-
-   if (pass=pass_end) and test then blad(old,integer(-war));
  end;
 
 
@@ -7511,7 +7521,7 @@ end;
 
 // sprawdz czy wystapilo rozszerzenie mnemonika
 // zmodyfikuj wielkosc operandu na podstawie 'SIZ'
- if siz<>' ' then
+ if siz <> ' ' then
   case op_[len] of
    'Q': if siz<>'Z' then
          op_[len]:=siz
@@ -7603,7 +7613,7 @@ end;
 
 
   if (longa or longi <> 0) and macro_rept_if_test then		// LONGA | LONGI
-   if not (code in [$f4,$02,ord(REP),ord(SEP)]) then begin	// PEA #, COP #, REP #, SEP #
+   if not (code in [$F4,$02,ord(REP),ord(SEP)]) then begin	// PEA #, COP #, REP #, SEP #
 
   // sprawdzamy rozmiar rejestrow dla trybu adresowania natychmiastowego '#'
     if op_[len]='#' then
@@ -7693,7 +7703,7 @@ end;
 
  // tutaj przeprowadzamy operacje sledzenia rozmiaru rejestrow A,X,Y
  // modyfikowanych przez rozkazy REP, SEP
-  if (opt and opt_T>0) and (pass=pass_end) and macro_rept_if_test then begin  // wlaczona opcja sledzenia rozkazow SEP, REP
+  if (opt and opt_T > 0) and (pass=pass_end) and macro_rept_if_test then begin  // wlaczona opcja sledzenia rozkazow SEP, REP
 
    if code in [ord(REP), ord(SEP)] then reg_size( byte(war), t_MXinst(code));
 
