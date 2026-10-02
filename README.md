@@ -38,7 +38,7 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [5dots](https://gitlab.com/bocianu/5dots)
 * [Raiders of the Lost Ark](https://forums.atariage.com/topic/260558-raiders-of-the-lost-ark/)
 * [Pad](https://forums.atariage.com/topic/191864-pad-15-beta/?do=findComment&comment=4011355)
-* [LK Avalon sources](https://github.com/NowinskiK/lkavalon-atari)
+* [LK Avalon sources](https://github.com/trekawek/lkavalon-atari)
 * [Intel 8080 Emulator](https://github.com/ivop/atari8080)
 * [EdVenture](https://github.com/EdSalisbury/edventure)
 * [VUPlayer-LZSS](https://github.com/VinsCool/VUPlayer-LZSS)
@@ -50,3 +50,4 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [Jatari cart](https://github.com/jhusak/jataricart/tree/master)
 * [Władca](https://github.com/old8bitpl/atari-wladca-src)
 * [Jump!](https://github.com/dinadan67/jump-for-mads)
+* [Frog](https://github.com/trekawek/frog)
