@@ -51,3 +51,4 @@ Max. amount of labels and macros is limited to PC's memory size. Single listing'
 * [Władca](https://github.com/old8bitpl/atari-wladca-src)
 * [Jump!](https://github.com/dinadan67/jump-for-mads)
 * [Frog](https://github.com/trekawek/frog)
+* [CHLEBA](https://github.com/viktorcech/chleba)
