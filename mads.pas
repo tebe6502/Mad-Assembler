@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2026-09-20                                                   *)
+(*  last change: 2026-10-05                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -25,13 +25,13 @@ uses
 {$IFDEF WINDOWS}
 	windows,
 {$ENDIF}
-	crt, sysutils;
+	crt, sysutils;		// ptccrt (multiplatform CRT, almost)
 
 type
 
     t_Dirop  = (_unknown, _r=1, _or, _lo, _hi, _get, _wget, _lget, _dget, _and, _xor, _not,
 		_len, _adr, _def, _filesize, _sizeof, _zpvar, _rnd, _asize, _isize,
-		_fileexists, _array);
+		_fileexists, _array, _version);
 
     t_Mads   = (__STACK_POINTER, __STACK_ADDRESS, __PROC_VARS_ADR);
 
@@ -304,6 +304,8 @@ var
     margin	: byte = 32;
 
     fvalue	: byte = $ff;
+
+    radix	: byte = 16;
 
     __link_stack_pointer_old, __link_stack_address_old, __link_proc_vars_adr_old: cardinal;
     __link_stack_pointer, __link_stack_address, __link_proc_vars_adr, carsum: cardinal;
@@ -4322,6 +4324,8 @@ LOOP:
 
      _not: oper:=OperNew(k,old,'!',value,false);    // .NOT
 
+     _version: begin war := 020108; value:=true;  end;
+
      _fileexists:				    // .FILEEXISTS
            begin
 
@@ -5318,6 +5322,20 @@ var op_, default: char;
     invers: byte;
     value, nawias, ciag, yes: Boolean;
     tmp: string;
+
+
+ procedure pisz_wartosc;
+ begin
+
+   if pisz then
+    if radix = 16 then
+     end_string := end_string + '$' + hex(cardinal(war),4)
+    else
+     end_string := end_string + IntToStr(war);
+
+ end;
+
+
 begin
  omin_spacje(i,a);
 
@@ -5510,7 +5528,7 @@ begin
             { if reloc and not(nawias) then             ????????????????????????
               if pass=pass_end then warning(116);  }
 
-             if pisz then end_string := end_string + '$' + hex(cardinal(war),4);
+	     pisz_wartosc;
             end;
 
           end;
@@ -5541,7 +5559,7 @@ begin
             { if reloc and not(nawias) then             ????????????????????????
               if pass=pass_end then warning(116);    }
 
-             if pisz then end_string := end_string + '$' + hex(cardinal(war),4);
+	     pisz_wartosc;
             end;
 
           end;
@@ -5627,8 +5645,7 @@ begin
          war:=get_expres(i,a,old, false);
          value:=true;
 
-         if pisz then end_string := end_string + '$' + hex(cardinal(war),4);
-
+	 pisz_wartosc;
        end;
   end;
 
@@ -6169,7 +6186,7 @@ const
  (kod:$44; ads:$00000004),	// MVP
  (kod:$60; ads:$00000010),	// PER = PEA rell (push effective address relative)
  (kod:$C3; ads:$00001000),	// PEI = PEA (zp) (push effective address indirect)
- (kod:$F4; ads:$04001090),	// PEA = PEA 
+ (kod:$F4; ads:$04001090),	// PEA = PEA
  (kod:$8B; ads:$00000000),	// PHB
  (kod:$0B; ads:$00000000),	// PHD
  (kod:$4B; ads:$00000000),	// PHK
@@ -7235,7 +7252,7 @@ end;
  end;
 
  omin_spacje(i,a);
- 
+
 
  // wyjatki dla ktorych rozmiar rejestru jest staly
  if (opt and opt_C > 0) and (op = '#') then
@@ -7422,7 +7439,7 @@ end;
 
  if branch_run then begin
 
-   op_ := 'B';  
+   op_ := 'B';
 
    if siz <> ' ' then
     if siz = 'Q' then op_:='W' else
@@ -7432,11 +7449,11 @@ end;
 
    test := false;
 
-   
+
    if code = $F4 then	// PEA
-   
+
      op_ := 'W'
-   
+
    else begin
 
      war:=war-2-adres;
@@ -7457,7 +7474,7 @@ end;
        idx:=65536;
 
      end;
-     
+
 
      if (war<0) and (abs(war)-idx>0) then begin war:=abs(war)-idx; test:=true end;
 
@@ -12524,7 +12541,18 @@ JUMP:
         if macro_rept_if_test then
          if pass=pass_end then begin
 
+	  omin_spacje(i, zm);
+
+	  if (zm[i] = '%') and (UpCase(zm[i+1]) = 'D') then begin
+	   inc(i, 2);
+	   omin_spacje(i, zm);
+
+	   radix:=10;
+	  end;
+
           wypisz(i,zm);
+
+	  radix:=16;
 
          end;
 
@@ -15894,7 +15922,7 @@ const
 
  // _HASH wylicza osobny program
  // nie trzeba przechowywac w pamieci stringow z nazwami
- _hash: array [0..345] of record
+ _hash: array [0..346] of record
                               v: byte;
                               o: word;
                          end =
@@ -15938,25 +15966,25 @@ const
  (v:$65;o:$6033),(v:$2D;o:$6034),(v:$6E;o:$6053),(v:$02;o:$608C),(v:$28;o:$60A4),(v:$48;o:$6110),
  (v:$72;o:$6113),(v:$D9;o:$6142),(v:$4C;o:$6190),(v:$BA;o:$61A1),(v:$68;o:$61A6),(v:$6D;o:$61C1),
  (v:$26;o:$61C9),(v:$11;o:$6203),(v:$CB;o:$6231),(v:$2E;o:$6274),(v:$05;o:$6293),(v:$9E;o:$62CD),
- (v:$9E;o:$62ED),(v:$55;o:$6334),(v:$2C;o:$6434),(v:$03;o:$648C),(v:$27;o:$64A4),(v:$49;o:$6510),
- (v:$73;o:$6513),(v:$4D;o:$6590),(v:$25;o:$65C9),(v:$10;o:$6603),(v:$06;o:$6693),(v:$9E;o:$66CD),
- (v:$9E;o:$66ED),(v:$54;o:$6714),(v:$AB;o:$68C2),(v:$D7;o:$6A46),(v:$39;o:$6A93),(v:$EA;o:$6B3A),
- (v:$6F;o:$733C),(v:$A9;o:$73F5),(v:$67;o:$7833),(v:$6D;o:$7B65),(v:$6A;o:$7C8D),(v:$A7;o:$7D7A),
- (v:$69;o:$7E9D),(v:$C9;o:$7F58),(v:$B7;o:$7F79),(v:$A7;o:$8154),(v:$D1;o:$843F),(v:$77;o:$864A),
- (v:$62;o:$8976),(v:$F0;o:$8A4B),(v:$CE;o:$8C5C),(v:$02;o:$8D39),(v:$71;o:$8D4A),(v:$74;o:$92F2),
- (v:$76;o:$9704),(v:$EC;o:$9833),(v:$F0;o:$987A),(v:$AA;o:$990E),(v:$A9;o:$9998),(v:$11;o:$9B5A),
- (v:$B9;o:$9B88),(v:$AE;o:$9E9D),(v:$D5;o:$9F41),(v:$61;o:$9F52),(v:$03;o:$A146),(v:$A4;o:$A152),
- (v:$0D;o:$A224),(v:$B0;o:$A307),(v:$C1;o:$A3EE),(v:$BB;o:$A421),(v:$E7;o:$A7EE),(v:$65;o:$A934),
- (v:$B4;o:$A9FB),(v:$66;o:$AB24),(v:$AD;o:$ACD0),(v:$64;o:$AFC6),(v:$BE;o:$B2B3),(v:$BD;o:$B633),
- (v:$E3;o:$B64B),(v:$CF;o:$B904),(v:$AE;o:$B9DA),(v:$C5;o:$B9F0),(v:$0A;o:$BA05),(v:$DD;o:$BA64),
- (v:$E4;o:$BEEA),(v:$CC;o:$BFBD),(v:$C0;o:$C10A),(v:$73;o:$C257),(v:$75;o:$CA0E),(v:$6E;o:$CA5A),
- (v:$09;o:$CC30),(v:$C8;o:$CD5F),(v:$66;o:$CDE6),(v:$A1;o:$CE0D),(v:$C3;o:$CF8A),(v:$6C;o:$D040),
- (v:$E6;o:$D090),(v:$B1;o:$D0C2),(v:$6B;o:$D0CD),(v:$D8;o:$D417),(v:$04;o:$D720),(v:$6C;o:$D894),
- (v:$CF;o:$D91C),(v:$D8;o:$DB0C),(v:$CE;o:$DE1A),(v:$15;o:$DE7D),(v:$B3;o:$E073),(v:$E2;o:$E10B),
- (v:$E8;o:$E318),(v:$6A;o:$E3FC),(v:$0E;o:$E6E6),(v:$D0;o:$E767),(v:$B4;o:$E829),(v:$CD;o:$E97F),
- (v:$0C;o:$EA8C),(v:$C4;o:$EB60),(v:$C3;o:$EBA8),(v:$08;o:$EDEE),(v:$07;o:$EFC3),(v:$C7;o:$F129),
- (v:$72;o:$F166),(v:$CC;o:$F1FE),(v:$AA;o:$F353),(v:$64;o:$F5F1),(v:$A8;o:$F6D0),(v:$D0;o:$F6E5),
- (v:$C0;o:$F88C),(v:$B5;o:$FAC5),(v:$01;o:$FC2A),(v:$D2;o:$FCCE)
+ (v:$9E;o:$62ED),(v:$55;o:$6334),(v:$17;o:$6431),(v:$2C;o:$6434),(v:$03;o:$648C),(v:$27;o:$64A4),
+ (v:$49;o:$6510),(v:$73;o:$6513),(v:$4D;o:$6590),(v:$25;o:$65C9),(v:$10;o:$6603),(v:$06;o:$6693),
+ (v:$9E;o:$66CD),(v:$9E;o:$66ED),(v:$54;o:$6714),(v:$AB;o:$68C2),(v:$D7;o:$6A46),(v:$39;o:$6A93),
+ (v:$EA;o:$6B3A),(v:$6F;o:$733C),(v:$A9;o:$73F5),(v:$67;o:$7833),(v:$6D;o:$7B65),(v:$6A;o:$7C8D),
+ (v:$A7;o:$7D7A),(v:$69;o:$7E9D),(v:$C9;o:$7F58),(v:$B7;o:$7F79),(v:$A7;o:$8154),(v:$D1;o:$843F),
+ (v:$77;o:$864A),(v:$62;o:$8976),(v:$F0;o:$8A4B),(v:$CE;o:$8C5C),(v:$02;o:$8D39),(v:$71;o:$8D4A),
+ (v:$74;o:$92F2),(v:$76;o:$9704),(v:$EC;o:$9833),(v:$F0;o:$987A),(v:$AA;o:$990E),(v:$A9;o:$9998),
+ (v:$11;o:$9B5A),(v:$B9;o:$9B88),(v:$AE;o:$9E9D),(v:$D5;o:$9F41),(v:$61;o:$9F52),(v:$03;o:$A146),
+ (v:$A4;o:$A152),(v:$0D;o:$A224),(v:$B0;o:$A307),(v:$C1;o:$A3EE),(v:$BB;o:$A421),(v:$E7;o:$A7EE),
+ (v:$65;o:$A934),(v:$B4;o:$A9FB),(v:$66;o:$AB24),(v:$AD;o:$ACD0),(v:$64;o:$AFC6),(v:$BE;o:$B2B3),
+ (v:$BD;o:$B633),(v:$E3;o:$B64B),(v:$CF;o:$B904),(v:$AE;o:$B9DA),(v:$C5;o:$B9F0),(v:$0A;o:$BA05),
+ (v:$DD;o:$BA64),(v:$E4;o:$BEEA),(v:$CC;o:$BFBD),(v:$C0;o:$C10A),(v:$73;o:$C257),(v:$75;o:$CA0E),
+ (v:$6E;o:$CA5A),(v:$09;o:$CC30),(v:$C8;o:$CD5F),(v:$66;o:$CDE6),(v:$A1;o:$CE0D),(v:$C3;o:$CF8A),
+ (v:$6C;o:$D040),(v:$E6;o:$D090),(v:$B1;o:$D0C2),(v:$6B;o:$D0CD),(v:$D8;o:$D417),(v:$04;o:$D720),
+ (v:$6C;o:$D894),(v:$CF;o:$D91C),(v:$D8;o:$DB0C),(v:$CE;o:$DE1A),(v:$15;o:$DE7D),(v:$B3;o:$E073),
+ (v:$E2;o:$E10B),(v:$E8;o:$E318),(v:$6A;o:$E3FC),(v:$0E;o:$E6E6),(v:$D0;o:$E767),(v:$B4;o:$E829),
+ (v:$CD;o:$E97F),(v:$0C;o:$EA8C),(v:$C4;o:$EB60),(v:$C3;o:$EBA8),(v:$08;o:$EDEE),(v:$07;o:$EFC3),
+ (v:$C7;o:$F129),(v:$72;o:$F166),(v:$CC;o:$F1FE),(v:$AA;o:$F353),(v:$64;o:$F5F1),(v:$A8;o:$F6D0),
+ (v:$D0;o:$F6E5),(v:$C0;o:$F88C),(v:$B5;o:$FAC5),(v:$01;o:$FC2A),(v:$D2;o:$FCCE)
  );
 
 begin

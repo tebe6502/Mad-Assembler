@@ -1,7 +1,7 @@
-* test na poprawnosc asemblacji
-* program sklada sie z wszystkich mozliwych
-* trybow i rozkazow CPU65816
-* komentarz zawiera informacje o oczekiwanym wyniku asemblacji rozkazu
+; test na poprawnosc asemblacji
+; program sklada sie z wszystkich mozliwych
+; trybow i rozkazow CPU65816
+; komentarz zawiera informacje o oczekiwanym wyniku asemblacji rozkazu
 
         opt h-
         org $8000
@@ -311,9 +311,9 @@ T       equ $708090
 
 	MVP	Z,$30	;$44
 
-	PEA	Q	;$62
-	PEA	(Z)	;$D4
-	PEA	#$40	;$F4
+	PER	Q	;$62
+	PEI	(Z)	;$D4
+	PEA	$40	;$F4
 
 	PHB		;$8B
 
