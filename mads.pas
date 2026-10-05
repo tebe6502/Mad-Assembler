@@ -4324,7 +4324,7 @@ LOOP:
 
      _not: oper:=OperNew(k,old,'!',value,false);    // .NOT
 
-     _version: begin war := 020108; value:=true;  end;
+     _version: begin war := 020109; value:=true;  end;
 
      _fileexists:				    // .FILEEXISTS
            begin
