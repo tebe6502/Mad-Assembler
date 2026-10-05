@@ -1,5 +1,5 @@
 (*----------------------------------------------------------------------------*)
-(*  Mad-Assembler v2.1.8 by Tomasz Biela (aka Tebe/Madteam)                   *)
+(*  Mad-Assembler v2.1.9 by Tomasz Biela (aka Tebe/Madteam)                   *)
 (*  https://github.com/tebe6502/Mad-Assembler                                 *)
 (*                                                                            *)
 (*  Supports 6502, WDC 65816, Sparta DOS X, virtual banks                     *)
@@ -873,7 +873,7 @@ LF,
 
 // version
 
-{132} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','8',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+{132} chr(ord('m') + $80),'a','d','s',' ','2','.','1','.','9',chr($80),' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
 
      chr($80)
  ];
@@ -4324,7 +4324,7 @@ LOOP:
 
      _not: oper:=OperNew(k,old,'!',value,false);    // .NOT
 
-     _version: begin war := 020108; value:=true;  end;
+     _version: begin war := 020109; value:=true;  end;
 
      _fileexists:				    // .FILEEXISTS
            begin

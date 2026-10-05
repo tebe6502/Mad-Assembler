@@ -1,5 +1,5 @@
 2026-10-05
-- dodana dyrektywa .VERSION zwracająca aktualną wersję assemblera (obecnie 020108)
+- dodana dyrektywa .VERSION zwracająca aktualną wersję assemblera (obecnie 020109)
 - dodany przełącznik dla .PRINT %d (działa tylko bezpośrednio po .PRINT), wyświetla liczby decymalnie
 
 2026-09-20
