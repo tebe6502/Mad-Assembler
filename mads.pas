@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2026-10-05                                                   *)
+(*  last change: 2026-11-10                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -6186,7 +6186,7 @@ const
  (kod:$44; ads:$00000004),	// MVP
  (kod:$60; ads:$00000010),	// PER = PEA rell (push effective address relative)
  (kod:$C3; ads:$00001000),	// PEI = PEA (zp) (push effective address indirect)
- (kod:$F4; ads:$04001090),	// PEA = PEA
+ (kod:$F4; ads:$04001090),	// PEA = PEA #
  (kod:$8B; ads:$00000000),	// PHB
  (kod:$0B; ads:$00000000),	// PHD
  (kod:$4B; ads:$00000000),	// PHK
@@ -7254,10 +7254,13 @@ end;
  omin_spacje(i,a);
 
 
+ if (opt and opt_C > 0) and (code = $F4) and (op = ' ') then code := $62;	// PEA -> PER
+
+
  // wyjatki dla ktorych rozmiar rejestru jest staly
  if (opt and opt_C > 0) and (op = '#') then
   case code of
-   $F4: blad(old,14);				// PEA #
+   $F4: op := ' ';				// PEA #
    254: test_siz(a,siz,'Z',pomin);		// COP #Z
    190: test_siz(a,siz,'Z',pomin);		// REP #Z
    222: test_siz(a,siz,'Z',pomin);		// SEP #Z
