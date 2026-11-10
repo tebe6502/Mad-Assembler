@@ -1,0 +1,208 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file Detector.as8
+	@author Marek "Konop" Konopka
+	@date 15.05.2010
+*/
+
+//******************************************************************************************************************************************************
+
+	.zpvar = NProgram.ZpgVars_Ptr
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'utils.as8'
+		icl	'stdbool.h8'
+		icl	'memory.h8'
+		icl	'system.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'pia.h8'
+		icl	'gtia.h8'
+		icl	'antic.h8'
+		icl	'pokey.h8'
+		icl	'API\Protocol.h8'
+		icl	'Detector.h8'
+		icl	'SpeedBench.h8'
+	opt l+
+	
+//******************************************************************************************************************************************************
+
+.local	NProgram
+	
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+	org	Startup_Ptr
+	jmp	main
+	
+//******************************************************************************************************************************************************
+	
+.proc	main
+	.var	.byte	status
+
+	NConsole.print	#echo_str
+	NVeronica.NMaster.store_system
+	
+	//	Enable bank #0
+	NVeronica.NMaster.set_rambanks	#NVeronica.NProtocol.EAtariRegisterStates.BANK0_ENABLED
+	NUtils.movba	#0, NSystem.SDMCTL
+	NUtils.movba	#0, NAntic.DMACTL
+
+	NVeronica.NMaster.identify	#NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT
+	sta	status
+
+	NUtils.cmpba	status, #NUtils.TRUE
+	bne	continue
+		speed_benchmark
+	
+continue
+	NVeronica.NMaster.restore_system
+	NVeronica.NMaster.print_status	status
+	NConsole.putc	#NConsole.ATASCII_EOL
+	
+	NUtils.cmpba	status, #NUtils.TRUE
+	bne	cont2
+		print_benchmark
+		NConsole.putc	#NConsole.ATASCII_EOL
+cont2
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	echo_str:	dta c'Veronica detector 1.0.0.0', NConsole.ATASCII_EOL, \
+		c'(C) 2009 by Marek Konopka', NConsole.ATASCII_EOL, 0
+
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	speed_benchmark
+	.using	NVeronica.NProtocol
+
+	NVeronica.NMaster.execute_data_upload_cmd	#NVeronica.NSlave.CODE_BEGIN, #NVeronica.NSlave.CODE_LENGTH, #NVeronica.NSlave.Code_Ptr	
+
+    NSystem.wait_for_vbl    #1
+    lda $d40b
+    sta $3000
+    
+	NSystem.disable_system_interrupts
+	measure_time	#start_time
+	NSystem.enable_system_interrupts
+	
+	NVeronica.NMaster.execute_procedure_call_cmd	#NVeronica.NSlave.Code_Ptr
+	NVeronica.NProtocol.wait_for_veronica
+
+	NSystem.disable_system_interrupts
+	measure_time	#end_time
+	NSystem.enable_system_interrupts
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	measure_time(.word time_ptr) .var
+	.zpvar	.word	time_ptr
+	
+	ldy	#STime.m_frame_num
+	NUtils.movba	NSystem.RTCLOK+2, "(time_ptr),y"
+	
+	ldy	#STime.m_line_num
+	NUtils.movba	NAntic.VCOUNT, "(time_ptr),y"
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+// TODO Zaookraglic wynik do 2 miejsc po przecinku.
+.proc	print_benchmark
+	.var	.word	frame_count
+	.var	.byte	num_lines
+	.var	.word	full_start_time, full_end_time
+	.var	.word	fps
+
+	NSystem.get_num_vcount_lines
+	sta	num_lines
+	
+	//	Start time line number fractional
+	NUtils.lead	$00000000, NMaths.math_arg0
+	NUtils.movba	start_time.m_line_num, NMaths.math_arg0+1
+	NUtils.leaw	$0000, NMaths.math_arg1
+	NUtils.movba	num_lines, NMaths.math_arg1
+	jsr	NMaths.div_u32_by_u16
+	NUtils.movba	NMaths.math_arg0, full_start_time
+		
+	//	End time line number fractional
+	NUtils.lead	$00000000, NMaths.math_arg0
+	NUtils.movba	end_time.m_line_num, NMaths.math_arg0+1
+	NUtils.leaw	$0000, NMaths.math_arg1
+	NUtils.movba	num_lines, NMaths.math_arg1
+	jsr	NMaths.div_u32_by_u16
+	NUtils.movba	NMaths.math_arg0, full_end_time
+
+	NUtils.movba	start_time.m_frame_num, full_start_time+1
+	NUtils.movba	end_time.m_frame_num, full_end_time+1
+		
+	NUtils.subw	full_end_time, full_start_time, frame_count
+	
+	NSystem.get_tv_fps
+	sta	fps+1
+	NUtils.movba	#0, fps
+	
+	_itofp	fps, #fps_fp
+	_itofp	frame_count, #frame_count_fp
+	_fpdiv	#fps_fp, #frame_count_fp, #result_fp
+	_fptoa	#result_fp, #result_str
+	
+	NAlgorithm.find	#result_str, #NConsole.ATASCII_EOL
+	NUtils.movba	#0, "result_str,y"
+	
+	NConsole.print	#clocked_str
+	NConsole.print	#result_str
+	NConsole.print	#mhz_str
+	rts
+	
+	clocked_str:	dta c'Clocked approx. at ', 0
+	mhz_str:	dta c' MHz', 0
+	
+	fps_fp:			.ds 6
+	frame_count_fp:	.ds	6
+	result_fp:		.ds 6
+	
+	result_str:	.ds 16
+
+.endp
+
+//******************************************************************************************************************************************************
+//	Data
+//******************************************************************************************************************************************************
+
+	.var	STime	start_time, end_time
+
+.endl // NProgram
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'system.as8'
+	icl	'memory.as8'
+	icl	'console.as8'
+	icl	'API\Master.as8'
+	icl	'API\Messages.as8'
+	icl	'API\Utils.as8'
+	icl	'SpeedBench.as8'
+	icl	'algorithm.as8'
+	icl	'maths.as8'
+	icl	'Utils\fp.asm'
+
+//******************************************************************************************************************************************************
+
+	org	NSystem.RUNAD
+	dta	a(NProgram.Startup_Ptr)

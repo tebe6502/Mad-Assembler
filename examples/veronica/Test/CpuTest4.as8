@@ -1,0 +1,92 @@
+//******************************************************************************************************************************************************
+	icl	'antic.h8'
+	icl	'memory.h8'
+	icl	'API\protocol.h8'
+//******************************************************************************************************************************************************
+
+	AtrProcPtr	= $a000
+	VerProcPtr	= $e000
+	VerWndPtr	= $c000
+	WindowPtr	= $8000
+	CodePtr		= $2000
+	AtrVerStartVct	= $bffc
+	
+//******************************************************************************************************************************************************
+
+	org CodePtr
+
+	.using NVeronica.NProtocol
+	
+	sei
+	NUtils.movba	#0, $d20e
+	NUtils.movba	#0, $d40e
+
+	NUtils.movba	#(EAtariRegisterStates.BANKS_ENABLED | EAtariRegisterStates.VER_CPU_RESET_PULSE_LOW), Atari_HW_Register
+	
+	NUtils.leaw	VerProcPtr, AtrVerStartVct
+	NMemory.memcpy	#AtrProcPtr, #BEGIN, #(END-BEGIN)
+
+	NUtils.movba	#(EAtariRegisterStates.BANKS_ENABLED | EAtariRegisterStates.VER_CPU_RESET_PULSE_HIGH | (1 << EAtariRegisterBits.RAMBANK_CFG)), Atari_HW_Register	// swap + reset
+	wait	#0
+	NUtils.movba	#(EAtariRegisterStates.BANKS_DISABLED | EAtariRegisterStates.VER_CPU_RESET_PULSE_HIGH), Atari_HW_Register	// swap + reset
+	
+	NUtils.movba	#$40, $d40e
+	NUtils.movba	#$40, $d40e
+	NUtils.movba	$10, $d20e
+	cli
+	rts
+
+//******************************************************************************************************************************************************
+
+.proc	wait(.byte x) .reg
+loop
+	NAntic.wait_for_raster_line
+	dex
+	bne	loop
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+	
+	BEGIN = *
+
+.local	namespace, VerProcPtr
+
+.proc	ver_proc
+	ldy	#0
+loop
+	lda	uuid_template_tbl,y
+	sta	VerWndPtr+1,y
+	iny
+	cpy	#VERONICA_UUID_SIZE
+	bne	loop
+
+	NUtils.movba	#{jmp $0000}, $0000
+	NUtils.leaw	$0000, $0001
+	jmp	$0000	
+.endp
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	icl	'API\protocol.as8'
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+.endl
+
+	END = *
+
+//******************************************************************************************************************************************************
+
+	icl	'antic.as8'
+	icl	'memory.as8'
+	icl	'utils.as8'
+
+//******************************************************************************************************************************************************
+
+	namespace.ver_proc
+
+//******************************************************************************************************************************************************
+
+	org	$2e0
+	dta	a(CodePtr)

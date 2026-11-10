@@ -1,0 +1,977 @@
+//******************************************************************************************************************************************************
+
+	NUtils.zpvaradr	$80
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'stdbool.h8'
+		icl	'stddef.h8'
+		icl	'gtia.h8'
+		icl	'memory.h8'
+		icl	'system.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'API\CommunicationProtocol.h8'
+		icl	'API\BIOS.h8'
+		icl	'API\EEPROM_Programming.h8'
+		icl	'6502K\VSE_Programming.h8'
+	opt l+
+
+//******************************************************************************************************************************************************
+
+.local	NEEPROM_Manager
+	.using	NVeronica, NVeronica.NMaster, NVeronica.NProtocol, NVeronica.NBIOS
+
+//******************************************************************************************************************************************************
+//	Constants
+//******************************************************************************************************************************************************
+
+	IOCB_CHANNEL	= 1
+
+//******************************************************************************************************************************************************
+//	Pointers
+//******************************************************************************************************************************************************
+
+	Startup_Ptr		= $2000
+	Input_BIOS_Ptr	= $4000
+	CPU_Startup_Ptr	= $fffc
+
+//******************************************************************************************************************************************************
+//	Variables
+//******************************************************************************************************************************************************
+	
+	.zpvar	.word	bios_ptr
+
+	.var 	.byte	key_code
+	.var	.word	error_code
+	.var 	.byte	bios_location, bios_type
+	.var 	.word	bios_size, bios_size_limit
+	
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+	org Startup_Ptr
+	NUtils.movba	#0, error_code+0
+	NVeronica.NMaster.enable	#EAtariHardwareRegisterStates.BANK0_ENABLED
+	jmp	main
+
+//******************************************************************************************************************************************************
+
+.proc	main
+loop
+	NConsole.print	#main_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #key_codes, #proc_ptrs
+	beq	int_loop
+	NConsole.putc	#$9b
+	jmp	loop
+	
+	key_codes:	dta c'BPIQ', $ff
+	proc_ptrs:	dta a(backup_proc, programm_proc, identify_proc, quit_proc)
+	main_str:	dta c'Veronica EEPROM Manager 1.0.0.0', $9b, \
+		c'(C) 2009 by Marek Konopka', $9b, \
+		c'B'*,'ackup, ','P'*,'rogramm, ','I'*,'d, ','Q'*,'uit: ', 0
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	quit_proc
+	NConsole.println	#exit_abbrev_str
+	pla
+	pla
+	pla
+	pla
+	NVeronica.NMaster.enable	#0	// disable
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	backup_proc
+	NConsole.println	#bkp_abbrev_str
+loop
+	NConsole.print	#locations_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #location_key_codes, #proc_ptrs
+	beq	int_loop
+	rts
+	
+	proc_ptrs:	dta a(internal_backup_proc, external_backup_proc/*, back_proc*/)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	internal_backup_proc
+	NConsole.println	#int_abbrev_str
+loop
+	NConsole.print	#sources_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #source_key_codes, #proc_ptrs
+	beq	int_loop
+	rts
+	
+	proc_ptrs:	dta a(int_pri_bkp_proc, int_sec_bkp_proc, int_boot_bkp_proc/*, back_proc*/)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	external_backup_proc
+	NConsole.println	#ext_abbrev_str
+loop
+	NConsole.print	#sources_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #source_key_codes, #proc_ptrs
+	beq	int_loop
+	rts
+	
+	proc_ptrs:	dta a(ext_pri_bkp_proc, ext_sec_bkp_proc, ext_boot_bkp_proc/*, back_proc*/)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	int_pri_bkp_proc
+	NConsole.println	#pri_abbrev_str
+	backup_gui	#EBIOSLocation.INTERNAL, #EBIOSType.PRIMARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	int_sec_bkp_proc
+	NConsole.println	#sec_abbrev_str
+	backup_gui	#EBIOSLocation.INTERNAL, #EBIOSType.SECONDARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	int_boot_bkp_proc
+	NConsole.println	#boot_abbrev_str
+	backup_gui	#EBIOSLocation.INTERNAL, #EBIOSType.BOOTSTRAP
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	ext_pri_bkp_proc
+	NConsole.println	#pri_abbrev_str
+	backup_gui	#EBIOSLocation.EXTERNAL, #EBIOSType.PRIMARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	ext_sec_bkp_proc
+	NConsole.println	#sec_abbrev_str
+	backup_gui	#EBIOSLocation.EXTERNAL, #EBIOSType.SECONDARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	ext_boot_bkp_proc
+	NConsole.println	#boot_abbrev_str
+	backup_gui	#EBIOSLocation.EXTERNAL, #EBIOSType.BOOTSTRAP
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	backup_gui( .byte bios_location .byte bios_type ) .var
+	show_diagnostics	bios_location, bios_type
+	bne	continue
+		rts
+
+continue
+	NVeronica.NMaster.retrieve_bios	bios_location, bios_type, #bios_ptr
+	
+	ldy	#SBIOSHeader.m_size
+	NUtils.movba	"(bios_ptr),y", bios_size+0
+	iny
+	NUtils.movba	"(bios_ptr),y", bios_size+1
+
+	NVeronica.NMaster.get_bios_size_limitation	bios_type, #bios_size_limit
+	
+	NUtils.subw	bios_size_limit, bios_size
+	bcs	limit_ok
+		NConsole.print	#invalid_bios_size_str
+		NConsole.print	#dot_space_str
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		rts
+
+limit_ok
+	show_veronica_bios_version	bios_ptr
+	
+	NConsole.print	#enter_filepath_str
+	NConsole.get_line	#filepath_buf
+	
+	NConsole.print	#saving_str
+	NConsole.println	#dot_str
+
+	NIO.open	#(IOCB_CHANNEL*16), #8, #filepath_buf
+	bpl	open_ok
+		sty	error_code+0
+		NConsole.print	#error_str
+		NUtils.wtod	error_code, #error_num_str
+		NConsole.putc	#' '
+		NConsole.print	#error_num_str
+		NConsole.print	#dot_space_str
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		NIO.close	#(IOCB_CHANNEL*16)
+		rts
+	
+open_ok
+	NIO.execute_command	#(IOCB_CHANNEL*16), #11, bios_ptr, bios_size
+	bpl	command_ok
+		sty	error_code+0
+		NConsole.print	#error_str
+		NUtils.wtod	error_code, #error_num_str
+		NConsole.putc	#' '
+		NConsole.print	#error_num_str
+		NConsole.print	#dot_space_str
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		NIO.close	#(IOCB_CHANNEL*16)
+		rts
+	
+command_ok
+	NIO.close	#(IOCB_CHANNEL*16)
+	
+	NConsole.print	#done_str
+	NConsole.println	#dot_str
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+/*.proc	back_proc
+	NConsole.println	#back_abbrev_str
+	pla
+	pla
+	pla
+	pla
+	rts
+.endp*/
+
+//******************************************************************************************************************************************************
+
+.proc	programm_proc
+	NConsole.println	#prg_abbrev_str
+loop
+	NConsole.print	#locations_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #location_key_codes, #proc_ptrs
+	beq	int_loop
+	rts
+	
+	proc_ptrs:	dta a(internal_programm_proc, external_programm_proc/*, back_proc*/)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	internal_programm_proc
+	NConsole.println	#int_abbrev_str
+loop
+	NConsole.print	#sources_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #source_key_codes, #proc_ptrs
+	beq	int_loop
+	rts
+	
+	proc_ptrs:	dta a(int_pri_prg_proc, int_sec_prg_proc, int_boot_prg_proc/*, back_proc*/)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	external_programm_proc
+	NConsole.println	#ext_abbrev_str
+loop
+	NConsole.print	#sources_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #source_key_codes, #proc_ptrs
+	beq	int_loop
+	rts
+	
+	proc_ptrs:	dta a(ext_pri_prg_proc, ext_sec_prg_proc, ext_boot_prg_proc/*, back_proc*/)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	int_pri_prg_proc
+	NConsole.println	#pri_abbrev_str
+	programm_gui	#EBIOSLocation.INTERNAL, #EBIOSType.PRIMARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	int_sec_prg_proc
+	NConsole.println	#sec_abbrev_str
+	programm_gui	#EBIOSLocation.INTERNAL, #EBIOSType.SECONDARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	int_boot_prg_proc
+	NConsole.println	#boot_abbrev_str
+	programm_gui	#EBIOSLocation.INTERNAL, #EBIOSType.BOOTSTRAP
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	ext_pri_prg_proc
+	NConsole.println	#pri_abbrev_str
+	programm_gui	#EBIOSLocation.EXTERNAL, #EBIOSType.PRIMARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	ext_sec_prg_proc
+	NConsole.println	#sec_abbrev_str
+	programm_gui	#EBIOSLocation.EXTERNAL, #EBIOSType.SECONDARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	ext_boot_prg_proc
+	NConsole.println	#boot_abbrev_str
+	programm_gui	#EBIOSLocation.EXTERNAL, #EBIOSType.BOOTSTRAP
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	programm_gui( .byte bios_location .byte bios_type ) .var
+	NUtils.leaw	Input_BIOS_Ptr, bios_ptr
+	show_diagnostics	bios_location, bios_type
+	bne	continue
+		rts
+
+continue
+	NConsole.print	#enter_filepath_str
+	NConsole.get_line	#filepath_buf
+	
+	//	Reading BIOS header.
+	NConsole.print	#reading_bios_header_str
+	NConsole.println	#dot_str
+
+	NIO.open	#(IOCB_CHANNEL*16), #4, #filepath_buf
+	bpl	header_open_ok
+		sty	error_code+0
+		NConsole.print	#error_str
+		NUtils.wtod	error_code, #error_num_str
+		NConsole.putc	#' '
+		NConsole.print	#error_num_str
+		NConsole.print	#dot_space_str
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		NIO.close	#(IOCB_CHANNEL*16)
+		rts
+	
+header_open_ok
+	NIO.execute_command	#(IOCB_CHANNEL*16), #7, bios_ptr, #.len(SBIOSHeader)
+	bpl	header_command_ok
+		sty	error_code+0
+		NConsole.print	#error_str
+		NUtils.wtod	error_code, #error_num_str
+		NConsole.putc	#' '
+		NConsole.print	#error_num_str
+		NConsole.print	#dot_space_str
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		NIO.close	#(IOCB_CHANNEL*16)
+		rts
+	
+header_command_ok
+	NIO.close	#(IOCB_CHANNEL*16)
+	
+	ldy	#SBIOSHeader.m_size
+	NUtils.movba	"(bios_ptr),y", bios_size+0
+	iny
+	NUtils.movba	"(bios_ptr),y", bios_size+1
+	
+	NVeronica.NMaster.get_bios_size_limitation	bios_type, #bios_size_limit
+	
+	NUtils.subw	bios_size_limit, bios_size
+	bcs	limit_ok
+		NConsole.print	#invalid_bios_size_str
+		NConsole.print	#dot_space_str
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		rts
+		
+limit_ok
+	show_veronica_bios_version	bios_ptr
+	
+	//	Reading entire BIOS.
+	NConsole.print	#reading_bios_data_str
+	NConsole.println	#dot_str
+
+	NIO.open	#(IOCB_CHANNEL*16), #4, #filepath_buf
+	bpl	bios_open_ok
+		sty	error_code+0
+		NConsole.print	#error_str
+		NUtils.wtod	error_code, #error_num_str
+		NConsole.putc	#' '
+		NConsole.print	#error_num_str
+		NConsole.print	#dot_space_str
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		NIO.close	#(IOCB_CHANNEL*16)
+		rts
+		
+bios_open_ok
+	NIO.execute_command	#(IOCB_CHANNEL*16), #7, bios_ptr, bios_size
+	bpl	bios_command_ok
+		sty	error_code+0
+		NConsole.print	#error_str
+		NUtils.wtod	error_code, #error_num_str
+		NConsole.putc	#' '
+		NConsole.print	#error_num_str
+		NConsole.print	#dot_space_str
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		NIO.close	#(IOCB_CHANNEL*16)
+		rts
+		
+bios_command_ok
+	NIO.close	#(IOCB_CHANNEL*16)
+
+	//	proceed_or_terminate();
+	NUtils.cmpba	bios_location, #EBIOSLocation.INTERNAL
+	bne	extp
+		internal_programming	bios_type, bios_ptr
+		jmp	finish
+extp
+		external_programming	bios_type, bios_ptr
+		jmp	finish
+		
+finish
+	NConsole.print	#finished_str
+	NConsole.println	#dot_str
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	internal_programming( .byte bios_type .word bios_ptr ) .var
+	.var	.word	dst_bios_ptr
+	.var	.byte	delay
+
+	jsr	NVeronica.NMaster.get_eeprom_switch_status
+	bne	ready_to_write
+		NConsole.print	#switch_to_write_enable_str
+		NConsole.putc	#'.'
+		jsr	NVeronica.NMaster.wait_for_eeprom_switch_write_enabled
+		NConsole.putc	#' '
+		NConsole.print		#switched_str
+		NConsole.println	#dot_str
+	
+ready_to_write
+	//	Calculate half a second delay.
+	jsr	NSystem.get_tv_fps
+	lsr	@
+	sta	delay
+	
+	NSystem.wait_for_vbl	delay
+	
+	ldy	#SBIOSHeader.m_size
+	NUtils.movba	"(bios_ptr),y", bios_size+0
+	iny
+	NUtils.movba	"(bios_ptr),y", bios_size+1
+	
+	NVeronica.NMaster.get_bios_address	#EBIOSLocation.INTERNAL, bios_type, #dst_bios_ptr
+		
+	//	First, transfer the new EEPROM data.
+	NVeronica.NMaster.execute_data_upload_cmd	bios_ptr, bios_size, #N6502K.Ver_Tmp_BIOS_Ptr
+	jsr	NVeronica.NMaster.wait_for_6502K
+	NConsole.print	#data_upload_str
+	NConsole.println	#dot_str
+	
+	//	Second, the programming routine.
+	NVeronica.NMaster.execute_data_upload_cmd	#N6502K.CODE_SECTION_BEGIN, #N6502K.CODE_LENGTH, #N6502K.Code_Ptr
+	jsr	NVeronica.NMaster.wait_for_6502K
+	NConsole.print	#data_upload_str
+	NConsole.println	#dot_str
+	
+	//	Third, the programming routine's params.
+	.var NVeronica.NEEPROMProgramming.SEEPROMWriteParams	params
+	
+	NUtils.leaw	N6502K.Ver_Tmp_BIOS_Ptr, params.m_src_rom_ptr
+	NUtils.movw	bios_size, params.m_rom_size
+	NUtils.movw	dst_bios_ptr, params.m_dst_rom_ptr
+
+	NVeronica.NMaster.execute_data_upload_cmd	#params, #.len(NVeronica.NEEPROMProgramming.SEEPROMWriteParams), #N6502K.Zpg_Variables_Ptr
+	jsr	NVeronica.NMaster.wait_for_6502K
+	NConsole.print	#data_upload_str
+	NConsole.println	#dot_str
+	
+	NConsole.print	#programming_str
+	NConsole.putc	#'.'
+	
+	//	Execute the programming procedure.
+	NVeronica.NMaster.execute_procedure_call_cmd	#N6502K.Entry_Proc_Ptr
+	jsr	NVeronica.NMaster.wait_for_6502K
+
+	//	Write startup vector
+	NUtils.cmpba	bios_type, #EBIOSType.BOOTSTRAP
+	bne	no_bootstrap
+		NUtils.movw	bios_ptr, params.m_src_rom_ptr
+		NUtils.leaw	2, params.m_rom_size
+		NUtils.leaw	CPU_Startup_Ptr, params.m_dst_rom_ptr
+
+		NVeronica.NMaster.execute_data_upload_cmd	#params, #.len(NVeronica.NEEPROMProgramming.SEEPROMWriteParams), #N6502K.Zpg_Variables_Ptr
+		jsr	NVeronica.NMaster.wait_for_6502K
+		//	Execute the programming procedure.
+		NVeronica.NMaster.execute_procedure_call_cmd	#N6502K.Entry_Proc_Ptr
+		jsr	NVeronica.NMaster.wait_for_6502K
+	
+no_bootstrap
+	NConsole.putc	#' '
+	NConsole.print	#done_str
+	NConsole.println	#dot_str
+	
+	//	Switch EPROM writing to disabled.
+	NConsole.print	#switch_to_write_disabled_str
+	NConsole.putc	#'.'
+	jsr	NVeronica.NMaster.wait_for_eeprom_switch_write_disabled
+	NSystem.wait_for_vbl	delay
+	NConsole.putc	#' '
+	NConsole.print	#switched_str
+	NConsole.println	#dot_str
+	
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	external_programming( .byte bios_type .word bios_ptr ) .var
+	.var	.word	dst_bios_ptr
+	
+	NConsole.print	#switch_to_write_enable_str
+	NConsole.print	#dot_space_str
+	NConsole.print	#done_str
+	NConsole.putc	#' '
+	NConsole.putc	#'?'
+	NConsole.putc	#' '
+	wait_for_key_pressed	#'Y'
+	NConsole.putc	#'Y'*
+	NConsole.putc	#$9b
+	
+	NConsole.print	#programming_str
+	NConsole.println	#dot_str
+	
+	ldy	#SBIOSHeader.m_size
+	NUtils.movba	"(bios_ptr),y", bios_size+0
+	iny
+	NUtils.movba	"(bios_ptr),y", bios_size+1
+	
+	NVeronica.NMaster.get_bios_address	#EBIOSLocation.EXTERNAL, bios_type, #dst_bios_ptr
+	NVeronica.NMaster.set_rambank	#0
+	NVeronica.NMaster.eeprom_write	bios_ptr, bios_size, dst_bios_ptr
+
+	NUtils.cmpba	bios_type, #EBIOSType.BOOTSTRAP
+	bne	no_bootstrap
+		.var	.word	startup_offset, startup_ptr
+		
+		NUtils.leaw	SBIOSHeader.m_code_ptr, startup_offset
+		NUtils.addw	bios_ptr, startup_offset, startup_ptr
+		NVeronica.NMaster.eeprom_write	startup_ptr, #2/*.len(.word)*/, #(CPU_Startup_Ptr-NVeronica.NEEPROMProgramming.VERONICA_TO_ATARI_EEPROM_OFFSET)
+	
+no_bootstrap
+	NConsole.print	#switch_to_write_disabled_str
+	NConsole.print	#dot_space_str
+	NConsole.print	#done_str
+	NConsole.putc	#' '
+	NConsole.putc	#'?'
+	NConsole.putc	#' '
+	wait_for_key_pressed	#'Y'
+	NConsole.putc	#'Y'*
+	NConsole.putc	#$9b
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	identify_proc
+	NConsole.println	#id_abbrev_str
+loop
+	NConsole.print	#locations_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #location_key_codes, #proc_ptrs
+	beq	int_loop
+	rts
+	
+	proc_ptrs:	dta a(internal_id_proc, external_id_proc/*, back_proc*/)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	internal_id_proc
+	NConsole.println	#int_abbrev_str
+loop
+	NConsole.print	#sources_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #source_key_codes, #proc_ptrs
+	beq	int_loop
+	rts
+	
+	proc_ptrs:	dta a(int_pri_id_proc, int_sec_id_proc, int_boot_id_proc/*, back_proc*/)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	external_id_proc
+	NConsole.println	#ext_abbrev_str
+loop
+	NConsole.print	#sources_str
+int_loop
+	NConsole.wait_for_key_pressed
+	sta	key_code
+	execute_proc_on_keymatched	key_code, #source_key_codes, #proc_ptrs
+	beq	int_loop
+	rts
+	
+	proc_ptrs:	dta a(ext_pri_id_proc, ext_sec_id_proc, ext_boot_id_proc/*, back_proc*/)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	int_pri_id_proc
+	NConsole.println	#pri_abbrev_str
+	identify_gui	#EBIOSLocation.INTERNAL, #EBIOSType.PRIMARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	int_sec_id_proc
+	NConsole.println	#sec_abbrev_str
+	identify_gui	#EBIOSLocation.INTERNAL, #EBIOSType.SECONDARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	int_boot_id_proc
+	NConsole.println	#boot_abbrev_str
+	identify_gui	#EBIOSLocation.INTERNAL, #EBIOSType.BOOTSTRAP
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	ext_pri_id_proc
+	NConsole.println	#pri_abbrev_str
+	identify_gui	#EBIOSLocation.EXTERNAL, #EBIOSType.PRIMARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	ext_sec_id_proc
+	NConsole.println	#sec_abbrev_str
+	identify_gui	#EBIOSLocation.EXTERNAL, #EBIOSType.SECONDARY
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	ext_boot_id_proc
+	NConsole.println	#boot_abbrev_str
+	identify_gui	#EBIOSLocation.EXTERNAL, #EBIOSType.BOOTSTRAP
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	identify_gui( .byte bios_location .byte bios_type ) .var
+	show_diagnostics	bios_location, bios_type
+	bne	continue
+		rts
+
+continue
+	NVeronica.NMaster.retrieve_bios	bios_location, bios_type, #bios_ptr
+
+	ldy	#SBIOSHeader.m_size
+	NUtils.movba	"(bios_ptr),y", bios_size+0
+	iny
+	NUtils.movba	"(bios_ptr),y", bios_size+1
+
+	NVeronica.NMaster.get_bios_size_limitation	bios_type, #bios_size_limit
+	
+	NUtils.subw	bios_size_limit, bios_size
+	bcs	limit_ok
+		NConsole.print	#invalid_bios_size_str
+		NConsole.print	#dot_space_str
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		rts
+
+limit_ok
+	show_veronica_bios_version	bios_ptr
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	wait_for_key_pressed( .byte key ) .var
+	.var	.byte	key
+	
+loop
+	NConsole.wait_for_key_pressed
+	cmp	key
+	bne	loop
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Shows diagnostic messages.
+/**	@param .byte bios_location	Bios location.
+	@param .byte bios_type	Bios type.
+	@return .byte A	Exit Status.
+*/
+.proc	show_diagnostics( .byte bios_location .byte bios_type ) .var
+	.var .byte	status
+	
+	NUtils.cmpba	bios_location, #EBIOSLocation.INTERNAL
+	bne	external
+		NVeronica.NMaster.identify	#NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT
+		sta	status
+		show_veronica_detection_str	status
+		NConsole.putc	#'.'
+		lda	status
+		beq	no_detection
+			NConsole.putc	#$9b
+			lda	#NUtils.TRUE
+			rts
+
+	no_detection:
+		NConsole.putc	#' '
+		NConsole.print	#breaking_str
+		NConsole.println	#dot_str
+		lda	#NUtils.FALSE
+		rts
+
+external
+	NConsole.println	#int_eeprom_rambank_placement_str
+	lda	#NUtils.TRUE
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Execute procedure on key pressed.
+/**	@param .byte key_code		- ATASCII key code.
+	@param .word key_codes_ptr	- Pointer to the key codes table.
+	@param .word procedures_ptr	- Pointer to the procedure pointers table.
+	@return .bool A	- Status.
+		#FALSE	- No match found.
+		#TRUE 	- Match found. Procedure executed.
+*/
+.proc	execute_proc_on_keymatched( .byte key_code .word key_codes_ptr .word procedures_ptr ) .var
+	.zpvar	.word	key_codes_ptr, procedures_ptr
+	.var	.byte	key_code
+	
+	ldy	#0
+loop
+	NUtils.cmpba	"(key_codes_ptr),y", #$ff
+	beq	_exit
+	NUtils.cmpba	key_code, "(key_codes_ptr),y"
+	beq	found
+	iny
+	bne	loop
+
+_exit
+	lda	#NUtils.FALSE
+	rts
+	
+found
+	tya
+	asl	@
+	tay
+	NUtils.movba	"(procedures_ptr),y", jsr_vct+0
+	iny
+	NUtils.movba	"(procedures_ptr),y", jsr_vct+1
+	
+	jsr_vct = * + 1
+	jsr $ffff
+	
+	lda	#NUtils.TRUE
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	show_veronica_detection_str( .byte a ) .reg
+	and	#1
+	asl	@
+	tax
+	NUtils.movba	"strings+0,x", NConsole.println.ptr+0
+	NUtils.movba	"strings+1,x", NConsole.println.ptr+1
+	jmp	NConsole.print
+	
+	strings:	dta a(no_detection_str, detected_str)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	show_veronica_bios_version( .word bios_ptr ) .var
+	NConsole.print	#bios_ver_str
+	
+	ldy	#SBIOSHeader.m_version.m_major
+	jsr	print_dec_byte
+	NConsole.putc	#'.'
+	
+	ldy	#SBIOSHeader.m_version.m_minor
+	jsr	print_dec_byte
+	NConsole.putc	#'.'
+	
+	ldy	#SBIOSHeader.m_version.m_maintenance
+	jsr	print_dec_byte
+	NConsole.putc	#'.'
+	
+	ldy	#SBIOSHeader.m_version.m_build
+	jsr	print_dec_byte
+	NConsole.putc	#$9b
+	
+	NConsole.print	#bios_size_str
+	ldy	#(SBIOSHeader.m_size+1)
+	jsr	print_hex_byte
+	
+	ldy	#(SBIOSHeader.m_size+0)
+	jsr	print_hex_byte
+	NConsole.putc	#$9b
+	
+	NConsole.print	#bios_startup_str
+	ldy	#(SBIOSHeader.m_code_ptr+1)
+	jsr	print_hex_byte
+	
+	ldy	#(SBIOSHeader.m_code_ptr+0)
+	jsr	print_hex_byte
+	NConsole.putc	#$9b
+	rts
+	
+print_hex_byte
+	NUtils.movba	"(bios_ptr),y", NConsole.bta.value
+	NUtils.leaw	tmp_buf, NConsole.bta.ptr
+	jsr	NConsole.bta
+	NConsole.print	#tmp_buf
+	rts
+
+print_dec_byte
+	NUtils.movba	"(bios_ptr),y", NUtils.wtod.value+0
+	NUtils.movba	#0, NUtils.wtod.value+1
+	NUtils.leaw		tmp_buf, NUtils.wtod.dst_ptr
+	jsr	NUtils.wtod
+	NConsole.print	#tmp_buf
+	rts
+
+	tmp_buf:	dta c'....'
+	fp:	.ds 6	//	bufor na liczbe FP0
+.endp
+
+//******************************************************************************************************************************************************
+//	Data
+//******************************************************************************************************************************************************
+
+	filepath_buf:	.ds	128
+	error_num_str:	.ds	4
+
+//******************************************************************************************************************************************************
+//	Data
+//******************************************************************************************************************************************************
+
+	locations_str:	dta c'I'*,'nternal, ','E'*,'xternal: ', 0
+	sources_str:	dta c'P'*,'rimary, ','S'*,'econdary, Boo','t'*,': ', 0
+	source_key_codes:	dta c'PST', $ff
+	location_key_codes:	dta c'IE', $ff
+
+	bkp_abbrev_str:	dta c'Backup', 0
+	prg_abbrev_str:	dta c'Programm', 0
+	exit_abbrev_str:	dta c'Quit', 0
+	int_abbrev_str:	dta c'Internal', 0
+	ext_abbrev_str:	dta c'External', 0
+	//back_abbrev_str:	dta c'Back', 0
+	id_abbrev_str:	dta c'Identify', 0
+	pri_abbrev_str:	dta c'Primary', 0
+	sec_abbrev_str:	dta c'Secondary', 0
+	boot_abbrev_str:	dta c'Boot', 0
+
+	bios_ver_str:		dta c'BIOS version: ', 0
+	bios_size_str:		dta c'BIOS size:    $', 0
+	bios_startup_str:	dta c'BIOS startup: $', 0
+	
+	int_eeprom_rambank_placement_str:	dta c'Assuming EEPROM under $8000', 0
+	invalid_bios_size_str:	dta c'Invalid BIOS size', 0
+	reading_bios_header_str:	dta c'Reading BIOS header', 0
+	reading_bios_data_str:	dta c'Reading BIOS data', 0
+	switch_to_write_enable_str:		dta c'Switch to write enable', 0
+	switch_to_write_disabled_str:	dta c'Switch to write disabled', 0
+	data_upload_str:	dta c'Successful data upload', 0
+	code_execuction_str:	dta c'Successful code execution', 0
+	
+	exit_str:	dta c'Exiting', 0
+	enter_filepath_str:	dta c'Enter filepath: ', 0
+	breaking_str:	dta c'Breaking', 0
+	reading_str:	dta c'Reading', 0
+	programming_str:	dta c'Programming', 0
+	saving_str:	dta c'Saving', 0
+	error_str:	dta c'Error', 0
+	finished_str:	dta c'Finished', 0
+	switched_str:	dta c'Switched', 0
+	done_str:	dta c'Done', 0
+	
+	dot_space_str:	dta c'. ', 0
+			
+.endl // NEEPROM_Manager
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'utils.as8'
+	icl	'memory.as8'
+	icl	'system.as8'
+	icl	'io.as8'
+	icl	'console.as8'
+	icl	'algorithm.as8'
+	icl	'Utils\utils.as8'
+	icl	'Utils\fp.asm'
+	icl	'API\Master.as8'
+	icl	'API\BIOS.as8'
+	icl	'API\CommunicationProtocol.as8'
+	icl	'API\ASE_Programming.as8'
+	icl	'API\DiagnosticMessages.as8'
+	icl	'6502K\VSE_Programming.as8'
+	
+	end

@@ -1,0 +1,48 @@
+	icl	'memory.h8'
+
+	VerProcPtr	= $c000
+	WindowPtr	= $8000
+	CodePtr		= $2000
+
+	org CodePtr
+
+	sei
+	NUtils.movba	#0, $d20e
+	NUtils.movba	#0, $d40e
+
+	NUtils.movba	#%01100001, $d5c0
+	NUtils.leaw	VerProcPtr, $bffc
+
+	NMemory.memcpy	#WindowPtr, #BEGIN, #(END-BEGIN)
+
+	NUtils.movba	#%00000001, $D5C0
+
+	lda	#$40
+	sta	$d40e
+	NUtils.movba	#$40, $d40e
+	NUtils.movba	$10, $d20e
+	cli
+	rts
+
+	BEGIN = *
+
+.local	namespace, VerProcPtr
+
+.proc	ver_proc
+loop
+	lda	$2000
+	clc
+	adc	#$01
+	eor	#%01000000
+	sta	$2000
+	jmp	loop
+.endp
+
+.endl
+
+	END = *
+
+	icl	'memory.as8'
+	icl	'utils.as8'
+
+	namespace.ver_proc

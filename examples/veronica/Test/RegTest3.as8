@@ -1,0 +1,227 @@
+//******************************************************************************************************************************************************
+	opt l-
+		icl	'stdbool.h8'
+		icl	'antic.h8'
+		icl	'memory.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'API\protocol.h8'
+		icl	'API\Bootstrap.h8'
+		icl	'utils.as8'
+	opt l+
+//******************************************************************************************************************************************************
+
+	AtrProcPtr	= $b800
+		A8ProcStat	= $bf00
+	BootstrapPtr	= $f800
+		ProcStat	= $ff00
+	BiosPtr	= $0200
+	
+	CodePtr		= $2000
+	AtrVerStartVct	= $bffc
+	
+	MEM_START	= $0500
+	MEM_LENGTH	= $f300
+	TEST_VALUE	= %01000000
+	
+//******************************************************************************************************************************************************
+
+	org CodePtr
+	jmp	main
+
+//******************************************************************************************************************************************************
+
+.proc	main
+	.using NVeronica.NProtocol
+	
+	.var	.byte	status
+	
+	sei
+	NUtils.movba	#0, $d20e
+	NUtils.movba	#0, $d40e
+
+	NVeronica.NMaster.set_rambanks	#EAtariRegisterStates.BANKS_ENABLED
+	
+	NMemory.memcpy	#AtrProcPtr, #BOOTSTRAP_BEGIN, #(BOOTSTRAP_END-BOOTSTRAP_BEGIN)
+	NUtils.leaw	BootstrapPtr, AtrVerStartVct
+
+	NVeronica.NMaster.swap_banks
+	NVeronica.NMaster.reset_veronica
+	//NVeronica.NMaster.unlock
+
+	NVeronica.NMaster.wait_for_veronica
+	wait	#0
+	NVeronica.NMaster.swap_banks
+	NUtils.movba	A8ProcStat, status
+	
+	NVeronica.NMaster.set_rambanks	#0
+	
+	NUtils.movba	#$40, $d40e
+	NUtils.movba	#$40, $d40e
+	NUtils.movba	$10, $d20e
+	cli
+	
+	println	status
+	
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	println(.byte a) .reg
+	and	#1
+	asl	@
+	tax
+	NUtils.movba	"strings+0,x", NConsole.println.ptr+0
+	NUtils.movba	"strings+1,x", NConsole.println.ptr+1
+	jsr	NConsole.print
+	NConsole.println	#dot_str
+	rts
+
+	strings:	dta a(failure_str, ok_str)
+	failure_str:	dta c'Fail', 0
+	ok_str:	dta c'Ok', 0
+	dot_str:	dta c'.', 0
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	wait(.byte x) .reg
+loop
+	NAntic.wait_for_raster_line
+	dex
+	bne	loop
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+//	Veronica
+//******************************************************************************************************************************************************
+	
+	BOOTSTRAP_BEGIN = *
+
+//******************************************************************************************************************************************************
+
+.local	bootstrap, BootstrapPtr
+
+//******************************************************************************************************************************************************
+
+	TMP_ZPVAR = .zpvar
+	.zpvar	= $fc
+	.zpvar	.word	src_ptr, dst_ptr
+
+//******************************************************************************************************************************************************
+
+.proc	bootstrap_proc
+	NVeronica.NBootstrap.initialize_cpu
+	//NVeronica.NBootstrap.initial_cpu_wait
+	memcpy	#BiosPtr, #BEGIN_BIOS, #(END_BIOS-BEGIN_BIOS)
+	jmp	BiosPtr
+.endp
+
+//******************************************************************************************************************************************************
+
+	BEGIN_BIOS = *
+
+.local	bios, BiosPtr
+
+.proc	relocated_proc
+loop
+	lda	#%00000000
+	ldx	#%01000000
+	sta	$0200
+	stx	$0200
+	jmp	loop
+.endp
+
+.endl
+
+	 END_BIOS = *
+
+//******************************************************************************************************************************************************
+
+.proc	memset(.word dst_ptr .word count .byte value) .var
+	.var	.word	count
+	.var	.byte	value
+
+	NMemory.memset_macro	dst_ptr, count, value
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	strcmp(.word src_ptr .word size .byte value) .var
+	.var	.word	size
+	.var	.byte	value
+
+	ldx	size+1
+	beq	skip_pages
+	
+	ldy	#0
+loop
+	NUtils.cmpba	"(src_ptr),y", value
+	bne	_exit_with_error
+	iny
+	bne	loop
+	inc	src_ptr+1
+	dex
+	bne	loop
+	
+skip_pages
+	lda	size
+	beq	_exit_ok
+
+	ldy	#0
+loop2
+	NUtils.cmpba	"(src_ptr),y", value
+	bne	_exit_with_error
+	iny
+	cpy	size
+	bne	loop2
+	jmp	_exit_ok
+	
+_exit_with_error
+	lda	#NUtils.FALSE
+	rts
+	
+_exit_ok
+	lda	#NUtils.TRUE
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	memcpy(.word dst_ptr .word src_ptr .word count) .var
+	.var	.word	count
+	
+	NMemory.memcpy_macro	dst_ptr, src_ptr, count
+	rts	
+.endp
+
+//******************************************************************************************************************************************************
+
+	.zpvar = TMP_ZPVAR
+
+.endl
+
+	BOOTSTRAP_END = *
+	
+//******************************************************************************************************************************************************
+
+	icl	'antic.as8'
+	icl	'memory.as8'
+	icl	'console.as8'
+	icl	'API\Master.as8'
+
+//******************************************************************************************************************************************************
+
+	jsr	bootstrap.bootstrap_proc
+	jsr	bootstrap.memset
+	jsr	bootstrap.strcmp
+	jsr	bootstrap.memcpy
+	jsr	bootstrap.bios.relocated_proc
+
+//******************************************************************************************************************************************************
+
+	org	$2e0
+	dta	a(CodePtr)

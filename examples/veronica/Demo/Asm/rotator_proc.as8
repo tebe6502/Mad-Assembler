@@ -1,0 +1,160 @@
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+.proc	rotator(.word params_ptr .word scrn_buf_ptr) .var
+	.zpvar	.word	params_ptr, scrn_buf_ptr	
+	
+	.var	.byte	byte_row, num_rows
+	.zpvar	.word	texel_col0_ptr, texel_col1_ptr
+	.zpvar	.word	edge_x, edge_y, x, y, pixel_step_x, pixel_step_y, edge_step_x, edge_step_y
+	.zpvar	.byte	pixel_chunk
+
+	.using	NRotator
+
+	jsr	set_vars
+		
+	NUtils.movba	#$80, texel_col0_ptr+0
+	NUtils.movba	#$00, texel_col1_ptr+0
+
+row_loop
+	NUtils.movw	edge_x, x
+	NUtils.movw	edge_y, y
+
+	NUtils.movba	#RENDER_STARTING_COL, byte_row
+	ldx	y+1
+col_loop
+	NUtils.movba	"YCoordTbl, x", texel_col0_ptr+1
+	ldy	x+1
+	lda	XCoordTbl,y
+	tay
+	NUtils.movba	"(texel_col0_ptr),y", pixel_chunk
+	
+	//NUtils.addw	x, pixel_step_x, x
+	lda	x
+	clc
+	PIXEL_STEP_XL0 = *+1
+	adc	#$ff
+	sta	x
+	lda	x+1
+	PIXEL_STEP_XH0 = *+1
+	adc	#$ff
+	sta	x+1
+	
+	//NUtils.addba	y, pixel_step_y, y
+	lda	y
+	clc
+	PIXEL_STEP_YL0 = *+1
+	adc	#$ff
+	sta	y
+	//NUtils.addx	pixel_step_y+1
+	txa
+	PIXEL_STEP_YH0 = *+1
+	adc	#$ff
+	tax
+	
+	NUtils.movba	"YCoordTbl, x", texel_col1_ptr+1
+	ldy	x+1
+	lda	XCoordTbl,y
+	tay
+	NUtils.orba	"(texel_col1_ptr),y", pixel_chunk
+	ldy	byte_row
+	sta	(scrn_buf_ptr),y
+	
+	//NUtils.addw	x, pixel_step_x, x
+	lda	x
+	clc
+	PIXEL_STEP_XL1 = *+1
+	adc	#$ff
+	sta	x
+	lda	x+1
+	PIXEL_STEP_XH1 = *+1
+	adc	#$ff
+	sta	x+1
+	
+	//NUtils.addba	y, pixel_step_y, y
+	lda	y
+	clc
+	PIXEL_STEP_YL1 = *+1
+	adc	#$ff
+	sta	y
+	//NUtils.addx	pixel_step_y+1
+	txa
+	PIXEL_STEP_YH1 = *+1
+	adc	#$ff
+	tax
+
+	inc	byte_row
+	NUtils.cmpba	byte_row, #(RENDER_STARTING_COL+RENDER_WIDTH_BYTES)
+	beq	done_row
+	jmp	col_loop
+	
+done_row
+	NUtils.addw		edge_x, edge_step_x, edge_x
+	NUtils.addw		edge_y, edge_step_y, edge_y
+	NUtils.addbw	scrn_buf_ptr, #SCREEN_WIDTH_BYTES, scrn_buf_ptr
+	
+	dec	num_rows
+	beq	done_screen
+	jmp	row_loop
+done_screen
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+.proc	set_vars
+	//	pixel_step_x = params_ptr->m_pixel_step_x
+	ldy	#SRotatorParams.m_pixel_step_x
+	NUtils.movba	"(params_ptr),y", pixel_step_x
+	iny
+	NUtils.movba	"(params_ptr),y", pixel_step_x+1
+	
+	//	pixel_step_x = params_ptr->m_pixel_step_x
+	ldy	#SRotatorParams.m_pixel_step_y
+	NUtils.movba	"(params_ptr),y", pixel_step_y
+	iny
+	NUtils.movba	"(params_ptr),y", pixel_step_y+1
+	
+	//	edge_step_x = params_ptr->m_edge_step_x
+	ldy	#SRotatorParams.m_edge_step_x
+	NUtils.movba	"(params_ptr),y", edge_step_x
+	iny
+	NUtils.movba	"(params_ptr),y", edge_step_x+1
+	
+	//	edge_step_y = params_ptr->m_edge_step_y
+	ldy	#SRotatorParams.m_edge_step_y
+	NUtils.movba	"(params_ptr),y", edge_step_y
+	iny
+	NUtils.movba	"(params_ptr),y", edge_step_y+1
+
+	//	edge_x = params_ptr->m_start_x
+	ldy	#SRotatorParams.m_start_x
+	NUtils.movba	"(params_ptr),y", edge_x
+	iny
+	NUtils.movba	"(params_ptr),y", edge_x+1
+	
+	//	edge_y = params_ptr->m_start_y
+	ldy	#SRotatorParams.m_start_y
+	NUtils.movba	"(params_ptr),y", edge_y
+	iny
+	NUtils.movba	"(params_ptr),y", edge_y+1
+	
+	//	num_rows = params_ptr->m_num_rows
+	ldy	#SRotatorParams.m_num_rows
+	NUtils.movba	"(params_ptr),y", num_rows
+	
+	NUtils.movba	pixel_step_x, PIXEL_STEP_XL0
+	NUtils.movba	pixel_step_x, PIXEL_STEP_XL1
+	NUtils.movba	pixel_step_x+1, PIXEL_STEP_XH0
+	NUtils.movba	pixel_step_x+1, PIXEL_STEP_XH1
+	
+	NUtils.movba	pixel_step_y, PIXEL_STEP_YL0
+	NUtils.movba	pixel_step_y, PIXEL_STEP_YL1
+	NUtils.movba	pixel_step_y+1, PIXEL_STEP_YH0
+	NUtils.movba	pixel_step_y+1, PIXEL_STEP_YH1
+	rts
+.endp
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+.endp

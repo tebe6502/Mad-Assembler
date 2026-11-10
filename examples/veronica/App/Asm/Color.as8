@@ -1,0 +1,123 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file Color.as8
+	@author Marek "Konop" Konopka
+	@date 15.05.2010
+*/
+
+//******************************************************************************************************************************************************
+
+	.zpvar	= NProgram.ZpgVars_Ptr
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'utils.as8'
+		icl	'stdbool.h8'
+		icl	'memory.h8'
+		icl	'system.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'pia.h8'
+		icl	'gtia.h8'
+		icl	'antic.h8'
+		icl	'API\Protocol.h8'
+		icl	'Incrementer.h8'
+		icl	'Color.h8'
+	opt l+
+
+//******************************************************************************************************************************************************
+
+.local	NProgram
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+	org Startup_Ptr
+	jmp	main
+
+//******************************************************************************************************************************************************
+	
+.proc	main
+	.using	NVeronica.NProtocol
+	
+	.var	.byte	status
+
+	//	Echo.
+	NConsole.print	#echo_str
+
+	NVeronica.NMaster.store_system
+	
+	//	Enable first bank only.
+	NVeronica.NMaster.set_rambanks	#NVeronica.NProtocol.EAtariRegisterStates.BANK0_ENABLED
+	
+	NVeronica.NMaster.identify	#NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT
+	sta	status
+	NVeronica.NMaster.print_status	status
+	NConsole.putc	#NConsole.ATASCII_EOL
+
+	NUtils.cmpba	status, #NUtils.TRUE
+	beq	detected
+		//	Veronica unavailable. Exiting.
+		NVeronica.NMaster.restore_system
+		rts
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+detected
+	NVeronica.NMaster.execute_data_upload_cmd	#NVeronica.NSlave.CODE_BEGIN, #NVeronica.NSlave.CODE_LENGTH, #NVeronica.NSlave.Code_Ptr	
+	
+	NVeronica.NMaster.wait_for_veronica
+	NVeronica.NMaster.setup_procedure_call_cmd	#NVeronica.NSlave.Code_Ptr
+	NVeronica.NMaster.swap_banks
+	NVeronica.NMaster.setup_procedure_call_cmd	#NVeronica.NSlave.Code_Ptr
+	
+	NConsole.println	#running_press_esc_to_exit_str
+	NConsole.init_keycode
+	
+loop
+	NVeronica.NMaster.wait_swap_unlock
+	NUtils.movba	NVeronica.NProtocol.Atari_Window_Location+.len(NVeronica.NProtocol.SProcedureCallCmd), NGtia.COLBAK
+
+	NConsole.get_key
+	cmp	#NConsole.KEYCODE_ESCAPE
+	bne	loop
+	
+	NConsole.init_keycode
+	NVeronica.NMaster.restore_system
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+	echo_str: dta c'Veronica Color Test 1.0.0.0', NConsole.ATASCII_EOL, \
+		c'(C) 2009 by Marek Konopka', NConsole.ATASCII_EOL, 0
+	
+	running_press_esc_to_exit_str:	dta c'Running. Press ESC to exit.', 0
+
+.endp
+
+//******************************************************************************************************************************************************
+	
+.endl // NProgram
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'memory.as8'
+	icl	'console.as8'
+	icl	'system.as8'
+	icl	'API\Master.as8'
+	icl	'API\Messages.as8'
+	icl	'API\Utils.as8'
+	icl	'Incrementer.as8'
+
+//******************************************************************************************************************************************************
+
+	org	NSystem.RUNAD
+	dta	a(NProgram.Startup_Ptr)

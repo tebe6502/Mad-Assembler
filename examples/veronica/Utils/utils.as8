@@ -1,0 +1,19 @@
+.local	NUtils
+
+///	Convert byte to decimal ATASCII string.
+/**	@param	.byte	value	- Number to convert.
+*/
+.proc	wtod( .word value .word dst_ptr ) .var
+	.var	.word	value
+	.zpvar	.word	dst_ptr
+	
+	_itofp	value, #fp
+	_fptoa	#fp, dst_ptr
+	NAlgorithm.find	dst_ptr, #$9b
+	NUtils.movba	#0, "(dst_ptr),y"
+	rts
+
+	fp:	.ds 6	//	FP0 number buffer
+.endp
+
+.endl

@@ -1,0 +1,58 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file Bootstrap.as8
+	@author Marek "Konop" Konopka
+	@date 14.05.2010
+*/
+
+//******************************************************************************************************************************************************
+
+.local	NVeronica.NBootstrap, NVeronica.NBootstrap.Code_Ptr
+
+//******************************************************************************************************************************************************
+//	Zero page variables
+//******************************************************************************************************************************************************
+
+	.zpvar	= Zpg_Variables_Ptr
+
+	///	Temporary variables declaration for a purpose of copying data from the window to the rest of Veronica's RAM.
+	.nowarn	.zpvar .word	src_ptr
+	.nowarn	.zpvar .word	dst_ptr
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+/*	The main procedure Veronica starts with.
+*/
+.proc main
+	initialize_cpu
+	
+	//	Copy BIOS from its initial location to the destination one.
+	memcpy	#NVeronica.NBios.Bios_Ptr, #Bios_Ptr, Bios_Ptr+NVeronica.NBios.SBIOSHeader.m_size
+	
+	//	Jump to destination BIOS location
+	NUtils.movw	NVeronica.NBootstrap.Bios_Ptr+NVeronica.NBios.SBIOSHeader.m_code_ptr, jmp_ptr
+	jmp_ptr = *+1
+	jmp $ffff
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Copy data chunk from source into destination location.
+/**	@param .word dst_ptr	Destination location pointer.
+	@param .word src_ptr	Source location pointer.
+	@param .word count		Count.
+*/
+.proc	memcpy(.word dst_ptr .word src_ptr .word count) .var
+	.var	.word	count
+	
+	NMemory.memcpy_macro	dst_ptr, src_ptr, count
+	rts	
+.endp
+
+//******************************************************************************************************************************************************
+
+.endl // NVeronica.NBootstrap

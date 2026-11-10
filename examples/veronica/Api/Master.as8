@@ -1,0 +1,339 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file Master.as8
+	@author Marek "Konop" Konopka
+	@date 14.05.2010
+*/
+
+.local	NVeronica.NMaster
+
+//******************************************************************************************************************************************************
+//	Zero page variables
+//******************************************************************************************************************************************************
+
+	.zpvar .word	src_adr, dst_adr
+
+//******************************************************************************************************************************************************
+//	Variables
+//******************************************************************************************************************************************************
+
+	.var .word	size
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+///	Enable rambanks.
+/**	@param .byte rambank_bits	- Rambank bit combination.
+*/
+.proc	set_rambanks(.byte rambank_bits) .var
+	.var .byte	rambank_bits
+	
+	.using	NVeronica.NProtocol.EAtariRegisterStates
+	
+    // TODO: Should not set b7 in $d500!!! Leave it unchanged.
+	NVeronica.NProtocol.set_or_switch_mem_bits	NVeronica.NProtocol.Atari_HW_Register, BANKS_MASK, SEMAPHORE_MASK, rambank_bits
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Boot Veronica.
+/**	@param .word_ptr boot_src_ptr	- Bootstrap source location.
+	@param .word_ptr boot_dst_ptr	- Bootstrap destination location (window).
+	@param .word_ptr boot_size		- Bootstrap size.
+	@param .word_ptr bios_src_ptr		- Bios source location.
+	@param .word_ptr bios_dst_ptr		- Bios destination location (window).
+	@param .word_ptr bios_size			- Bios size.	
+*/
+.proc	boot_veronica(.word boot_src_ptr .word boot_dst_ptr .word boot_size .word bios_src_ptr .word bios_dst_ptr .word bios_size .word startup_ptr) .var
+	.var	.word boot_src_ptr, boot_dst_ptr, boot_size, bios_src_ptr, bios_dst_ptr, bios_size//, startup_ptr
+	startup_ptr = NVeronica.NProtocol.Atari_Window_Location+(NCpu.CPURES-NVeronica.NProtocol.Initial_Window_Location)
+	
+	//	Copy bootstrap
+	NMemory.memcpy	boot_dst_ptr, boot_src_ptr, boot_size
+	
+	//	Copy BIOS
+	NMemory.memcpy	bios_dst_ptr, bios_src_ptr, bios_size
+
+	/*swap_banks
+	reset_veronica*/
+	swap_and_reset
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Identify Veronica's presence.
+/**	@param .byte timeout	- Timeout.
+	@return	.byte A	- Status flag indicating Veronica's presence.
+*/
+.proc	identify(.byte timeout) .var
+	.var .byte	timeout
+
+	//	Clear rambank memory to make sure Veronica overwrites it.
+	NUtils.movba	#NVeronica.NProtocol.ECommand.IDLE, NVeronica.NProtocol.Atari_Window_Ramlo
+	
+	setup_identify_cmd
+	execute_command_with_timeout	timeout
+	cmp	#NUtils.TRUE
+	beq	cont
+		//	Timeout. Veronica absent or timed out.
+		//lda	#NUtils.FALSE
+		rts
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+cont
+	//	Wait for Veronica until she finishes executing the IDENTIFY command or timeouts.
+	wait_for_veronica_with_timeout	#NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT
+	cmp	#NUtils.TRUE
+	beq	cont_2
+		//	Veronica absent or timed out.
+		//lda	#NUtils.FALSE
+		rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+cont_2
+	swap_banks
+	NMemory.strcmphp	#(NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SIdentifyCmd.m_uuid), #uuid_template_tbl, #NVeronica.NProtocol.VERONICA_UUID_SIZE
+	//	NMemory.strcmphp returns the appropriate exit status.
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Execute command.
+/**
+*/
+.proc	execute_command
+	wait_for_veronica
+	unlock_and_swap
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Execute command. Use timeout limitation.
+/**	@param .byte X	- Timeout
+	@return .byte A	- Status.
+*/
+.proc	execute_command_with_timeout(.byte x) .reg
+	jsr	wait_for_veronica_with_timeout
+	cmp	#NUtils.TRUE
+	beq	cont
+		//lda	#NUtils.FALSE
+		rts
+cont
+	unlock_and_swap
+	lda	#NUtils.TRUE
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Setup Veronica identification command.
+.proc	setup_identify_cmd
+	NUtils.movba	#NVeronica.NProtocol.ECommand.IDENTIFY, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SCmdBase.m_command
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Setup data upload command.
+/**	@param .word src_adr	- Source location for data chunk in Atari's address space.
+	@param .word size		- Size of data chunk to copy.
+	@param .word dst_adr	- Destination location for data chunk in Veronica's address space.
+*/
+.proc	setup_data_upload_cmd(.word src_adr .word size .word dst_adr) .var
+	size = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_size
+	dst_adr = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_adr
+
+	NUtils.movba	#NVeronica.NProtocol.ECommand.DATA_CHUNK_UPLOAD, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SCmdBase.m_command
+	//NUtils.movw	size, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_size
+	//NUtils.movw	dst_adr, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_adr
+	//NMemory.memcpy	src_adr, size, #(Atari_Window_Ramlo+.len(SDataChunkUploadCmd))
+	NMemory.memcpy	#(NVeronica.NProtocol.Atari_Window_Ramlo+.len(NVeronica.NProtocol.SDataChunkUploadCmd)), src_adr, size
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Setup procedure execution command.
+/**	@param proc_adr	Address of a procedure to call in Veronica's address space.
+*/
+.proc	setup_procedure_call_cmd(.word proc_adr) .var
+	proc_adr = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SProcedureCallCmd.m_proc_adr
+	
+	NUtils.movba	#NVeronica.NProtocol.ECommand.PROCEDURE_CALL, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SCmdBase.m_command
+	//NUtils.movw	proc_adr, Atari_Window_Ramlo+SProcedureCallCmd.m_proc_adr
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Setup data download command.
+/**	@param .word src_adr	- Source location of a data chunk in Veronica's address space.
+	@param .word size	- Size of data chunk to copy.
+*/
+.proc	setup_data_download_cmd(.word src_adr .word size) .var
+	src_adr = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkDownloadCmd.m_chunk_src_adr
+	size = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkDownloadCmd.m_chunk_src_size
+	
+	NUtils.movba	#ECommand.DATA_CHUNK_DOWNLOAD, Atari_Window_Ramlo+SCmdBase.m_command
+	//NUtils.movw	size, Atari_Window_Ramlo+SDataChunkDownloadCmd.m_chunk_src_size
+	//NUtils.movw	src_adr, Atari_Window_Ramlo+SDataChunkDownloadCmd.m_chunk_src_adr
+	
+	//	TODO: copy window contents to final destination?
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Execute data upload command.
+/**	@param .word src_adr	- Source location of a data chunk in Atari's address space.
+	@param .word size		- Size of data chunk to copy.
+	@param .word dst_adr	- Destination location of data chunk in Veronica's address space.
+*/
+.proc	execute_data_upload_cmd(.word src_adr .word size .word dst_adr) .var
+	setup_data_upload_cmd	src_adr, size, dst_adr
+	execute_command
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Execute procedure in the 6502K address space.
+/**	@param proc_adr	Address of a procedure to call in the 6502K address space.
+*/
+.proc	execute_procedure_call_cmd(.word proc_ptr) .var
+	proc_ptr = setup_procedure_call_cmd.proc_adr
+
+	//setup_procedure_call_cmd	NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SProcedureCallCmd.m_proc_adr
+	jsr	setup_procedure_call_cmd
+	execute_command
+    rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Execute data download command.
+/**	@param .word src_adr	- Source location of a data chunk in Veronica's address space.
+	@param .word size		- Size of data chunk to copy.
+	@param .word dst_adr	- Destination location of data chunk in Atari's address space.
+*/
+.proc	execute_data_download_cmd(.word src_adr .word size /*.word dst_adr*/) .var
+	setup_data_download_cmd	src_adr, size
+	execute_command
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	swap_banks
+	.using	NVeronica.NProtocol
+
+	NVeronica.NProtocol.swap_banks
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	unlock
+	.using	NVeronica.NProtocol
+	
+	NVeronica.NProtocol.unlock_atari
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	wait_for_veronica
+	.using	NVeronica.NProtocol
+	
+	NVeronica.NProtocol.wait_for_veronica
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Wait for Veronica to finish its task.
+/**	@param .byte X	- Timeout.
+	@return .bool	- Status
+		NUtils.FALSE	- Failed.
+		NUtils.TRUE		- Succeeded.
+*/
+.proc	wait_for_veronica_with_timeout(.byte x) .reg
+	.using	NVeronica.NProtocol
+
+	NVeronica.NProtocol.wait_for_veronica_with_timeout
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	unlock_and_swap
+	.using	NVeronica.NProtocol
+	
+	NVeronica.NProtocol.unlock_and_swap
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	wait_swap_unlock
+	.using	NVeronica.NProtocol
+	
+	NVeronica.NProtocol.wait_swap_unlock
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	reset_veronica
+	.using	NVeronica.NProtocol, NVeronica.NProtocol.EAtariRegisterStates
+	
+	//	Pulse low
+	NVeronica.NProtocol.set_mem_bits	Atari_HW_Register, VER_CPU_RESET_MASK|SEMAPHORE_MASK, #(VER_CPU_RESET_PULSE_LOW | LOCK_ATARI)
+	
+	//	Wait some time.
+	NVeronica.NProtocol.reset_wait
+
+	//	Pulse high. Veronica's CPU should reset now.
+	NVeronica.NProtocol.set_mem_bits	Atari_HW_Register, VER_CPU_RESET_MASK|SEMAPHORE_MASK, #(VER_CPU_RESET_PULSE_HIGH | UNLOCK_ATARI)
+	
+	//NVeronica.NProtocol.reset_wait
+	//	Allow Veronica's CPU to stabilize.
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	swap_and_reset
+	.using	NVeronica.NProtocol, NVeronica.NProtocol.EAtariRegisterStates
+	
+	//	Reset pulse low, switch rambanks
+	NVeronica.NProtocol.set_or_switch_bits	Atari_HW_Register, VER_CPU_RESET_MASK, VER_CPU_RESET_PULSE_LOW, RAMBANK_CFG_MASK
+	
+	//	Wait some time.
+	//NVeronica.NProtocol.reset_wait
+
+	//	Pulse high. Veronica's CPU should reset now.
+	NVeronica.NProtocol.set_mem_bits	Atari_HW_Register, SEMAPHORE_MASK|VER_CPU_RESET_MASK, #(UNLOCK_ATARI|VER_CPU_RESET_PULSE_HIGH)
+	
+	//NVeronica.NProtocol.reset_wait
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'API\Protocol.as8'
+
+//******************************************************************************************************************************************************
+	
+.endl // NVeronica.NMaster

@@ -1,0 +1,110 @@
+.local	NProgram
+
+//******************************************************************************************************************************************************
+//	Constants
+//******************************************************************************************************************************************************
+
+	//	Zoom level 	- (%000IFFFF FFFFFFFF)
+	//	X,Y			- (%IIIIFFFF FFFFFFFF)
+	
+	BKG_COL	= $70
+	TEXT_FOR_COL	= $0f
+	TEXT_BKG_COL	= $00
+
+	DL_PROLOG_CHUNK_SIZE    = 8
+	DL_CHUNK_SIZE		    = 6
+	SCRN_BUFFER_SIZE	    = $0960
+	XCOORD_TBL_SIZE		    = $0100
+	YCOORD_TBL_SIZE		    = $0100
+	DST_TEXTURE_SIZE	    = $1000
+
+//******************************************************************************************************************************************************
+//	Pointers
+//******************************************************************************************************************************************************
+
+	ZpgVars_Ptr	= $80
+    
+	A8ScreenBuffer0	= $2000 // $0960
+	A8ScreenBuffer1	= $3000 // $0960
+	MulTables		= $4000 // $0800
+	A8DisplayList0	= $4800 // $0200
+	A8DisplayList1	= $4a00 // $0200
+	MixDisplayList0	= $4c00 // $0200
+	MixDisplayList1	= $4e00 // $0200
+	Sinus			= $5000 // $0100
+		SinusL			= Sinus+$0000 // $0080
+		SinusH			= Sinus+$0080 // $0080
+	SrcTexturePtr	= $5100	// $0100
+	YCoordTbl		= $5200 // $0100
+	XCoordTbl		= $5300 // $0100
+	InfoLine		= $5400 // $0020
+
+	Startup_Ptr	= $5500
+	
+	DstTexturePtr	    = $7000 // $1000
+	ParamsPtr		    = NVeronica.NProtocol.Atari_Window_Location+$0010	// SRotatorParams
+	A8VerScreenBuffer	= NVeronica.NProtocol.Atari_Window_Location+$0100 // $0960
+.endl
+
+.local	NRotator
+
+//******************************************************************************************************************************************************
+//	Constants
+//******************************************************************************************************************************************************
+
+	SCREEN_WIDTH		= 64
+	SCREEN_WIDTH_BYTES	= (SCREEN_WIDTH/2)
+	SCREEN_HEIGHT		= 57
+	
+	//	Wide screen 16:10, 64x48 = 3072 texels
+	RENDER_WIDTH_BYTES	= 32
+	RENDER_HEIGHT		= 48
+	RENDER_STARTING_ROW	= (SCREEN_HEIGHT-RENDER_HEIGHT)/2
+	RENDER_STARTING_COL	= 0
+	
+	//	Asskicker - 44x42, 1848 texels, 3 frames
+	//RENDER_STARTING_ROW	= 9
+	//RENDER_STARTING_COL	= 5
+	//RENDER_WIDTH_BYTES	= 22
+	//RENDER_HEIGHT		= 42
+	
+	//	Natural Wonders - 48x46, 2208 texels, 2 frames
+	
+	//	50/50	1.56 Mhz vs 1.63 MHz
+	/*A8_SCREEN_HEIGHT	= 29
+	VER_SCREEN_HEIGHT	= 28
+	A8_RENDER_HEIGHT	= 24
+	VER_RENDER_HEIGHT	= 24*/
+	
+	//	23/77	1.56 Mhz vs 14.318 MHz
+	A8_RENDER_HEIGHT	= 5
+	VER_RENDER_HEIGHT	= RENDER_HEIGHT-A8_RENDER_HEIGHT
+	A8_SCREEN_HEIGHT	= A8_RENDER_HEIGHT+RENDER_STARTING_ROW
+	VER_SCREEN_HEIGHT	= SCREEN_HEIGHT-A8_SCREEN_HEIGHT
+
+	//	Rotator params
+	TEXTURE_WIDTH		= 16
+	TEXTURE_HEIGHT		= 16
+	DST_TEXTURE_MODULO	= 256
+    
+	X_OFFSET			= SCREEN_WIDTH/2
+	Y_OFFSET			= RENDER_HEIGHT/2
+	STARTING_ANGLE		= $00
+	INITIAL_ZOOM		= 0x0100
+	COSINE_OFFSET		= 64
+
+//******************************************************************************************************************************************************
+//	Structures
+//******************************************************************************************************************************************************
+
+.struct	SRotatorParams
+	m_pixel_step_x	.word
+	m_pixel_step_y	.word
+	m_edge_step_x	.word
+	m_edge_step_y	.word
+	m_start_x		.word
+	m_start_y		.word
+	m_num_rows		.byte
+.ends
+
+.endl // NRotator

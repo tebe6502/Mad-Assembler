@@ -1,0 +1,2922 @@
+mads 1.9.5 build 59 (29 Sep 12)
+     1 				//******************************************************************************************************************************************************
+     2 				//	Header
+     3 				//******************************************************************************************************************************************************
+     4
+     5 				/**	@file Detector.as8
+     6 					@author Marek "Konop" Konopka
+     7 					@date 15.05.2010
+     8 				*/
+     8
+     9
+    10 				//******************************************************************************************************************************************************
+    11
+    12 					.zpvar = NProgram.ZpgVars_Ptr
+    13 					
+    14 				//******************************************************************************************************************************************************
+    15 				//	Inclusions
+    16 				//******************************************************************************************************************************************************
+    17
+    32 					opt l+
+    33 					
+    34 				//******************************************************************************************************************************************************
+    35
+    36 				.local	NProgram
+    37 					
+    38 				//******************************************************************************************************************************************************
+    39 				//	Code
+    40 				//******************************************************************************************************************************************************
+    41
+    42 					org	Startup_Ptr
+    43 FFFF> 2000-2236> 4C 03 + 	jmp	main
+    44 					
+    45 				//******************************************************************************************************************************************************
+    46 					
+    47 2003			.proc	main
+    48 2003				.var	.byte	status
+    49
+    50 					NConsole.print	#echo_str
+    50 				 MWA #echo_str NConsole.print.ptr\ JSR NConsole.print
+    50 2003 A9 56 85 86 A9 20 +  MWA #echo_str NConsole.print.ptr
+    50 200B 20 4A 23		 JSR NConsole.print
+    51 200E 20 46 25			NVeronica.NMaster.store_system
+    52 					
+    53 					//	Enable bank #0
+    54 					NVeronica.NMaster.set_rambanks	#NVeronica.NProtocol.EAtariRegisterStates.BANK0_ENABLED
+    54 				 MVA #NVeronica.NProtocol.EAtariRegisterStates.BANK0_ENABLED NVeronica.NMaster.set_rambanks.rambank_bits\ JSR NVeronica.NMaster.set_rambanks
+    54 2011 A9 10 8D A4 23	 MVA #NVeronica.NProtocol.EAtariRegisterStates.BANK0_ENABLED NVeronica.NMaster.set_rambanks.rambank_bits
+    54 2016 20 8E 23		 JSR NVeronica.NMaster.set_rambanks
+    55 2019				NUtils.movba	#0, NSystem.SDMCTL
+Macro: NUtils.movba [Source: utils.as8]
+     1 2019 A9 00		    lda #0
+     2 201B 8D 2F 02		    sta NSystem.SDMCTL
+Source: Detector.as8
+    56 201E				NUtils.movba	#0, NAntic.DMACTL
+Macro: NUtils.movba [Source: utils.as8]
+     1 201E A9 00		    lda #0
+     2 2020 8D 00 D4		    sta NAntic.DMACTL
+Source: Detector.as8
+    57
+    58 					NVeronica.NMaster.identify	#NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT
+    58 				 MVA #NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT NVeronica.NMaster.identify.timeout\ JSR NVeronica.NMaster.identify
+    58 2023 A9 FF 8D E2 23	 MVA #NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT NVeronica.NMaster.identify.timeout
+    58 2028 20 A5 23		 JSR NVeronica.NMaster.identify
+    59 202B 8D 8B 20			sta	status
+    60
+    61 202E				NUtils.cmpba	status, #NUtils.TRUE
+Macro: NUtils.cmpba [Source: utils.as8]
+     1 202E AD 8B 20		    lda status
+     2 2031 C9 01		    cmp #NUtils.TRUE
+Source: Detector.as8
+    62 2033 D0 03			bne	continue
+    63 2035 20 8C 20				speed_benchmark
+    64 					
+    65 2038			continue
+    66 2038 20 6A 25			NVeronica.NMaster.restore_system
+    67 					NVeronica.NMaster.print_status	status
+    67 				 LDa status\ JSR NVeronica.NMaster.print_status
+    67 203B AD 8B 20		 LDa status
+    67 203E 20 88 25		 JSR NVeronica.NMaster.print_status
+    68 					NConsole.putc	#NConsole.ATASCII_EOL
+    68 				 LDa# NConsole.ATASCII_EOL\ JSR NConsole.putc
+    68 2041 A9 9B		 LDa# NConsole.ATASCII_EOL
+    68 2043 20 5D 23		 JSR NConsole.putc
+    69 					
+    70 2046				NUtils.cmpba	status, #NUtils.TRUE
+Macro: NUtils.cmpba [Source: utils.as8]
+     1 2046 AD 8B 20		    lda status
+     2 2049 C9 01		    cmp #NUtils.TRUE
+Source: Detector.as8
+    71 204B D0 08			bne	cont2
+    72 204D 20 F7 20				print_benchmark
+    73 						NConsole.putc	#NConsole.ATASCII_EOL
+    73 				 LDa# NConsole.ATASCII_EOL\ JSR NConsole.putc
+    73 2050 A9 9B		 LDa# NConsole.ATASCII_EOL
+    73 2052 20 5D 23		 JSR NConsole.putc
+    74 2055			cont2
+    75 2055 60				rts
+    76
+    77 				//------------------------------------------------------------------------------------------------------------------------------------------------------
+    78
+    79 					echo_str:	dta c'Veronica detector 1.0.0.0', NConsole.ATASCII_EOL, \
+    80 						c'(C) 2009 by Marek Konopka', NConsole.ATASCII_EOL, 0
+    80 2056 56 65 72 6F 6E 69 + 	echo_str:	dta c'Veronica detector 1.0.0.0', NConsole.ATASCII_EOL, 		c'(C) 2009 by Marek Konopka', NConsole.ATASCII_EOL, 0
+    81
+    82 = 208B 00		status
+    82 				.endp
+    83
+    84 				//******************************************************************************************************************************************************
+    85
+    86 208C			.proc	speed_benchmark
+    87 208C				.using	NVeronica.NProtocol
+    88
+    89 					NVeronica.NMaster.execute_data_upload_cmd	#NVeronica.NSlave.CODE_BEGIN, #NVeronica.NSlave.CODE_LENGTH, #NVeronica.NSlave.Code_Ptr	
+    89 				 MWA #NVeronica.NSlave.CODE_BEGIN NVeronica.NMaster.src_adr\ MWA #NVeronica.NSlave.CODE_LENGTH NVeronica.NMaster.size\ MWA #NVeronica.NSlave.Code_Ptr NVeronica.NMaster.dst_adr\ JSR NVeronica.NMaster.execute_data_upload_cmd
+    89 208C A9 A5 85 88 A9 25 +  MWA #NVeronica.NSlave.CODE_BEGIN NVeronica.NMaster.src_adr
+    89 2094 A9 46 8D 98 24 A9 +  MWA #NVeronica.NSlave.CODE_LENGTH NVeronica.NMaster.size
+    89 209E A9 00 85 8A A9 11 +  MWA #NVeronica.NSlave.Code_Ptr NVeronica.NMaster.dst_adr
+    89 20A6 20 29 24		 JSR NVeronica.NMaster.execute_data_upload_cmd
+    90
+    91 				    NSystem.wait_for_vbl    #1
+    91 				 LDx# 1\ JSR NSystem.wait_for_vbl
+    91 20A9 A2 01		 LDx# 1
+    91 20AB 20 7F 22		 JSR NSystem.wait_for_vbl
+    92 20AE AD 0B D4		    lda $d40b
+    93 20B1 8D 00 30		    sta $3000
+    94 				    
+    95 20B4 20 66 22			NSystem.disable_system_interrupts
+    96 					measure_time	#start_time
+    96 				 MWA #start_time NProgram.measure_time.time_ptr\ JSR NProgram.measure_time
+    96 20B7 A9 62 85 80 A9 22 +  MWA #start_time NProgram.measure_time.time_ptr
+    96 20BF 20 E9 20		 JSR NProgram.measure_time
+    97 20C2 20 70 22			NSystem.enable_system_interrupts
+    98 					
+    99 					NVeronica.NMaster.execute_procedure_call_cmd	#NVeronica.NSlave.Code_Ptr
+    99 				 MWA #NVeronica.NSlave.Code_Ptr NVeronica.NMaster.execute_procedure_call_cmd.proc_ptr\ JSR NVeronica.NMaster.execute_procedure_call_cmd
+    99 20C5 A9 00 8D 01 80 A9 +  MWA #NVeronica.NSlave.Code_Ptr NVeronica.NMaster.execute_procedure_call_cmd.proc_ptr
+    99 20CF 20 4E 24		 JSR NVeronica.NMaster.execute_procedure_call_cmd
+   100 20D2				NVeronica.NProtocol.wait_for_veronica
+Macro: NVeronica.NProtocol.wait_for_veronica [Source: Protocol.h8]
+     1 20D2			loop
+     3 20D2 AD C0 D5			lda	Atari_HW_Register
+     4 20D5 10 FB			bpl	loop
+Source: Detector.as8
+   101
+   102 20D7 20 66 22			NSystem.disable_system_interrupts
+   103 					measure_time	#end_time
+   103 				 MWA #end_time NProgram.measure_time.time_ptr\ JSR NProgram.measure_time
+   103 20DA A9 64 85 80 A9 22 +  MWA #end_time NProgram.measure_time.time_ptr
+   103 20E2 20 E9 20		 JSR NProgram.measure_time
+   104 20E5 20 70 22			NSystem.enable_system_interrupts
+   105 20E8 60				rts
+   106 				.endp
+   107
+   108 				//******************************************************************************************************************************************************
+   109
+   110 20E9			.proc	measure_time(.word time_ptr) .var
+   111 20E9				.zpvar	.word	time_ptr
+   112 					
+   113 20E9 A0 00			ldy	#STime.m_frame_num
+   114 20EB				NUtils.movba	NSystem.RTCLOK+2, "(time_ptr),y"
+Macro: NUtils.movba [Source: utils.as8]
+     1 20EB A5 14		    lda NSystem.RTCLOK+2
+     2 20ED 91 80		    sta (time_ptr),y
+Source: Detector.as8
+   115 					
+   116 20EF A0 01			ldy	#STime.m_line_num
+   117 20F1				NUtils.movba	NAntic.VCOUNT, "(time_ptr),y"
+Macro: NUtils.movba [Source: utils.as8]
+     1 20F1 AD 0B D4		    lda NAntic.VCOUNT
+     2 20F4 91 80		    sta (time_ptr),y
+Source: Detector.as8
+   118 20F6 60				rts
+   119 = 0080			time_ptr
+   119 				.endp
+   120
+   121 				//******************************************************************************************************************************************************
+   122
+   123 				// TODO Zaookraglic wynik do 2 miejsc po przecinku.
+   124 20F7			.proc	print_benchmark
+   125 20F7				.var	.word	frame_count
+   126 20F7				.var	.byte	num_lines
+   127 20F7				.var	.word	full_start_time, full_end_time
+   128 20F7				.var	.word	fps
+   129
+   130 20F7 20 9B 22			NSystem.get_num_vcount_lines
+   131 20FA 8D 5B 22			sta	num_lines
+   132 					
+   133 					//	Start time line number fractional
+   134 20FD				NUtils.lead	$00000000, NMaths.math_arg0
+Macro: NUtils.lead [Source: utils.as8]
+     1 20FD A9 00		    lda #<($00000000)
+     2 20FF 8D 6F 26		    sta NMaths.math_arg0
+     4 2102 A9 00		    lda #>($00000000)
+     5 2104 8D 70 26		    sta NMaths.math_arg0+1
+     7 2107 A9 00		    lda #^($00000000)
+     8 2109 8D 71 26		    sta NMaths.math_arg0+2
+    10 210C A9 00		    lda #(($00000000) >> 24)
+    11 210E 8D 72 26		    sta NMaths.math_arg0+3
+Source: Detector.as8
+   135 2111				NUtils.movba	start_time.m_line_num, NMaths.math_arg0+1
+Macro: NUtils.movba [Source: utils.as8]
+     1 2111 AD 63 22		    lda start_time.m_line_num
+     2 2114 8D 70 26		    sta NMaths.math_arg0+1
+Source: Detector.as8
+   136 2117				NUtils.leaw	$0000, NMaths.math_arg1
+Macro: NUtils.leaw [Source: utils.as8]
+     1 2117 A9 00		    lda #<($0000)
+     2 2119 8D 73 26		    sta NMaths.math_arg1
+     4 211C A9 00		    lda #>($0000)
+     5 211E 8D 74 26		    sta NMaths.math_arg1+1
+Source: Detector.as8
+   137 2121				NUtils.movba	num_lines, NMaths.math_arg1
+Macro: NUtils.movba [Source: utils.as8]
+     1 2121 AD 5B 22		    lda num_lines
+     2 2124 8D 73 26		    sta NMaths.math_arg1
+Source: Detector.as8
+   138 2127 20 FD 25			jsr	NMaths.div_u32_by_u16
+   139 212A				NUtils.movba	NMaths.math_arg0, full_start_time
+Macro: NUtils.movba [Source: utils.as8]
+     1 212A AD 6F 26		    lda NMaths.math_arg0
+     2 212D 8D 5C 22		    sta full_start_time
+Source: Detector.as8
+   140 						
+   141 					//	End time line number fractional
+   142 2130				NUtils.lead	$00000000, NMaths.math_arg0
+Macro: NUtils.lead [Source: utils.as8]
+     1 2130 A9 00		    lda #<($00000000)
+     2 2132 8D 6F 26		    sta NMaths.math_arg0
+     4 2135 A9 00		    lda #>($00000000)
+     5 2137 8D 70 26		    sta NMaths.math_arg0+1
+     7 213A A9 00		    lda #^($00000000)
+     8 213C 8D 71 26		    sta NMaths.math_arg0+2
+    10 213F A9 00		    lda #(($00000000) >> 24)
+    11 2141 8D 72 26		    sta NMaths.math_arg0+3
+Source: Detector.as8
+   143 2144				NUtils.movba	end_time.m_line_num, NMaths.math_arg0+1
+Macro: NUtils.movba [Source: utils.as8]
+     1 2144 AD 65 22		    lda end_time.m_line_num
+     2 2147 8D 70 26		    sta NMaths.math_arg0+1
+Source: Detector.as8
+   144 214A				NUtils.leaw	$0000, NMaths.math_arg1
+Macro: NUtils.leaw [Source: utils.as8]
+     1 214A A9 00		    lda #<($0000)
+     2 214C 8D 73 26		    sta NMaths.math_arg1
+     4 214F A9 00		    lda #>($0000)
+     5 2151 8D 74 26		    sta NMaths.math_arg1+1
+Source: Detector.as8
+   145 2154				NUtils.movba	num_lines, NMaths.math_arg1
+Macro: NUtils.movba [Source: utils.as8]
+     1 2154 AD 5B 22		    lda num_lines
+     2 2157 8D 73 26		    sta NMaths.math_arg1
+Source: Detector.as8
+   146 215A 20 FD 25			jsr	NMaths.div_u32_by_u16
+   147 215D				NUtils.movba	NMaths.math_arg0, full_end_time
+Macro: NUtils.movba [Source: utils.as8]
+     1 215D AD 6F 26		    lda NMaths.math_arg0
+     2 2160 8D 5E 22		    sta full_end_time
+Source: Detector.as8
+   148
+   149 2163				NUtils.movba	start_time.m_frame_num, full_start_time+1
+Macro: NUtils.movba [Source: utils.as8]
+     1 2163 AD 62 22		    lda start_time.m_frame_num
+     2 2166 8D 5D 22		    sta full_start_time+1
+Source: Detector.as8
+   150 2169				NUtils.movba	end_time.m_frame_num, full_end_time+1
+Macro: NUtils.movba [Source: utils.as8]
+     1 2169 AD 64 22		    lda end_time.m_frame_num
+     2 216C 8D 5F 22		    sta full_end_time+1
+Source: Detector.as8
+   151 						
+   152 216F				NUtils.subw	full_end_time, full_start_time, frame_count
+Macro: NUtils.subw [Source: utils.as8]
+     1 216F AD 5E 22		    lda full_end_time
+     2 2172 38			    sec
+     3 2173 ED 5C 22		    sbc full_start_time
+     5 2176 8D 59 22		        sta frame_count
+     8 2179 AD 5F 22		    lda full_end_time+1
+     9 217C ED 5D 22		    sbc full_start_time+1
+    11 217F 8D 5A 22		        sta frame_count+1
+Source: Detector.as8
+   153 					
+   154 2182 20 90 22			NSystem.get_tv_fps
+   155 2185 8D 61 22			sta	fps+1
+   156 2188				NUtils.movba	#0, fps
+Macro: NUtils.movba [Source: utils.as8]
+     1 2188 A9 00		    lda #0
+     2 218A 8D 60 22		    sta fps
+Source: Detector.as8
+   157 					
+   158 					_itofp	fps, #fps_fp
+   158 				 MWA fps fr0\ MWA #fps_fp flptr\ JSR _itofp
+   158 218D AD 60 22 85 D4 AD +  MWA fps fr0
+   158 2197 A9 37 85 FC A9 22 +  MWA #fps_fp flptr
+   158 219F 20 A4 26		 JSR _itofp
+   159 					_itofp	frame_count, #frame_count_fp
+   159 				 MWA frame_count fr0\ MWA #frame_count_fp flptr\ JSR _itofp
+   159 21A2 AD 59 22 85 D4 AD +  MWA frame_count fr0
+   159 21AC A9 3D 85 FC A9 22 +  MWA #frame_count_fp flptr
+   159 21B4 20 A4 26		 JSR _itofp
+   160 					_fpdiv	#fps_fp, #frame_count_fp, #result_fp
+   160 				 MWA #fps_fp loadfr0.adr\ MWA #frame_count_fp loadfr1.adr\ MWA #result_fp flptr\ JSR _fpdiv
+   160 21B7 A9 37 85 D0 A9 22 +  MWA #fps_fp loadfr0.adr
+   160 21BF A9 3D 85 D2 A9 22 +  MWA #frame_count_fp loadfr1.adr
+   160 21C7 A9 43 85 FC A9 22 +  MWA #result_fp flptr
+   160 21CF 20 AA 26		 JSR _fpdiv
+   161 					_fptoa	#result_fp, #result_str
+   161 				 MWA #result_fp loadfr0.adr\ MWA #result_str ptr1\ JSR _fptoa
+   161 21D2 A9 43 85 D0 A9 22 +  MWA #result_fp loadfr0.adr
+   161 21DA A9 49 85 D2 A9 22 +  MWA #result_str ptr1
+   161 21E2 20 7F 26		 JSR _fptoa
+   162 					
+   163 					NAlgorithm.find	#result_str, #NConsole.ATASCII_EOL
+   163 				 MWA #result_str NAlgorithm.find.ptr\ MVA #NConsole.ATASCII_EOL NAlgorithm.find.value\ JSR NAlgorithm.find
+   163 21E5 A9 49 8D EE 25 A9 +  MWA #result_str NAlgorithm.find.ptr
+   163 21EF A9 9B 8D F1 25	 MVA #NConsole.ATASCII_EOL NAlgorithm.find.value
+   163 21F4 20 EB 25		 JSR NAlgorithm.find
+   164 21F7				NUtils.movba	#0, "result_str,y"
+Macro: NUtils.movba [Source: utils.as8]
+     1 21F7 A9 00		    lda #0
+     2 21F9 99 49 22		    sta result_str,y
+Source: Detector.as8
+   165 					
+   166 					NConsole.print	#clocked_str
+   166 				 MWA #clocked_str NConsole.print.ptr\ JSR NConsole.print
+   166 21FC A9 1E 85 86 A9 22 +  MWA #clocked_str NConsole.print.ptr
+   166 2204 20 4A 23		 JSR NConsole.print
+   167 					NConsole.print	#result_str
+   167 				 MWA #result_str NConsole.print.ptr\ JSR NConsole.print
+   167 2207 A9 49 85 86 A9 22 +  MWA #result_str NConsole.print.ptr
+   167 220F 20 4A 23		 JSR NConsole.print
+   168 					NConsole.print	#mhz_str
+   168 				 MWA #mhz_str NConsole.print.ptr\ JSR NConsole.print
+   168 2212 A9 32 85 86 A9 22 +  MWA #mhz_str NConsole.print.ptr
+   168 221A 20 4A 23		 JSR NConsole.print
+   169 221D 60				rts
+   170 					
+   171 221E 43 6C 6F 63 6B 65 + 	clocked_str:	dta c'Clocked approx. at ', 0
+   172 2232 20 4D 48 7A 00		mhz_str:	dta c' MHz', 0
+   173 					
+   174 = 2237				fps_fp:			.ds 6
+   175 = 223D				frame_count_fp:	.ds	6
+   176 = 2243				result_fp:		.ds 6
+   177 					
+   178 = 2249				result_str:	.ds 16
+   179
+   180 2259-2261> 00 00		frame_count
+   180 = 225B 00		num_lines
+   180 = 225C 00 00		full_start_time
+   180 = 225E 00 00		full_end_time
+   180 = 2260 00 00		fps
+   180 				.endp
+   181
+   182 				//******************************************************************************************************************************************************
+   183 				//	Data
+   184 				//******************************************************************************************************************************************************
+   185
+   186 2262				.var	STime	start_time, end_time
+   187
+   188 2262			start_time
+   188 2264			end_time
+   188 				.endl // NProgram
+   189 					
+   190 				//******************************************************************************************************************************************************
+   191 				//	Inclusions
+   192 				//******************************************************************************************************************************************************
+   193
+   194 2266				icl	'system.as8'
+Source: system.as8
+     1 2266			.local NSystem
+     2
+     3 				//******************************************************************************************************************************************************
+     4 				//  Code
+     5 				//******************************************************************************************************************************************************
+     6
+     7 2266			.proc   disable_os
+     8 				    NMacros.disable_os
+     9 				    rts
+    10 				.end
+    11
+    12 				//******************************************************************************************************************************************************
+    13
+    14 2266			.proc   enable_os
+    15 				    disable_system_interrupts
+    16 				    
+    17 				    NUtils.movba	#%11111111, NPia.PORTB
+    18
+    19 				    NUtils.movba	#$c0, NPokey.IRQEN
+    20 				    NUtils.movba	#$40, NAntic.NMIEN
+    21 				    cli
+    22 				    rts
+    23 				.endp
+    24
+    25 				//******************************************************************************************************************************************************
+    26
+    27 2266			.proc	disable_system_interrupts
+    28 2266				NMacros.disable_system_interrupts
+Macro: NSystem.NMacros.disable_system_interrupts [Source: system.h8]
+     1 2266-26DD> 78				sei
+     2 2267 A9 00				lda	#0
+     3 2269 8D 0E D4				sta	NAntic.NMIEN
+     4 226C 8D 0E D2				sta	NPokey.IRQEN
+Source: system.as8
+    29 226F 60				rts
+    30 				.endp
+    31
+    32 				//******************************************************************************************************************************************************
+    33
+    34 2270			.proc	enable_system_interrupts
+    35 2270				NUtils.movba	$10, NPokey.IRQEN
+Macro: NUtils.movba [Source: utils.as8]
+     1 2270 A5 10		    lda $10
+     2 2272 8D 0E D2		    sta NPokey.IRQEN
+Source: system.as8
+    36 2275				NUtils.movba	#$40, NAntic.NMIEN
+Macro: NUtils.movba [Source: utils.as8]
+     1 2275 A9 40		    lda #$40
+     2 2277 8D 0E D4		    sta NAntic.NMIEN
+Source: system.as8
+    37 227A 58				cli
+    38 227B 60				rts
+    39 				.endp
+    40
+    41 				//******************************************************************************************************************************************************
+    42
+    43 227C			.proc	set_vbv(.word xy .byte a) .reg
+    44 227C 4C 5C E4			jmp	SETVBLV
+    45 				.endp
+    46
+    47 				//******************************************************************************************************************************************************
+    48
+    49 227F			.proc	wait_for_vbl(.byte x) .reg
+    50 227F			loop
+    51 227F A5 14			lda	RTCLOK+2
+    52
+    53 2281				.local
+    54 2281				loop:
+    55 2281 C5 14				cmp	RTCLOK+2
+    56 2283 F0 FC				beq	loop
+    57 					.endl
+    58
+    59 2285 CA				dex
+    60 2286 D0 F7			bne	loop
+    61 2288 60				rts
+    62 				.end
+    63
+    64 				//******************************************************************************************************************************************************
+    65
+    66 				//	Gets TV system.
+    67 				/**	@return .bool A	TV System.
+    68 						0	PAL/SECAM.
+    69 						1	NTSC.
+    70 				*/
+    70
+    71 2289			.proc	get_tv_system
+    72 2289 AD 14 D0			lda	NGtia.PAL
+    73 228C 29 02			and	#%00000010
+    74 228E 4A				lsr	@
+    75 228F 60				rts
+    76 				.endp
+    77
+    78 				//******************************************************************************************************************************************************
+    79
+    80 				//	Gets TV system fps.
+    81 				/**	@return .byte A	Fps.
+    82 						#50 for PAL/SECAM
+    83 						#60 for NTSC
+    84 				*/
+    84
+    85 2290			.proc	get_tv_fps
+    86 2290 20 89 22			jsr	get_tv_system
+    87 2293 0A				asl	@
+    88 2294 A8				tay
+    89 2295 B9 99 22			lda	fps,y
+    90 2298 60				rts
+    91 					
+    92 2299 32 3C			fps: dta b(50), b(60)
+    93 				.endp
+    94
+    95 				//******************************************************************************************************************************************************
+    96
+    97 				//	Gets number of tv lines.
+    98 				/**	@return .byte A Number of lines.
+    99 						#156 for PAL/SECAM
+   100 						#131 for NTSC
+   101 				*/
+   101
+   102 229B			.proc	get_num_vcount_lines
+   103 229B 20 89 22			jsr	get_tv_system
+   104 229E 0A				asl	@
+   105 229F A8				tay
+   106 22A0 B9 A4 22			lda	fps,y
+   107 22A3 60				rts
+   108 					
+   109 22A4 9C 83			fps: dta b(156), b(131)
+   110 				.endp
+   111
+   112 				//******************************************************************************************************************************************************
+   113
+   114 				.endl // NSystem
+   195 22A6				icl	'memory.as8'
+Source: memory.as8
+     1 22A6			.local	NMemory
+     2
+     3 				//******************************************************************************************************************************************************
+     4 				//	Variables
+     5 				//******************************************************************************************************************************************************
+     6
+     7 22A6				.zpvar	.word	ptr, ptr2
+     8 22A6				.var	.word	count, modulo
+     9 22A6				.var	.byte	value, width, height
+    10
+    11 				//******************************************************************************************************************************************************
+    12 				//	Code
+    13 				//******************************************************************************************************************************************************
+    14
+    15 				///	Compares two tables for equality.
+    16 				/**	@param .word tbl0_ptr	First table pointer.
+    17 					@param .word tbl1_ptr	Second table pointer.
+    18 					@param .byte size		Table size. Must be greater than zero.
+    19 					@return A	- Flag indicating comparison status.
+    20 						NUtils.TRUE		Equal.
+    21 						NUtils.FALSE	Different.
+    22 				*/
+    22
+    23 22A6			.proc	strcmp(.word tbl0_ptr .word tbl1_ptr .word count) .var
+    24 					tbl0_ptr = NMemory.ptr
+    25 					tbl1_ptr = NMemory.ptr2
+    26 					count = NMemory.count
+    27
+    28 					ldy	#0
+    29 					ldx	count+1
+    30 					beq	last_page
+    31
+    32 22A6				.local	full_pages
+    33 22A6				loop:
+    34 						lda	(tbl0_ptr),y
+    35 						cmp	(tbl1_ptr),y
+    36 						bne	unequal
+    37 						iny
+    38 						bne	loop
+    39 					
+    40 						inc	tbl0_ptr+1
+    41 						inc	tbl1_ptr+1
+    42 						dex
+    43 						bne	loop
+    44 					.endl
+    45
+    46 22A6				.local	last_page
+    47 						lda	count
+    48 						beq	equal
+    49 22A6				loop:
+    50 						lda	(tbl0_ptr),y
+    51 						cmp	(tbl1_ptr),y
+    52 						bne	unequal
+    53 						iny
+    54 						cpy	count
+    55 						bne	loop
+    56 					.endl	
+    57 					
+    58 22A6			equal
+    59 					lda	#NUtils.TRUE
+    60 					rts
+    61 					
+    62 22A6			unequal
+    63 					lda	#NUtils.FALSE
+    64 					rts
+    65 				.endp
+    66
+    67 				//******************************************************************************************************************************************************
+    68
+    69 				///	Compares two half-page sized tables for equality. Uses code auto-modification.
+    70 				/**	@param .word tbl0_ptr	First table pointer.
+    71 					@param .word tbl1_ptr	Second table pointer.
+    72 					@param .byte size		Table size.
+    73 					@return A	- Flag indicating comparison status.
+    74 						NUtils.TRUE		Equal.
+    75 						NUtils.FALSE	Different.
+    76 				*/
+    76
+    77 22A6			.proc	strcmphp(.word tbl0_ptr .word tbl1_ptr .byte size) .var
+    78 = 22A7				size = * + 1
+    79 22A6 A0 FF				ldy	#$ff
+    80 22A8 88				dey
+    81 22A9			loop
+    82 = 22AA				tbl0_ptr = *+1
+    83 22A9 B9 FF FF				lda	$ffff,y
+    84 = 22AD				tbl1_ptr = *+1
+    85 22AC D9 FF FF				cmp	$ffff,y
+    86 22AF D0 06			bne	inequality
+    87 					
+    88 22B1 88				dey
+    89 22B2 10 F5			bpl	loop
+    90 					
+    91 					//	equality
+    92 22B4 A9 01			lda	#NUtils.TRUE
+    93 22B6 60				rts
+    94
+    95 22B7			inequality
+    96 22B7 A9 00			lda	#NUtils.FALSE
+    97 22B9 60				rts
+    98 				.endp
+    99
+   100 				//******************************************************************************************************************************************************
+   101
+   102 				///	Set memory. Uses code auto-modification.
+   103 				/**	@param .word %%1	Destination location.
+   104 					@param .word %%2	Count.
+   105 					@param .byte %%3	Value.
+   106 				*/
+   106
+   107 22BA			.proc	memset(.word dst_ptr .word count .byte value) .var
+   108 					dst_ptr	= NMemory.ptr
+   109 					count	= NMemory.count
+   110 					value	= NMemory.value
+   111 					
+   112 					ldx	value
+   113 					ldy	#0
+   114 22BA			loop
+   115 					//	Test, whether we are done or not.
+   116 					NUtils.tstzw	count
+   117 					beq	done
+   118 						txa
+   119 						sta	(dst_ptr),y
+   120 					
+   121 					NUtils.decw	count
+   122 					iny
+   123 					bne	loop
+   124 					
+   125 					inc	dst_ptr+1
+   126 					jmp	loop
+   127 22BA			done
+   128 					rts
+   129 				.endp
+   130
+   131 				//******************************************************************************************************************************************************
+   132
+   133 				///	Set memory. Range restricted to one page only. Uses code auto-modification.
+   134 				/**	@param .word dst_ptr	Destination pointer. Should be page aligned to achieve best performance.
+   135 					@param .byte count	Count.
+   136 					@param .byte value	Value.
+   137 				*/
+   137
+   138 22BA			.proc	memsetp(.word dst_ptr .byte count .byte value) .var
+   139 					value = * + 1
+   140 						lda	#0
+   141 					count = * + 1	// auto-modification
+   142 						ldy	#0
+   143 22BA			loop
+   144 					dey
+   145 					dst_ptr	= * + 1
+   146 						sta	$ffff,y	// auto-modification
+   147 					bne	loop
+   148 					rts
+   149 				.endp
+   150
+   151 				//******************************************************************************************************************************************************
+   152
+   153 				///	Set 2D table. Uses code auto-modification.
+   154 				/**	@param .word %%1	- Destination location.
+   155 					@param .byte %%2	- Width.
+   156 					@param .word %%3	- Modulo.
+   157 					@param .byte %%4	- Height.
+   158 					@param .byte %%5	- Value.
+   159 				*/
+   159
+   160 22BA			.proc	memsetm(.word dst_ptr .byte width .word modulo .byte height .byte value) .var
+   161 					dst_ptr = NMemory.ptr
+   162 					width = NMemory.width
+   163 					modulo = NMemory.modulo
+   164 					height = NMemory.height
+   165 					value	= NMemory.value
+   166
+   167 					ldx	height
+   168 22BA			loop2
+   169 					ldy	#0
+   170 					lda	value
+   171 22BA			loop
+   172 					sta	(dst_ptr),y
+   173 					iny
+   174 					cpy	width
+   175 					bne	loop
+   176 					
+   177 					NUtils.addw	dst_ptr, modulo, dst_ptr
+   178 					dex
+   179 					bne	loop2
+   180 					rts
+   181 				.endp
+   182
+   183 				//******************************************************************************************************************************************************
+   184
+   185 				/**	(byte*)	tmp_vct0	- destination
+   186 					.word tmp_vct1		- count
+   187 					.byte tmp_vct2		- value
+   188 				*/
+   188
+   189 				/*.proc	memsetf
+   190 					NUM_BITS = 4
+   191 					
+   192 					.var .word	cnt16s
+   193 					
+   194 					NUtils.movw	tmp_vct1, cnt16s
+   195 					NUtils.lsrw		cnt16s, NUM_BITS
+   196 				loop_16s
+   197 					NUtils.tstzw	cnt16s
+   198 					beq				done_16s
+   199
+   200 					ldy	#0
+   201 					lda	tmp_vct2
+   202 					.rept	(1<<NUM_BITS)-1
+   203 						sta	(tmp_vct0),y
+   204 						iny
+   205 					.endr
+   206 					sta	(tmp_vct0),y
+   207 					
+   208 					NUtils.addbwa	tmp_vct0, #(1<<NUM_BITS)
+   209 					NUtils.decw		cnt16s
+   210 					jmp				loop_16s
+   211
+   212 				done_16s
+   213 					.var .byte	rest, tmp
+   214 					
+   215 					NUtils.andb		tmp_vct1, #((1<<NUM_BITS)-1), rest
+   216 					beq	done
+   217 					
+   218 				cont_rest
+   219 					NUtils.subba	#((1<<NUM_BITS)-1), rest, tmp
+   220 					asl	@
+   221 					//clc
+   222 					adc	tmp
+   223 					adc	<rest_start
+   224 					sta	jmp_adr+1
+   225 					lda	>rest_start
+   226 					adc #0
+   227 					sta	jmp_adr+2
+   228
+   229 					lda	tmp_vct2
+   230 					ldy	#0
+   231 				jmp_adr
+   232 					jmp	$ffff	// auto-modification
+   233 						
+   234 				rest_start
+   235 					.rept	((1<<NUM_BITS)-2)
+   236 						sta	(tmp_vct0),y
+   237 						iny
+   238 					.endr
+   239 					sta	(tmp_vct0),y
+   240
+   241 				done
+   242 					rts
+   243 				.endp*/
+   243
+   244
+   245 				//******************************************************************************************************************************************************
+   246
+   247 				///	Copy data chunk from source into destination location.
+   248 				/**	@param .word dst_ptr	Destination location pointer.
+   249 					@param .word src_ptr	Source location pointer.
+   250 					@param .word count		Count.
+   251 				*/
+   251
+   252 22BA			.proc	memcpy(.word dst_ptr .word src_ptr .word count) .var
+   253 = 0082				dst_ptr = NMemory.ptr
+   254 = 0084				src_ptr = NMemory.ptr2
+   255 = 2343				count = NMemory.count
+   256
+   257 22BA				NMemory.memcpy_macro	NMemory.ptr, NMemory.ptr2, NMemory.count
+Macro: NMemory.memcpy_macro [Source: memory.h8]
+     1 22BA A5 84		    lda NMemory.ptr2
+     2 22BC 38			    sec
+     3 22BD E5 82		    sbc NMemory.ptr
+     8 22BF A5 85		    lda NMemory.ptr2+1
+     9 22C1 E5 83		    sbc NMemory.ptr+1
+     2 22C3 B0 5A			bcs	forward
+     1 22C5 A5 84		    lda NMemory.ptr2
+     2 22C7 18			    clc
+     3 22C8 6D 43 23		    adc NMemory.count
+     5 22CB 85 84		        sta NMemory.ptr2
+     8 22CD A5 85		    lda NMemory.ptr2+1
+     9 22CF 6D 44 23		    adc NMemory.count+1
+    11 22D2 85 85		        sta NMemory.ptr2+1
+     1 22D4 A5 82		    lda NMemory.ptr
+     2 22D6 18			    clc
+     3 22D7 6D 43 23		    adc NMemory.count
+     5 22DA 85 82		        sta NMemory.ptr
+     8 22DC A5 83		    lda NMemory.ptr+1
+     9 22DE 6D 44 23		    adc NMemory.count+1
+    11 22E1 85 83		        sta NMemory.ptr+1
+     1 22E3 A5 84		    lda NMemory.ptr2+0
+     2 22E5 D0 02		    bne skip
+     3 22E7 C6 85		    dec NMemory.ptr2+1
+     4 22E9			skip
+     5 22E9 C6 84		    dec NMemory.ptr2+0
+Source: memory.as8
+     1 22EB A5 82		    lda NMemory.ptr+0
+     2 22ED D0 02		    bne skip
+     3 22EF C6 83		    dec NMemory.ptr+1
+     4 22F1			skip
+     5 22F1 C6 82		    dec NMemory.ptr+0
+Source: memory.as8
+    10 22F3 A0 00				ldy	#0
+    11 22F5				loop:
+     1 22F5 AD 43 23		    lda NMemory.count
+     2 22F8 0D 44 23		    ora NMemory.count+1
+Source: memory.as8
+    14 22FB F0 45				beq	done
+     1 22FD B1 84		    lda (NMemory.ptr2),y
+     2 22FF 91 82		    sta (NMemory.ptr),y
+Source: memory.as8
+     1 2301 AD 43 23		    lda NMemory.count+0
+     2 2304 D0 03		    bne skip
+     3 2306 CE 44 23		    dec NMemory.count+1
+     4 2309			skip
+     5 2309 CE 43 23		    dec NMemory.count+0
+Source: memory.as8
+     1 230C A5 84		    lda NMemory.ptr2+0
+     2 230E D0 02		    bne skip
+     3 2310 C6 85		    dec NMemory.ptr2+1
+     4 2312			skip
+     5 2312 C6 84		    dec NMemory.ptr2+0
+Source: memory.as8
+     1 2314 A5 82		    lda NMemory.ptr+0
+     2 2316 D0 02		    bne skip
+     3 2318 C6 83		    dec NMemory.ptr+1
+     4 231A			skip
+     5 231A C6 82		    dec NMemory.ptr+0
+Source: memory.as8
+    21 231C 4C F5 22				jmp	loop
+    25 231F A0 00				ldy	#0
+    26 2321				loop:
+     1 2321 AD 43 23		    lda NMemory.count
+     2 2324 0D 44 23		    ora NMemory.count+1
+Source: memory.as8
+    29 2327 F0 19				beq	done
+     1 2329 B1 84		    lda (NMemory.ptr2),y
+     2 232B 91 82		    sta (NMemory.ptr),y
+Source: memory.as8
+     1 232D AD 43 23		    lda NMemory.count+0
+     2 2330 D0 03		    bne skip
+     3 2332 CE 44 23		    dec NMemory.count+1
+     4 2335			skip
+     5 2335 CE 43 23		    dec NMemory.count+0
+Source: memory.as8
+    34 2338 C8					iny
+    35 2339 D0 E6				bne	loop
+    37 233B E6 85				inc	NMemory.ptr2+1
+    38 233D E6 83				inc	NMemory.ptr+1
+    39 233F 4C 21 23				jmp	loop
+    42 2342			done
+Source: memory.as8
+   258 2342 60				rts
+   259 				.endp
+   260
+   261 				//******************************************************************************************************************************************************
+   262
+   263 				///	Copy data chunk from source into destination location in forward direction.
+   264 				/**	@param .word dst_ptr	Destination location pointer.
+   265 					@param .word src_ptr	Source location pointer.
+   266 					@param .word count		Count.
+   267 				*/
+   267
+   268 2343			.proc	fwdmemcpy(.word dst_ptr .word src_ptr .word count) .var
+   269 					dst_ptr = NMemory.ptr
+   270 					src_ptr = NMemory.ptr2
+   271 					count = NMemory.count
+   272
+   273 					ldy	#0
+   274
+   275 					ldx	count+1
+   276 					beq	copy_last_page
+   277 						
+   278 						sty	copy.count
+   279 						
+   280 2343					.local	copy_pages
+   281 							jsr	copy
+   282 							inc	src_ptr+1
+   283 							inc	dst_ptr+1
+   284 							dex
+   285 							bne	copy_pages
+   286 						.endl
+   287
+   288 2343			copy_last_page
+   289 					lda	count
+   290 					beq	copy._exit
+   291
+   292 						sta	copy.count
+   293
+   294 2343					.proc	copy(.byte count) .var
+   295 2343						.var	.byte	count
+   296
+   297 2343						.local	loop
+   298 								lda	(src_ptr),y
+   299 								sta	(dst_ptr),y
+   300 								iny
+   301 								cpy	count
+   302 								bne	loop
+   303 							.endl
+   304 					
+   305 2343					_exit:	rts
+   306 						.endp
+   307 				.endp
+   308
+   309 				//******************************************************************************************************************************************************
+   310
+   311 				///	Copy data chunk from source into destination location. Range restricted to one page only. Uses code auto-modification.
+   312 				/**	@param .word dst_ptr	Destination location pointer. Should be page aligned to achieve best performance.
+   313 					@param .word src_ptr	Source location pointer. Should be page aligned to achieve best performance.
+   314 					@param .byte count		Count.
+   315 				*/
+   315
+   316 2343			.proc	memcpyhp(.word dst_ptr .word src_ptr .byte count) .var
+   317 					count	= NMemory.count
+   318 					
+   319 					ldy	count
+   320 					bne	continue
+   321 					rts
+   322
+   323 2343			continue
+   324 					dey
+   325 2343			loop
+   326 					src_ptr = * + 1
+   327 						lda $ffff,y	// auto-modification
+   328 					dst_ptr = * + 1
+   329 						sta	$ffff,y	// auto-modification
+   330 					
+   331 					dey
+   332 					bpl	loop
+   333 					rts
+   334 				.endp
+   335
+   336 				//******************************************************************************************************************************************************
+   337
+   338 				///	Copy data chunk from source into destination location. Range restricted to one page only. Uses code auto-modification.
+   339 				/**	@param .word dst_ptr	Destination location pointer. Should be page aligned to achieve best performance.
+   340 					@param .word src_ptr	Source location pointer. Should be page aligned to achieve best performance.
+   341 					@param .byte count		Count (1-255).
+   342 				*/
+   342
+   343 2343			.proc	memcpyp(.word dst_ptr .word src_ptr .byte count) .var
+   344 					count	= NMemory.count
+   345
+   346 					ldy	#0	
+   347 2343			loop
+   348 					src_ptr = * + 1
+   349 						lda $ffff,y	// auto-modification
+   350 					dst_ptr = * + 1
+   351 						sta $ffff,y	// auto-modification
+   352 					
+   353 					iny
+   354 					cpy	count
+   355 					bne	loop
+   356 					rts
+   357 				.endp
+   358
+   359 				//******************************************************************************************************************************************************
+   360
+   361 				///	Copy data chunk from source into destination location.
+   362 				/**	@param .word dst_ptr	Destination location pointer.
+   363 					@param .word dst_modulo	Destination modulo.
+   364 					@param .word src_ptr	Source location pointer.
+   365 					@param .byte width		Width.
+   366 					@param .byte height		Height.
+   367 					@param .word src_modulo	Source modulo.
+   368 				*/
+   368
+   369 2343			.proc	memcpym(.word dst_ptr .word dst_modulo .word src_ptr .byte width .byte height .word src_modulo) .var
+   370 					dst_ptr = NMemory.ptr
+   371 2343				.var	.word	dst_modulo
+   372 					src_ptr = NMemory.ptr2
+   373 2343				.var	.word	src_modulo
+   374 					
+   375 2343			loop_y
+   376 					ldy	#0
+   377 2343			loop_x
+   378 					NUtils.movba	"(src_ptr),y", "(dst_ptr),y"
+   379 					iny
+   380 					cpy	width
+   381 					bne	loop_x
+   382 					
+   383 					NUtils.addw	src_ptr, src_modulo, src_ptr
+   384 					NUtils.addw	dst_ptr, dst_modulo, dst_ptr
+   385
+   386 					dec	height
+   387 					bne	loop_y
+   388 					rts
+   389 				.endp
+   390
+   391 				//******************************************************************************************************************************************************
+   392
+   393 				///	Backup memory locations.
+   394 				/**	@param .word tbl_ptr	Backup table pointer.
+   395 				*/
+   395
+   396 2343			.proc	backup(.word tbl_ptr) .var
+   397 					tbl_ptr = NMemory.ptr
+   398 					tmp_ptr = NMemory.ptr2
+   399 					
+   400 2343			loop
+   401 					ldy	#0
+   402 					NUtils.cmpba	"(tbl_ptr),y", #EType.NONE
+   403 					bne	cont
+   404 						//	Exit.
+   405 						rts
+   406 2343			cont
+   407 					ldy	#1
+   408 					NUtils.movba	"(tbl_ptr),y", tmp_ptr
+   409 					iny
+   410 					NUtils.movba	"(tbl_ptr),y", tmp_ptr+1
+   411
+   412 					//	Copy the first byte.
+   413 					ldy	#0
+   414 					lda	(tmp_ptr),y
+   415 					ldy	#3
+   416 					sta	(tbl_ptr),y
+   417 					
+   418 					//	if	(tbl_ptr[0] == EType.BYTE)
+   419 					ldy	#0
+   420 					NUtils.cmpba	"(tbl_ptr),y", #EType.BYTE
+   421 					bne	cont_2
+   422 						NUtils.addbw	tbl_ptr, #4, tbl_ptr
+   423 						jmp	loop
+   424 					
+   425 2343			cont_2
+   426 					//	if	(tbl_ptr[0] == EType.WORD)
+   427 					//ldy	#0
+   428 					NUtils.cmpba	"(tbl_ptr),y", #EType.WORD
+   429 					bne	cont_3
+   430 						//	Copy second byte.
+   431 						ldy	#1
+   432 						lda	(tmp_ptr),y
+   433 						ldy	#4
+   434 						sta	(tbl_ptr),y
+   435 						NUtils.addbw	tbl_ptr, #5, tbl_ptr
+   436 						jmp	loop
+   437 					
+   438 2343			cont_3
+   439 					jmp	loop
+   440 				.endp
+   441
+   442 				//******************************************************************************************************************************************************
+   443
+   444 				///	Restore memory locations.
+   445 				/**	@param .word tbl_ptr	Backup table pointer.
+   446 				*/
+   446
+   447 2343			.proc	restore(.word tbl_ptr) .var
+   448 					tbl_ptr = NMemory.ptr
+   449 					tmp_ptr = NMemory.ptr2
+   450 					
+   451 2343			loop
+   452 					ldy	#0
+   453 					NUtils.cmpba	"(tbl_ptr),y", #EType.NONE
+   454 					bne	cont
+   455 						//	Exit.
+   456 						rts
+   457 2343			cont
+   458 					ldy	#1
+   459 					NUtils.movba	"(tbl_ptr),y", tmp_ptr
+   460 					iny
+   461 					NUtils.movba	"(tbl_ptr),y", tmp_ptr+1
+   462
+   463 					//	Copy the first byte.
+   464 					ldy	#3
+   465 					lda	(tbl_ptr),y
+   466 					ldy	#0
+   467 					sta	(tmp_ptr),y
+   468 					
+   469 					//	if	(tbl_ptr[0] == EType.BYTE)
+   470 					//ldy	#0
+   471 					NUtils.cmpba	"(tbl_ptr),y", #EType.BYTE
+   472 					bne	cont_2
+   473 						NUtils.addbw	tbl_ptr, #4, tbl_ptr
+   474 						jmp	loop
+   475 					
+   476 2343			cont_2
+   477 					//	if	(tbl_ptr[0] == EType.WORD)
+   478 					//ldy	#0
+   479 					NUtils.cmpba	"(tbl_ptr),y", #EType.WORD
+   480 					bne	cont_3
+   481 						//	Copy second byte.
+   482 						ldy	#4
+   483 						lda	(tbl_ptr),y
+   484 						ldy	#1
+   485 						sta	(tmp_ptr),y
+   486 						
+   487 						NUtils.addbw	tbl_ptr, #5, tbl_ptr
+   488 						jmp	loop
+   489 					
+   490 2343			cont_3
+   491 					jmp	loop
+   492 				.endp
+   493
+   494 				//******************************************************************************************************************************************************
+   495
+   496 = 0082			ptr
+   496 = 0084			ptr2
+   496 = 2343 00 00		count
+   496 = 2345 00 00		modulo
+   496 = 2347 00		value
+   496 = 2348 00		width
+   496 = 2349 00		height
+   496 				.endl // NMemory
+   196 234A				icl	'console.as8'
+Source: console.as8
+     1 234A			.local	NConsole
+     2
+     3 				//******************************************************************************************************************************************************
+     4 				//	Variables
+     5 				//******************************************************************************************************************************************************
+     6
+     7 234A				.zpvar	.word	ptr
+     8 234A				.var	.byte	value
+     9
+    10 				//******************************************************************************************************************************************************
+    11 				//	Code
+    12 				//******************************************************************************************************************************************************
+    13
+    14 				///	Print text.
+    15 				/**	Procedura wyprowadza na ekran ciag znaków (string) na pozycji X/Y kursora okreslonej przez
+    16 					zmienne odpowiednio COLCRS ($55-$56) i ROWCRS ($54). Ciag znaków musi byc zakoñczony zerem.
+    17 					Zaklada sie, ze obowiazuja przy tym domyslne ustawienia OS-u, to jest ekran jest
+    18 					w trybie Graphics 0, a kanal IOCB 0 jest otwarty dla edytora ekranowego. 
+    19 					Maksymalna dopuszczalna dlugosc ciagu to 255 znaków lacznie ze znakiem konca $00.
+    20 				*/
+    20
+    21 234A			.proc	print(.word ptr) .var
+    22 = 0086				ptr = NConsole.ptr
+    23
+    24 234A A0 00			ldy	#0
+    25 234C			loop
+    26 234C B1 86			lda	(ptr),y
+    27 234E F0 0C			beq	_exit
+    28 2350					NUtils.pushy
+Macro: NUtils.pushy [Source: utils.as8]
+     1 2350 98			    tya
+     2 2351 48			    pha
+Source: console.as8
+    29 2352 B1 86				lda	(ptr),y
+    30 2354 20 5D 23				jsr	putc
+    31 2357					NUtils.popy
+Macro: NUtils.popy [Source: utils.as8]
+     1 2357 68			    pla
+     2 2358 A8			    tay
+Source: console.as8
+    32 2359 C8				iny
+    33 235A D0 F0			bne	loop
+    34 					
+    35 235C			_exit
+    36 235C 60				rts
+    37 				.endp
+    38
+    39 				//******************************************************************************************************************************************************
+    40
+    41 				///	Print text line.
+    42 				/**	Procedura wyprowadza na ekran ciag znaków (string) na pozycji X/Y kursora okreslonej przez
+    43 					zmienne odpowiednio COLCRS ($55-$56) i ROWCRS ($54). Ciag znaków musi byc zakoñczony zerem.
+    44 					Zaklada sie, ze obowiazuja przy tym domyslne ustawienia OS-u, to jest ekran jest
+    45 					w trybie Graphics 0, a kanal IOCB 0 jest otwarty dla edytora ekranowego. 
+    46 					Maksymalna dopuszczalna dlugosc ciagu to 255 znaków lacznie ze znakiem konca $00.
+    47 				*/
+    47
+    48 235D			.proc	println(.word ptr) .var
+    49 					ptr = NConsole.ptr
+    50
+    51 					print	ptr
+    52 					lda	#ATASCII_EOL
+    53 					jmp	putc
+    54 				.endp
+    55
+    56 				//******************************************************************************************************************************************************
+    57
+    58 				///	Print single character.
+    59 				/**	@param .byte A	- Character.
+    60 				*/
+    60
+    61 235D			.proc	putc(.byte a) .reg
+    62 235D				.using NIO
+    63
+    64 235D A2 00			ldx	#$00
+    65 235F A8				tay
+    66 2360				NUtils.pushb	"IOCB+7,x"
+Macro: NUtils.pushb [Source: utils.as8]
+     1 2360 BD 47 03		    lda IOCB+7,x
+     2 2363 48			    pha
+Source: console.as8
+    67 2364				NUtils.pushb	"IOCB+6,x"
+Macro: NUtils.pushb [Source: utils.as8]
+     1 2364 BD 46 03		    lda IOCB+6,x
+     2 2367 48			    pha
+Source: console.as8
+    68 2368 98				tya
+    69 2369 60				rts
+    70 				.endp
+    71
+    72 				//******************************************************************************************************************************************************
+    73
+    74 				///	Initialize system keycode.
+    75 236A			.proc	init_keycode
+    76 					NUtils.movba	#KEYCODE_NONE, NSystem.CH
+    77 					rts
+    78 				.endp
+    79
+    80 				//******************************************************************************************************************************************************
+    81
+    82 				///	Wait for key pressed.
+    83 				/**	@param .byte A	Result.
+    84 				*/
+    84
+    85 236A			.proc	wait_for_key_pressed
+    86 236A				.using	NIO
+    87
+    88 					jsr	find_first_free_iocb_channel
+    89 					bmi	_error
+    90
+    91 					NUtils.leaw	kbd_dev_str, "ICBUFA,x"
+    92 					NUtils.movba	#$04, "ICAX1,x"
+    93 					NUtils.movba	#$00, "ICAX2,x"
+    94 					lda #$03
+    95 					jsr cio_exe
+    96 					bmi	_error	// w dobrze zdebugowanym programie raczej nie wyst¹pi tu b³¹d
+    97
+    98 					lda #$00
+    99 					sta ICBUFL,x
+   100 					sta ICBUFL+1,x
+   101 					lda #$07
+   102 					jsr cio_exe
+   103 					bmi _error	// np. naciœniêto Break
+   104
+   105 					pha
+   106 					lda #$0c
+   107 					jsr cio_exe
+   108 					pla
+   109 					rts
+   110
+   111 236A			_error
+   112 					rts
+   113
+   114 236A			cio_exe
+   115 					sta ICCMD,x
+   116 					jmp CIOV
+   117 				.endp
+   118
+   119 				//******************************************************************************************************************************************************
+   120
+   121 				///	GETLINE.
+   122 				/**	Program czeka, az uzytkownik wpisze ciag znaków z klawiatury i nacisnie klawisz RETURN.
+   123 					Znaki podczas wpisywania sa wyswietlane na ekranie, dzialaja tez normalne znaki kontrolne
+   124 					(odczyt jest robiony z edytora ekranowego). 
+   125
+   126 					Wywolanie funkcji polega na zaladowaniu adresu, pod jaki maja byc wpisane znaki,
+   127 					do rejestrów A/Y (mlodszy/starszy) i wykonaniu rozkazu JSR GETLINE. Konczacy znak to $9b.
+   128 				*/
+   128
+   129 236A			.proc	get_line(.word ya) .reg
+   130 236A				.using NIO
+   131 					
+   132 					ldx	#$00
+   133 					sta	ICBUFA+0,x
+   134 					tya
+   135 					sta	ICBUFA+1,x
+   136
+   137 					NUtils.movba	#MAX_STR_LEN, "ICBUFL,x"
+   138 					NUtils.movba	#$05, "ICCMD,x"
+   139 					
+   140 					jmp	CIOV
+   141 				.endp
+   142
+   143 				//******************************************************************************************************************************************************
+   144
+   145 				///	Convert byte into lowercase, hexadecimal ATASCII string.
+   146 				/**	@param .byte value	Value to convert.
+   147 					@param .word dst_ptr	Pointer to destination buffer.
+   148 				*/
+   148
+   149 236A			.proc	bta(.byte value .word ptr) .var
+   150 					value	= NConsole.value
+   151 					ptr 	= NConsole.ptr
+   152
+   153 					lda	value
+   154 					NUtils.lsra	4
+   155 					tax
+   156 					
+   157 					ldy	#0
+   158 					NUtils.movba	"hex_to_str_tbl,x", "(ptr),y"
+   159 					
+   160 					NUtils.andba	value, #$0f
+   161 					tax
+   162 					iny
+   163 					NUtils.movba	"hex_to_str_tbl,x", "(ptr),y"
+   164
+   165 					//	Terminating NULL
+   166 					iny
+   167 					NUtils.movba	#0, "(ptr),y"
+   168 					rts
+   169 				.endp
+   170
+   171 				//******************************************************************************************************************************************************
+   172
+   173 				///	Convert byte to decimal ATASCII string.
+   174 				/**	@param	.byte	value	- Number to convert.
+   175 				*/
+   175
+   176 				/*.proc	wtod( .word value .word dst_ptr ) .var
+   177 					.var	.word	value
+   178 					dst_ptr = NConsole.dst_ptr
+   179 					
+   180 					_itofp	value, #fp
+   181 					_fptoa	#fp, dst_ptr
+   182 					NAlgorithm.find_first_of	dst_ptr, #$9b
+   183 					NUtils.movba	#0, "(dst_ptr),y"
+   184 					rts
+   185
+   186 					fp:	.ds 6	//	FP0 number buffer
+   187 				.endp*/
+   187
+   188
+   189 				//******************************************************************************************************************************************************
+   190 				//	Data
+   191 				//******************************************************************************************************************************************************
+   192 					
+   193 236A 4B 3A 9B			kbd_dev_str:  dta c'K:', ATASCII_EOL
+   194 236D 30 31 32 33 34 35 + 	hex_to_atascii_tbl:	dta c'0123456789ABCDEF'
+   195 237D 10 11 12 13 14 15 + 	hex_to_internal_tbl:	dta d'0123456789ABCDEF'
+   196
+   197 				//******************************************************************************************************************************************************
+   198
+   199 = 0086			ptr
+   199 = 238D 00		value
+   199 				.endl // NConsole
+   197 238E				icl	'API\Master.as8'
+     1 				//******************************************************************************************************************************************************
+     2 				//	Header
+     3 				//******************************************************************************************************************************************************
+     4
+     5 				/**	@file Master.as8
+     6 					@author Marek "Konop" Konopka
+     7 					@date 14.05.2010
+     8 				*/
+     8
+     9
+    10 238E			.local	NVeronica.NMaster
+    11
+    12 				//******************************************************************************************************************************************************
+    13 				//	Zero page variables
+    14 				//******************************************************************************************************************************************************
+    15
+    16 238E				.zpvar .word	src_adr, dst_adr
+    17
+    18 				//******************************************************************************************************************************************************
+    19 				//	Variables
+    20 				//******************************************************************************************************************************************************
+    21
+    22 238E				.var .word	size
+    23
+    24 				//******************************************************************************************************************************************************
+    25 				//	Code
+    26 				//******************************************************************************************************************************************************
+    27
+    28 				///	Enable rambanks.
+    29 				/**	@param .byte rambank_bits	- Rambank bit combination.
+    30 				*/
+    30
+    31 238E			.proc	set_rambanks(.byte rambank_bits) .var
+    32 238E				.var .byte	rambank_bits
+    33 					
+    34 238E				.using	NVeronica.NProtocol.EAtariRegisterStates
+    35 					
+    36 				    // TODO: Should not set b7 in $d500!!! Leave it unchanged.
+    37 238E				NVeronica.NProtocol.set_or_switch_mem_bits	NVeronica.NProtocol.Atari_HW_Register, BANKS_MASK, SEMAPHORE_MASK, rambank_bits
+Macro: NVeronica.NProtocol.set_or_switch_mem_bits [Source: Protocol.h8]
+     1 238E AD A4 23			lda	rambank_bits
+     2 2391 29 30			and	#(BANKS_MASK)
+     3 2393 8D A4 23			sta	rambank_bits
+     5 2396 AD C0 D5			lda	NVeronica.NProtocol.Atari_HW_Register
+     6 2399 29 CF			and	#~(BANKS_MASK)
+     8 239B 49 80				eor	#(SEMAPHORE_MASK)
+    10 239D 0D A4 23			ora	rambank_bits
+    11 23A0 8D C0 D5			sta	NVeronica.NProtocol.Atari_HW_Register
+Source: Master.as8
+    38 23A3 60				rts
+    39 = 23A4 00		rambank_bits
+    39 				.endp
+    40
+    41 				//******************************************************************************************************************************************************
+    42
+    43 				///	Boot Veronica.
+    44 				/**	@param .word_ptr boot_src_ptr	- Bootstrap source location.
+    45 					@param .word_ptr boot_dst_ptr	- Bootstrap destination location (window).
+    46 					@param .word_ptr boot_size		- Bootstrap size.
+    47 					@param .word_ptr bios_src_ptr		- Bios source location.
+    48 					@param .word_ptr bios_dst_ptr		- Bios destination location (window).
+    49 					@param .word_ptr bios_size			- Bios size.	
+    50 				*/
+    50
+    51 23A5			.proc	boot_veronica(.word boot_src_ptr .word boot_dst_ptr .word boot_size .word bios_src_ptr .word bios_dst_ptr .word bios_size .word startup_ptr) .var
+    52 23A5				.var	.word boot_src_ptr, boot_dst_ptr, boot_size, bios_src_ptr, bios_dst_ptr, bios_size//, startup_ptr
+    53 					startup_ptr = NVeronica.NProtocol.Atari_Window_Location+(NCpu.CPURES-NVeronica.NProtocol.Initial_Window_Location)
+    54 					
+    55 					//	Copy bootstrap
+    56 					NMemory.memcpy	boot_dst_ptr, boot_src_ptr, boot_size
+    57 					
+    58 					//	Copy BIOS
+    59 					NMemory.memcpy	bios_dst_ptr, bios_src_ptr, bios_size
+    60
+    61 					/*swap_banks
+    62 					reset_veronica*/
+    62
+    63 					swap_and_reset
+    64 					rts
+    65 				.endp
+    66
+    67 				//******************************************************************************************************************************************************
+    68
+    69 				///	Identify Veronica's presence.
+    70 				/**	@param .byte timeout	- Timeout.
+    71 					@return	.byte A	- Status flag indicating Veronica's presence.
+    72 				*/
+    72
+    73 23A5			.proc	identify(.byte timeout) .var
+    74 23A5				.var .byte	timeout
+    75
+    76 					//	Clear rambank memory to make sure Veronica overwrites it.
+    77 23A5				NUtils.movba	#NVeronica.NProtocol.ECommand.IDLE, NVeronica.NProtocol.Atari_Window_Ramlo
+Macro: NUtils.movba [Source: utils.as8]
+     1 23A5 A9 00		    lda #NVeronica.NProtocol.ECommand.IDLE
+     2 23A7 8D 00 80		    sta NVeronica.NProtocol.Atari_Window_Ramlo
+Source: Master.as8
+    78 					
+    79 23AA 20 F8 23			setup_identify_cmd
+    80 					execute_command_with_timeout	timeout
+    80 				 LDx timeout\ JSR NVeronica.NMaster.execute_command_with_timeout
+    80 23AD AE E2 23		 LDx timeout
+    80 23B0 20 EA 23		 JSR NVeronica.NMaster.execute_command_with_timeout
+    81 23B3 C9 01			cmp	#NUtils.TRUE
+    82 23B5 F0 01			beq	cont
+    83 						//	Timeout. Veronica absent or timed out.
+    84 						//lda	#NUtils.FALSE
+    85 23B7 60					rts
+    86 					
+    87 				//------------------------------------------------------------------------------------------------------------------------------------------------------
+    88
+    89 23B8			cont
+    90 					//	Wait for Veronica until she finishes executing the IDENTIFY command or timeouts.
+    91 					wait_for_veronica_with_timeout	#NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT
+    91 				 LDx# NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT\ JSR NVeronica.NMaster.wait_for_veronica_with_timeout
+    91 23B8 A2 FF		 LDx# NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT
+    91 23BA 20 64 24		 JSR NVeronica.NMaster.wait_for_veronica_with_timeout
+    92 23BD C9 01			cmp	#NUtils.TRUE
+    93 23BF F0 01			beq	cont_2
+    94 						//	Veronica absent or timed out.
+    95 						//lda	#NUtils.FALSE
+    96 23C1 60					rts
+    97
+    98 				//------------------------------------------------------------------------------------------------------------------------------------------------------
+    99
+   100 23C2			cont_2
+   101 23C2 20 55 24			swap_banks
+   102 					NMemory.strcmphp	#(NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SIdentifyCmd.m_uuid), #uuid_template_tbl, #NVeronica.NProtocol.VERONICA_UUID_SIZE
+   102 				 MWA #(NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SIdentifyCmd.m_uuid) NMemory.strcmphp.tbl0_ptr\ MWA #uuid_template_tbl NMemory.strcmphp.tbl1_ptr\ MVA #NVeronica.NProtocol.VERONICA_UUID_SIZE NMemory.strcmphp.size\ JSR NMemory.strcmphp
+   102 23C5 A9 01 8D AA 22 A9 +  MWA #(NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SIdentifyCmd.m_uuid) NMemory.strcmphp.tbl0_ptr
+   102 23CF A9 88 8D AD 22 A9 +  MWA #uuid_template_tbl NMemory.strcmphp.tbl1_ptr
+   102 23D9 A9 10 8D A7 22	 MVA #NVeronica.NProtocol.VERONICA_UUID_SIZE NMemory.strcmphp.size
+   102 23DE 20 A6 22		 JSR NMemory.strcmphp
+   103 					//	NMemory.strcmphp returns the appropriate exit status.
+   104 23E1 60				rts
+   105 = 23E2 00		timeout
+   105 				.endp
+   106
+   107 				//******************************************************************************************************************************************************
+   108
+   109 				///	Execute command.
+   110 				/**
+   111 				*/
+   111
+   112 23E3			.proc	execute_command
+   113 23E3 20 5E 24			wait_for_veronica
+   114 23E6 20 7B 24			unlock_and_swap
+   115 23E9 60				rts
+   116 				.endp
+   117
+   118 				//******************************************************************************************************************************************************
+   119
+   120 				///	Execute command. Use timeout limitation.
+   121 				/**	@param .byte X	- Timeout
+   122 					@return .byte A	- Status.
+   123 				*/
+   123
+   124 23EA			.proc	execute_command_with_timeout(.byte x) .reg
+   125 23EA 20 64 24			jsr	wait_for_veronica_with_timeout
+   126 23ED C9 01			cmp	#NUtils.TRUE
+   127 23EF F0 01			beq	cont
+   128 						//lda	#NUtils.FALSE
+   129 23F1 60					rts
+   130 23F2			cont
+   131 23F2 20 7B 24			unlock_and_swap
+   132 23F5 A9 01			lda	#NUtils.TRUE
+   133 23F7 60				rts
+   134 				.endp
+   135
+   136 				//******************************************************************************************************************************************************
+   137
+   138 				///	Setup Veronica identification command.
+   139 23F8			.proc	setup_identify_cmd
+   140 23F8				NUtils.movba	#NVeronica.NProtocol.ECommand.IDENTIFY, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SCmdBase.m_command
+Macro: NUtils.movba [Source: utils.as8]
+     1 23F8 A9 01		    lda #NVeronica.NProtocol.ECommand.IDENTIFY
+     2 23FA 8D 00 80		    sta NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SCmdBase.m_command
+Source: Master.as8
+   141 23FD 60				rts
+   142 				.endp
+   143
+   144 				//******************************************************************************************************************************************************
+   145
+   146 				///	Setup data upload command.
+   147 				/**	@param .word src_adr	- Source location for data chunk in Atari's address space.
+   148 					@param .word size		- Size of data chunk to copy.
+   149 					@param .word dst_adr	- Destination location for data chunk in Veronica's address space.
+   150 				*/
+   150
+   151 23FE			.proc	setup_data_upload_cmd(.word src_adr .word size .word dst_adr) .var
+   152 = 8003				size = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_size
+   153 = 8001				dst_adr = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_adr
+   154
+   155 23FE				NUtils.movba	#NVeronica.NProtocol.ECommand.DATA_CHUNK_UPLOAD, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SCmdBase.m_command
+Macro: NUtils.movba [Source: utils.as8]
+     1 23FE A9 02		    lda #NVeronica.NProtocol.ECommand.DATA_CHUNK_UPLOAD
+     2 2400 8D 00 80		    sta NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SCmdBase.m_command
+Source: Master.as8
+   156 					//NUtils.movw	size, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_size
+   157 					//NUtils.movw	dst_adr, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_adr
+   158 					//NMemory.memcpy	src_adr, size, #(Atari_Window_Ramlo+.len(SDataChunkUploadCmd))
+   159 					NMemory.memcpy	#(NVeronica.NProtocol.Atari_Window_Ramlo+.len(NVeronica.NProtocol.SDataChunkUploadCmd)), src_adr, size
+   159 				 MWA #(NVeronica.NProtocol.Atari_Window_Ramlo+.len(NVeronica.NProtocol.SDataChunkUploadCmd)) NMemory.memcpy.dst_ptr\ MWA src_adr NMemory.memcpy.src_ptr\ MWA size NMemory.memcpy.count\ JSR NMemory.memcpy
+   159 2403 A9 05 85 82 A9 80 +  MWA #(NVeronica.NProtocol.Atari_Window_Ramlo+.len(NVeronica.NProtocol.SDataChunkUploadCmd)) NMemory.memcpy.dst_ptr
+   159 240B A5 88 85 84 A5 89 +  MWA src_adr NMemory.memcpy.src_ptr
+   159 2413 AD 03 80 8D 43 23 +  MWA size NMemory.memcpy.count
+   159 241F 20 BA 22		 JSR NMemory.memcpy
+   160 2422 60				rts
+   161 				.endp
+   162
+   163 				//******************************************************************************************************************************************************
+   164
+   165 				///	Setup procedure execution command.
+   166 				/**	@param proc_adr	Address of a procedure to call in Veronica's address space.
+   167 				*/
+   167
+   168 2423			.proc	setup_procedure_call_cmd(.word proc_adr) .var
+   169 = 8001				proc_adr = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SProcedureCallCmd.m_proc_adr
+   170 					
+   171 2423				NUtils.movba	#NVeronica.NProtocol.ECommand.PROCEDURE_CALL, NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SCmdBase.m_command
+Macro: NUtils.movba [Source: utils.as8]
+     1 2423 A9 03		    lda #NVeronica.NProtocol.ECommand.PROCEDURE_CALL
+     2 2425 8D 00 80		    sta NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SCmdBase.m_command
+Source: Master.as8
+   172 					//NUtils.movw	proc_adr, Atari_Window_Ramlo+SProcedureCallCmd.m_proc_adr
+   173 2428 60				rts
+   174 				.endp
+   175
+   176 				//******************************************************************************************************************************************************
+   177
+   178 				///	Setup data download command.
+   179 				/**	@param .word src_adr	- Source location of a data chunk in Veronica's address space.
+   180 					@param .word size	- Size of data chunk to copy.
+   181 				*/
+   181
+   182 2429			.proc	setup_data_download_cmd(.word src_adr .word size) .var
+   183 					src_adr = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkDownloadCmd.m_chunk_src_adr
+   184 					size = NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SDataChunkDownloadCmd.m_chunk_src_size
+   185 					
+   186 					NUtils.movba	#ECommand.DATA_CHUNK_DOWNLOAD, Atari_Window_Ramlo+SCmdBase.m_command
+   187 					//NUtils.movw	size, Atari_Window_Ramlo+SDataChunkDownloadCmd.m_chunk_src_size
+   188 					//NUtils.movw	src_adr, Atari_Window_Ramlo+SDataChunkDownloadCmd.m_chunk_src_adr
+   189 					
+   190 					//	TODO: copy window contents to final destination?
+   191 					rts
+   192 				.endp
+   193
+   194 				//******************************************************************************************************************************************************
+   195
+   196 				///	Execute data upload command.
+   197 				/**	@param .word src_adr	- Source location of a data chunk in Atari's address space.
+   198 					@param .word size		- Size of data chunk to copy.
+   199 					@param .word dst_adr	- Destination location of data chunk in Veronica's address space.
+   200 				*/
+   200
+   201 2429			.proc	execute_data_upload_cmd(.word src_adr .word size .word dst_adr) .var
+   202 					setup_data_upload_cmd	src_adr, size, dst_adr
+   202 				 MWA src_adr NVeronica.NMaster.src_adr\ MWA size NVeronica.NMaster.setup_data_upload_cmd.size\ MWA dst_adr NVeronica.NMaster.setup_data_upload_cmd.dst_adr\ JSR NVeronica.NMaster.setup_data_upload_cmd
+   202 2429 A5 88 85 88 A5 89 +  MWA src_adr NVeronica.NMaster.src_adr
+   202 2431 AD 98 24 8D 03 80 +  MWA size NVeronica.NMaster.setup_data_upload_cmd.size
+   202 243D A5 8A 8D 01 80 A5 +  MWA dst_adr NVeronica.NMaster.setup_data_upload_cmd.dst_adr
+   202 2447 20 FE 23		 JSR NVeronica.NMaster.setup_data_upload_cmd
+   203 244A 20 E3 23			execute_command
+   204 244D 60				rts
+   205 				.endp
+   206
+   207 				//******************************************************************************************************************************************************
+   208
+   209 				///	Execute procedure in the 6502K address space.
+   210 				/**	@param proc_adr	Address of a procedure to call in the 6502K address space.
+   211 				*/
+   211
+   212 244E			.proc	execute_procedure_call_cmd(.word proc_ptr) .var
+   213 = 8001				proc_ptr = setup_procedure_call_cmd.proc_adr
+   214
+   215 					//setup_procedure_call_cmd	NVeronica.NProtocol.Atari_Window_Ramlo+NVeronica.NProtocol.SProcedureCallCmd.m_proc_adr
+   216 244E 20 23 24			jsr	setup_procedure_call_cmd
+   217 2451 20 E3 23			execute_command
+   218 2454 60			    rts
+   219 				.endp
+   220
+   221 				//******************************************************************************************************************************************************
+   222
+   223 				///	Execute data download command.
+   224 				/**	@param .word src_adr	- Source location of a data chunk in Veronica's address space.
+   225 					@param .word size		- Size of data chunk to copy.
+   226 					@param .word dst_adr	- Destination location of data chunk in Atari's address space.
+   227 				*/
+   227
+   228 2455			.proc	execute_data_download_cmd(.word src_adr .word size /*.word dst_adr*/) .var
+   229 					setup_data_download_cmd	src_adr, size
+   230 					execute_command
+   231 					rts
+   232 				.endp
+   233
+   234 				//******************************************************************************************************************************************************
+   235
+   236 2455			.proc	swap_banks
+   237 2455				.using	NVeronica.NProtocol
+   238
+   239 2455				NVeronica.NProtocol.swap_banks
+Macro: NVeronica.NProtocol.swap_banks [Source: Protocol.h8]
+     1 2455 AD C0 D5		    lda Atari_HW_Register
+     2 2458 49 82		    eor #(EAtariRegisterStates.UNLOCK_ATARI | EAtariRegisterStates.RAMBANK_CFG_MASK)
+     4 245A 8D C0 D5		        sta Atari_HW_Register
+Source: Master.as8
+   240 245D 60				rts
+   241 				.endp
+   242
+   243 				//******************************************************************************************************************************************************
+   244
+   245 245E			.proc	unlock
+   246 245E				.using	NVeronica.NProtocol
+   247 					
+   248 					NVeronica.NProtocol.unlock_atari
+   249 					rts
+   250 				.endp
+   251
+   252 				//******************************************************************************************************************************************************
+   253
+   254 245E			.proc	wait_for_veronica
+   255 245E				.using	NVeronica.NProtocol
+   256 					
+   257 245E				NVeronica.NProtocol.wait_for_veronica
+Macro: NVeronica.NProtocol.wait_for_veronica [Source: Protocol.h8]
+     1 245E			loop
+     3 245E AD C0 D5			lda	Atari_HW_Register
+     4 2461 10 FB			bpl	loop
+Source: Master.as8
+   258 2463 60				rts
+   259 				.endp
+   260
+   261 				//******************************************************************************************************************************************************
+   262
+   263 				///	Wait for Veronica to finish its task.
+   264 				/**	@param .byte X	- Timeout.
+   265 					@return .bool	- Status
+   266 						NUtils.FALSE	- Failed.
+   267 						NUtils.TRUE		- Succeeded.
+   268 				*/
+   268
+   269 2464			.proc	wait_for_veronica_with_timeout(.byte x) .reg
+   270 2464				.using	NVeronica.NProtocol
+   271
+   272 2464				NVeronica.NProtocol.wait_for_veronica_with_timeout
+Macro: NVeronica.NProtocol.wait_for_veronica_with_timeout [Source: Protocol.h8]
+     1 2464				loop:
+     2 2464 AD C0 D5				lda	Atari_HW_Register
+     3 2467 29 80				and	#(1 << (EAtariRegisterBits.SEMAPHORE_READ))
+     5 2469 D0 0D					bne	matched
+     2 246B A0 00			ldy	#0
+     3 246D			loop
+     4 246D C8				iny
+     5 246E D0 FD			bne	loop
+Source: Master.as8
+    12 2470 CA					dex
+    13 2471 D0 F1				bne	loop
+    16 2473 A9 00				lda	#NUtils.FALSE
+    17 2475 4C 7A 24				jmp	done
+    19 2478				matched:
+    20 2478 A9 01				lda	#NUtils.TRUE
+    21 247A				done:
+Source: Master.as8
+Source: Master.as8
+   273 247A 60				rts
+   274 				.endp
+   275
+   276 				//******************************************************************************************************************************************************
+   277
+   278 247B			.proc	unlock_and_swap
+   279 247B				.using	NVeronica.NProtocol
+   280 					
+   281 247B				NVeronica.NProtocol.unlock_and_swap
+Macro: NVeronica.NProtocol.unlock_and_swap [Source: Protocol.h8]
+     1 247B AD C0 D5			lda	Atari_HW_Register
+     2 247E 29 7F			and	#~(EAtariRegisterStates.SEMAPHORE_MASK)
+     4 2480 09 80				ora	#(EAtariRegisterStates.UNLOCK_ATARI)
+     7 2482 49 02				eor	#(EAtariRegisterStates.RAMBANK_CFG_MASK)
+     9 2484 8D C0 D5			sta	Atari_HW_Register
+Source: Master.as8
+Source: Master.as8
+   282 2487 60				rts
+   283 				.endp
+   284
+   285 				//******************************************************************************************************************************************************
+   286
+   287 2488			.proc	wait_swap_unlock
+   288 2488				.using	NVeronica.NProtocol
+   289 					
+   290 					NVeronica.NProtocol.wait_swap_unlock
+   291 					rts
+   292 				.endp
+   293
+   294 				//******************************************************************************************************************************************************
+   295
+   296 2488			.proc	reset_veronica
+   297 2488				.using	NVeronica.NProtocol, NVeronica.NProtocol.EAtariRegisterStates
+   298 					
+   299 					//	Pulse low
+   300 					NVeronica.NProtocol.set_mem_bits	Atari_HW_Register, VER_CPU_RESET_MASK|SEMAPHORE_MASK, #(VER_CPU_RESET_PULSE_LOW | LOCK_ATARI)
+   301 					
+   302 					//	Wait some time.
+   303 					NVeronica.NProtocol.reset_wait
+   304
+   305 					//	Pulse high. Veronica's CPU should reset now.
+   306 					NVeronica.NProtocol.set_mem_bits	Atari_HW_Register, VER_CPU_RESET_MASK|SEMAPHORE_MASK, #(VER_CPU_RESET_PULSE_HIGH | UNLOCK_ATARI)
+   307 					
+   308 					//NVeronica.NProtocol.reset_wait
+   309 					//	Allow Veronica's CPU to stabilize.
+   310 					rts
+   311 				.endp
+   312
+   313 				//******************************************************************************************************************************************************
+   314
+   315 2488			.proc	swap_and_reset
+   316 2488				.using	NVeronica.NProtocol, NVeronica.NProtocol.EAtariRegisterStates
+   317 					
+   318 					//	Reset pulse low, switch rambanks
+   319 					NVeronica.NProtocol.set_or_switch_bits	Atari_HW_Register, VER_CPU_RESET_MASK, VER_CPU_RESET_PULSE_LOW, RAMBANK_CFG_MASK
+   320 					
+   321 					//	Wait some time.
+   322 					//NVeronica.NProtocol.reset_wait
+   323
+   324 					//	Pulse high. Veronica's CPU should reset now.
+   325 					NVeronica.NProtocol.set_mem_bits	Atari_HW_Register, SEMAPHORE_MASK|VER_CPU_RESET_MASK, #(UNLOCK_ATARI|VER_CPU_RESET_PULSE_HIGH)
+   326 					
+   327 					//NVeronica.NProtocol.reset_wait
+   328 					rts
+   329 				.endp
+   330
+   331 				//******************************************************************************************************************************************************
+   332 				//	Inclusions
+   333 				//******************************************************************************************************************************************************
+   334
+   335 2488				icl	'API\Protocol.as8'
+     1 				//******************************************************************************************************************************************************
+     2 				//	Header
+     3 				//******************************************************************************************************************************************************
+     4
+     5 				/**	@file Protocol.as8
+     6 					@author Marek "Konop" Konopka
+     7 					@date 14.05.2010
+     8 				*/
+     8
+     9
+    10 				//.local	NVeronica.NProtocol
+    11
+    12 				//******************************************************************************************************************************************************
+    13 				//	Data
+    14 				//******************************************************************************************************************************************************
+    15
+    16 					///	UUID	{5aacf152-e397-4c48-b0ab-9060ca3e84a7}
+    17 2488 5A AC F1 52 E3 97 + 	uuid_template_tbl:	dta $5a, $ac, $f1, $52, $e3, $97, $4c, $48, $b0, $ab, $90, $60, $ca, $3e, $84, $a7
+    18
+    19 				//******************************************************************************************************************************************************
+    20
+    21 				//.endl // NVeronica.NProtocol
+    21 = 0088			src_adr
+    21 = 008A			dst_adr
+    21 = 2498 00 00		size
+   336
+   337 				//******************************************************************************************************************************************************
+   338 					
+   339 				.endl // NVeronica.NMaster
+   198 249A				icl	'API\Messages.as8'
+     1 				//******************************************************************************************************************************************************
+     2 				//	Header
+     3 				//******************************************************************************************************************************************************
+     4
+     5 				/**	@file Messages.as8
+     6 					@author Marek "Konop" Konopka
+     7 					@date 14.05.2010
+     8 				*/
+     8
+     9
+    10 249A			.local	NVeronica
+    11
+    12 				//******************************************************************************************************************************************************
+    13 				//	Data
+    14 				//******************************************************************************************************************************************************
+    15
+    16 249A 56 65 72 6F 6E 69 + 	detected_str:		dta c'Veronica detected', 0
+    17 24AC 56 65 72 6F 6E 69 + 	no_detection_str:	dta c'Veronica unavailable', 0
+    18 					
+    19 24C1 53 75 63 63 65 73 + 	after_data_upload_str:	dta c'Succesful data upload', 0
+    20 24D7 50 72 6F 63 65 64 + 	after_proc_exec_str:	dta c'Procedure executed', 0
+    21 					
+    22 24EA 2E 00			dot_str:	dta c'.', 0
+    23
+    24 				//******************************************************************************************************************************************************
+    25
+    26 				.endl
+   199 24EC				icl	'API\Utils.as8'
+     1 24EC			.local	NVeronica.NMaster
+     2
+     3 				//******************************************************************************************************************************************************
+     4 				//	Variables
+     5 				//******************************************************************************************************************************************************
+     6
+     7 24EC				.var	.byte	gintlk_backup
+     8 24EC				.var	.word	prev_vvblki, prev_vvblkd
+     9 24EC				.var	.byte	rambank_cfg_backup, basic_backup, sdmctl_backup
+    10
+    11 				//******************************************************************************************************************************************************
+    12 				//	Code
+    13 				//******************************************************************************************************************************************************
+    14
+    15 				///	Prevent system VBL interrupt from blocking.
+    16 24EC			.proc	attach_vbl_override
+    17 24EC				NUtils.movw	NSystem.VVBLKI, prev_vvblki
+Macro: NUtils.movw [Source: utils.as8]
+     1 24EC AD 22 02		    lda NSystem.VVBLKI
+     2 24EF 8D 9E 25		    sta prev_vvblki
+     4 24F2 AD 23 02		    lda NSystem.VVBLKI+1
+     5 24F5 8D 9F 25		    sta prev_vvblki+1
+Source: Utils.as8
+    18 24F8				NUtils.movw	NSystem.VVBLKD, prev_vvblkd
+Macro: NUtils.movw [Source: utils.as8]
+     1 24F8 AD 24 02		    lda NSystem.VVBLKD
+     2 24FB 8D A0 25		    sta prev_vvblkd
+     4 24FE AD 25 02		    lda NSystem.VVBLKD+1
+     5 2501 8D A1 25		    sta prev_vvblkd+1
+Source: Utils.as8
+    19 					NSystem.set_vbv	#pre_vbl_override, #6
+    19 				 LDx> pre_vbl_override\ LDy< pre_vbl_override\ LDa# 6\ JSR NSystem.set_vbv
+    19 2504 A2 25		 LDx> pre_vbl_override
+    19 2506 A0 2E		 LDy< pre_vbl_override
+    19 2508 A9 06		 LDa# 6
+    19 250A 20 7C 22		 JSR NSystem.set_vbv
+    20 					NSystem.set_vbv	#post_vbl_override, #7
+    20 				 LDx> post_vbl_override\ LDy< post_vbl_override\ LDa# 7\ JSR NSystem.set_vbv
+    20 250D A2 25		 LDx> post_vbl_override
+    20 250F A0 3D		 LDy< post_vbl_override
+    20 2511 A9 07		 LDa# 7
+    20 2513 20 7C 22		 JSR NSystem.set_vbv
+    21 2516 60				rts
+    22 				.endp
+    23
+    24 				//******************************************************************************************************************************************************
+    25
+    26 				///	Prevent system VBL interrupt from blocking.
+    27 2517			.proc	detach_vbl_override
+    28 					NSystem.set_vbv	prev_vvblkd, #7
+    28 				 LDx prev_vvblkd+1\ LDy prev_vvblkd\ LDa# 7\ JSR NSystem.set_vbv
+    28 2517 AE A1 25		 LDx prev_vvblkd+1
+    28 251A AC A0 25		 LDy prev_vvblkd
+    28 251D A9 07		 LDa# 7
+    28 251F 20 7C 22		 JSR NSystem.set_vbv
+    29 					NSystem.set_vbv	prev_vvblki, #6
+    29 				 LDx prev_vvblki+1\ LDy prev_vvblki\ LDa# 6\ JSR NSystem.set_vbv
+    29 2522 AE 9F 25		 LDx prev_vvblki+1
+    29 2525 AC 9E 25		 LDy prev_vvblki
+    29 2528 A9 06		 LDa# 6
+    29 252A 20 7C 22		 JSR NSystem.set_vbv
+    30 252D 60				rts
+    31 				.endp
+    32
+    33 				//******************************************************************************************************************************************************
+    34
+    35 252E			.proc	pre_vbl_override
+    36 252E				NUtils.movba	NSystem.GINTLK, gintlk_backup
+Macro: NUtils.movba [Source: utils.as8]
+     1 252E AD FA 03		    lda NSystem.GINTLK
+     2 2531 8D 9D 25		    sta gintlk_backup
+Source: Utils.as8
+    37 2534				NUtils.movba	NGtia.TRIG3, NSystem.GINTLK
+Macro: NUtils.movba [Source: utils.as8]
+     1 2534 AD 13 D0		    lda NGtia.TRIG3
+     2 2537 8D FA 03		    sta NSystem.GINTLK
+Source: Utils.as8
+    38 253A 4C 5F E4			jmp	NSystem.SYSVBV
+    39 				.endp
+    40
+    41 				//******************************************************************************************************************************************************
+    42
+    43 253D			.proc	post_vbl_override
+    44 253D				NUtils.movba	gintlk_backup, NSystem.GINTLK
+Macro: NUtils.movba [Source: utils.as8]
+     1 253D AD 9D 25		    lda gintlk_backup
+     2 2540 8D FA 03		    sta NSystem.GINTLK
+Source: Utils.as8
+    45 2543 4C 62 E4			jmp	NSystem.XITVBV
+    46 				.endp
+    47
+    48 				//******************************************************************************************************************************************************
+    49
+    50 2546			.proc	store_system
+    51 					//	Backup Antic DMA
+    52 2546				NUtils.movba	NSystem.SDMCTL, sdmctl_backup
+Macro: NUtils.movba [Source: utils.as8]
+     1 2546 AD 2F 02		    lda NSystem.SDMCTL
+     2 2549 8D A4 25		    sta sdmctl_backup
+Source: Utils.as8
+    53 254C 20 EC 24			attach_vbl_override
+    54 					//	Backup Veronica rambank configuration
+    55 254F				NUtils.andba	NVeronica.NProtocol.Atari_HW_Register, #NVeronica.NProtocol.EAtariRegisterStates.BANKS_MASK, rambank_cfg_backup
+Macro: NUtils.andba [Source: utils.as8]
+     1 254F AD C0 D5		    lda NVeronica.NProtocol.Atari_HW_Register
+     2 2552 29 30		    and #NVeronica.NProtocol.EAtariRegisterStates.BANKS_MASK
+     4 2554 8D A2 25		        sta rambank_cfg_backup
+Source: Utils.as8
+    56 					//	Backup PORTB Basic configuration
+    57 2557				NUtils.andba	NPia.PORTB, #NPia.EPORTB.BASIC_MASK, basic_backup
+Macro: NUtils.andba [Source: utils.as8]
+     1 2557 AD 01 D3		    lda NPia.PORTB
+     2 255A 29 02		    and #NPia.EPORTB.BASIC_MASK
+     4 255C 8D A3 25		        sta basic_backup
+Source: Utils.as8
+    58 					//	Disable Basic
+    59 255F				NVeronica.NProtocol.set_mem_bits	NPia.PORTB, NPia.EPORTB.BASIC_MASK, #NPia.EPORTB.BASIC_OFF
+Macro: NVeronica.NProtocol.set_mem_bits [Source: Protocol.h8]
+     1 255F AD 01 D3			lda	NPia.PORTB
+     2 2562 29 FD			and	#~(NPia.EPORTB.BASIC_MASK)
+     3 2564 09 02			ora	#NPia.EPORTB.BASIC_OFF
+     4 2566 8D 01 D3			sta	NPia.PORTB
+Source: Utils.as8
+    60 2569 60				rts
+    61 				.endp
+    62
+    63 				//******************************************************************************************************************************************************
+    64
+    65 256A			.proc	restore_system
+    66 					//	Restore Basic
+    67 256A				NVeronica.NProtocol.set_mem_bits	NPia.PORTB, NPia.EPORTB.BASIC_MASK, basic_backup
+Macro: NVeronica.NProtocol.set_mem_bits [Source: Protocol.h8]
+     1 256A AD 01 D3			lda	NPia.PORTB
+     2 256D 29 FD			and	#~(NPia.EPORTB.BASIC_MASK)
+     3 256F 0D A3 25			ora	basic_backup
+     4 2572 8D 01 D3			sta	NPia.PORTB
+Source: Utils.as8
+    68 					//	Restore rambank configuration
+    69 					set_rambanks	rambank_cfg_backup
+    69 				 MVA rambank_cfg_backup NVeronica.NMaster.set_rambanks.rambank_bits\ JSR NVeronica.NMaster.set_rambanks
+    69 2575 AD A2 25 8D A4 23	 MVA rambank_cfg_backup NVeronica.NMaster.set_rambanks.rambank_bits
+    69 257B 20 8E 23		 JSR NVeronica.NMaster.set_rambanks
+    70 257E 20 17 25			detach_vbl_override
+    71 					//	Restore Antic DMA
+    72 2581				NUtils.movba	sdmctl_backup, NSystem.SDMCTL
+Macro: NUtils.movba [Source: utils.as8]
+     1 2581 AD A4 25		    lda sdmctl_backup
+     2 2584 8D 2F 02		    sta NSystem.SDMCTL
+Source: Utils.as8
+    73 2587 60				rts
+    74 				.endp
+    75
+    76 				//******************************************************************************************************************************************************
+    77
+    78 2588			.proc	print_status(.byte a) .reg
+    79 2588 29 01			and	#1
+    80 258A 0A				asl	@
+    81 258B AA				tax
+    82 258C				NUtils.movba	"strings+0,x", NConsole.print.ptr+0
+Macro: NUtils.movba [Source: utils.as8]
+     1 258C BD 99 25		    lda strings+0,x
+     2 258F 85 86		    sta NConsole.print.ptr+0
+Source: Utils.as8
+    83 2591				NUtils.movba	"strings+1,x", NConsole.print.ptr+1
+Macro: NUtils.movba [Source: utils.as8]
+     1 2591 BD 9A 25		    lda strings+1,x
+     2 2594 85 87		    sta NConsole.print.ptr+1
+Source: Utils.as8
+    84 2596 4C 4A 23			jmp	NConsole.print
+    85 					
+    86 2599 AC 24 9A 24			strings:	dta a(NVeronica.no_detection_str, NVeronica.detected_str)
+    87 				.endp
+    88
+    89 				//******************************************************************************************************************************************************
+    90
+    91 = 259D 00		gintlk_backup
+    91 = 259E 00 00		prev_vvblki
+    91 = 25A0 00 00		prev_vvblkd
+    91 = 25A2 00		rambank_cfg_backup
+    91 = 25A3 00		basic_backup
+    91 = 25A4 00		sdmctl_backup
+    91 				.endl // NVeronica.NMaster
+   200 25A5				icl	'SpeedBench.as8'
+     1 25A5			.local	NVeronica.NSlave
+     2
+     3 				//******************************************************************************************************************************************************
+     4 				//	Code
+     5 				//******************************************************************************************************************************************************
+     6
+     7 25A5			CODE_BEGIN
+     8
+     9 				//******************************************************************************************************************************************************
+    10
+    11 1100			.local	code_section, Code_Ptr
+    12 					//	Initialize loop counter.
+    13 1100				NUtils.leaw	10000, Cnt
+Macro: NUtils.leaw [Source: utils.as8]
+     1 1100 A9 10		    lda #<(10000)
+     2 1102 8D 00 10		    sta Cnt
+     4 1105 A9 27		    lda #>(10000)
+     5 1107 8D 01 10		    sta Cnt+1
+Source: SpeedBench.as8
+    14
+    15 					//	Repeat 10,000 times a 100 cycles loop resulting in total with 1,000,000 cycles.
+    16 110A			loop
+    17 110A A5 00			lda	$00	// 3
+    18 					//	32*2 = 64
+    19 					.rept	32
+    20 						nop	// 2
+    21 					.endr
+Source: REPT
+    20 110C EA					nop	// 2
+    20 110D EA					nop	// 2
+    20 110E EA					nop	// 2
+    20 110F EA					nop	// 2
+    20 1110 EA					nop	// 2
+    20 1111 EA					nop	// 2
+    20 1112 EA					nop	// 2
+    20 1113 EA					nop	// 2
+    20 1114 EA					nop	// 2
+    20 1115 EA					nop	// 2
+    20 1116 EA					nop	// 2
+    20 1117 EA					nop	// 2
+    20 1118 EA					nop	// 2
+    20 1119 EA					nop	// 2
+    20 111A EA					nop	// 2
+    20 111B EA					nop	// 2
+    20 111C EA					nop	// 2
+    20 111D EA					nop	// 2
+    20 111E EA					nop	// 2
+    20 111F EA					nop	// 2
+    20 1120 EA					nop	// 2
+    20 1121 EA					nop	// 2
+    20 1122 EA					nop	// 2
+    20 1123 EA					nop	// 2
+    20 1124 EA					nop	// 2
+    20 1125 EA					nop	// 2
+    20 1126 EA					nop	// 2
+    20 1127 EA					nop	// 2
+    20 1128 EA					nop	// 2
+    20 1129 EA					nop	// 2
+    20 112A EA					nop	// 2
+    20 112B EA					nop	// 2
+Source: SpeedBench.as8
+    22
+    23 112C AD 00 10			lda	Cnt	// 4
+    24 112F 38				sec	// 2
+    25 1130 E9 01			sbc	#1	// 2
+    26 1132 8D 00 10			sta	Cnt	// 4
+    27 1135 AD 01 10			lda	Cnt+1	// 4
+    28 1138 E9 00			sbc	#0	// 2
+    29 113A 8D 01 10			sta	Cnt+1	// 4
+    30
+    31 113D AD 00 10			lda	Cnt	// 4
+    32 1140 0D 01 10			ora	Cnt+1	// 4
+    33 1143 D0 C5			bne	loop	// 3
+    34 1145 60				rts
+    35 				.endl
+    36
+    37 				//******************************************************************************************************************************************************
+    38
+    39 25EB			CODE_END
+    40
+    41 				//******************************************************************************************************************************************************
+    42
+    43 				.endl // NVeronica.NSlave
+   201 25EB				icl	'algorithm.as8'
+Source: algorithm.as8
+     1 25EB			.local	NAlgorithm
+     2
+     3 				//******************************************************************************************************************************************************
+     4 				//	Code
+     5 				//******************************************************************************************************************************************************
+     6
+     7 				///	Locates position of the first occurrence of an element in a page that has a specified value.
+     8 				/**	@param .word ptr	Pointer to the first element.
+     9 					@param .byte value	Value to search for.
+    10 					@return .bool A	Status.
+    11 						NUtils.TRUE		- Found.
+    12 						NUtils.FALSE	- Not found.
+    13 					@return .byte Y	- Offset.
+    14 				*/
+    14
+    15 25EB			.proc	find(.word ptr .byte value) .var
+    16 25EB A0 00			ldy	#0
+    17 25ED			loop
+    18 = 25EE				ptr = * + 1
+    19 25ED B9 FF FF				lda	$ffff,y
+    20 = 25F1				value = * + 1
+    21 25F0 C9 FF				cmp	#$ff
+    22 25F2 F0 06			beq	matched
+    23 					
+    24 25F4 C8				iny
+    25 25F5 D0 F6			bne	loop
+    26
+    27 25F7			not_found
+    28 25F7 A9 00			lda	#NUtils.FALSE	
+    29 25F9 60				rts
+    30 					
+    31 25FA			matched
+    32 25FA A9 01			lda	#NUtils.TRUE
+    33 25FC 60				rts
+    34 				.endp
+    35
+    36 				//******************************************************************************************************************************************************
+    37
+    38 				.endl // NAlgorithm
+   202 25FD				icl	'maths.as8'
+Source: maths.as8
+     1 25FD			.local	NMaths
+     2
+     3 				//******************************************************************************************************************************************************
+     4 				//	Enumerations
+     5 				//******************************************************************************************************************************************************
+     6
+     7 25FD			.enum	ERandomGeneratorDefaults
+     8 					DEF_BYTE_A = $f2, DEF_BYTE_B = $f3, DEF_BYTE_C = $f4
+     8 = 00F2			DEF_BYTE_A
+     8 = 00F3			DEF_BYTE_B
+     8 = 00F4			DEF_BYTE_C
+     9 				.ende
+    10
+    11 				//******************************************************************************************************************************************************
+    12 				//	Variables
+    13 				//******************************************************************************************************************************************************
+    14
+    15 25FD				.zpvar	.word	tmp_mul_vct0, tmp_mul_vct1, tmp_mul_vct2, tmp_mul_vct3
+    16 25FD				.zpvar	.word	ptr
+    17 					
+    18 					.ifdef	ZPG_MATHS
+    19 						.zpvar	.dword	math_arg0, math_arg1, math_arg2, math_arg3
+    20 					.else
+    21 25FD					.var	.dword	math_arg0, math_arg1, math_arg2, math_arg3
+    22 					.endif
+    23
+    24 				//******************************************************************************************************************************************************
+    25 				//	Code
+    26 				//******************************************************************************************************************************************************
+    27
+    28 				///	Initialize random variable.
+    29 				/**	@param .word ptr	Random variable pointer.
+    30 				*/
+    30
+    31 25FD			.proc	srand(.word ptr) .var
+    32 					ptr	= NMaths.ptr
+    33 					
+    34 					ldy	#SRandomNumber.m_byte_a
+    35 					NUtils.movba	#ERandomGeneratorDefaults.DEF_BYTE_A, "(ptr),y"
+    36 					ldy	#SRandomNumber.m_byte_b
+    37 					NUtils.movba	#ERandomGeneratorDefaults.DEF_BYTE_B, "(ptr),y"
+    38 					ldy	#SRandomNumber.m_byte_c
+    39 					NUtils.movba	#ERandomGeneratorDefaults.DEF_BYTE_C, "(ptr),y"
+    40 					rts
+    41 				.endp
+    42
+    43 				//******************************************************************************************************************************************************
+    44
+    45 				///	Generate random values.
+    46 				/**	@param .word ptr	Random variable pointer.
+    47 				*/
+    47
+    48 25FD			.proc	rand(.word ptr) .var
+    49 					ptr	= NMaths.ptr
+    50
+    51 					ldy	#SRandomNumber.m_byte_a
+    52 					lda	(ptr),y
+    53 					ldy	#SRandomNumber.m_byte_b
+    54 					eor	(ptr),y
+    55 					asl	@
+    56 					ldy	#SRandomNumber.m_byte_a
+    57 					sta	(ptr),y
+    58 					
+    59 					ldy	#SRandomNumber.m_byte_b
+    60 					lda	(ptr),y
+    61 					ldy	#SRandomNumber.m_byte_c
+    62 					adc	(ptr),y
+    63 					ldy	#SRandomNumber.m_byte_b
+    64 					sta	(ptr),y
+    65 					
+    66 					ldy	#SRandomNumber.m_byte_c
+    67 					lda	(ptr),y
+    68 					ldy	#SRandomNumber.m_byte_b
+    69 					eor	(ptr),y
+    70 					ldy	#SRandomNumber.m_byte_c
+    71 					sta	(ptr),y
+    72 					rts
+    73 				.endp
+    74
+    75 				//******************************************************************************************************************************************************
+    76
+    77 				///	Initialize multiplication tables.
+    78 				/**	@param .byte Y	Pointer to tables (higher byte).
+    79 				*/
+    79
+    80 25FD			.proc	init_mul(.byte y) .reg
+    81 25FD				.var	.byte	tmp
+    82 						
+    83 					tya
+    84 					clc
+    85 					sta	tmp_mul_vct0+1
+    86 					adc	#2
+    87 					sta	tmp_mul_vct1+1
+    88 					adc	#2
+    89 					sta	tmp_mul_vct2+1
+    90 					adc	#2
+    91 					sta	tmp_mul_vct3+1
+    92
+    93 				    lda	#0
+    94 				    sta	tmp_mul_vct0+0
+    95 				    sta	tmp_mul_vct1+0
+    96 				    ldy	#$fe
+    97 				    sta	(tmp_mul_vct2),y
+    98 				    sta	(tmp_mul_vct3),y
+    99
+   100 					ldx	#$ff
+   101 					stx	tmp
+   102 					inx
+   103 					
+   104 25FD			loop1
+   105 					lda	#$fe
+   106 					sta	tmp_mul_vct2+0
+   107 					sta	tmp_mul_vct3+0
+   108 						
+   109 					txa
+   110 					tay
+   111 					lsr	@
+   112 					clc
+   113 					adc	(tmp_mul_vct2),y
+   114 					sta	(tmp_mul_vct0),y
+   115 					inc	tmp_mul_vct2+0
+   116 					sta	(tmp_mul_vct2),y
+   117 					ldy	#0
+   118 					sty	tmp_mul_vct2+0
+   119 					ldy	tmp
+   120 					sta	(tmp_mul_vct2),y
+   121 						
+   122 					txa
+   123 					tay
+   124 					lda	#0
+   125 					adc	(tmp_mul_vct3),y
+   126 					sta	(tmp_mul_vct1),y
+   127 					inc	tmp_mul_vct3+0
+   128 					sta	(tmp_mul_vct3),y
+   129 					ldy	#0
+   130 					sty	tmp_mul_vct3+0
+   131 					ldy	tmp
+   132 					sta	(tmp_mul_vct3),y
+   133
+   134 					dec	tmp
+   135 					inx
+   136 					bne	loop1
+   137
+   138 25FD			loop2
+   139 					ldy	#$ff
+   140 					sty	tmp_mul_vct0+0
+   141 					sty	tmp_mul_vct1+0
+   142 						
+   143 					txa
+   144 					tay
+   145 					sec
+   146 					ror	@
+   147 					clc
+   148 					adc	(tmp_mul_vct0),y
+   149 					inc	tmp_mul_vct0+0
+   150 					inc	tmp_mul_vct0+1
+   151 					sta	(tmp_mul_vct0),y
+   152 					dec	tmp_mul_vct0+1
+   153 					lda	#0
+   154 					adc	(tmp_mul_vct1),y
+   155 					inc	tmp_mul_vct1+0
+   156 					inc	tmp_mul_vct1+1
+   157 					sta	(tmp_mul_vct1),y
+   158 					dec	tmp_mul_vct1+1
+   159 						
+   160 					inx
+   161 					bne	loop2
+   162 				    rts
+   163 				.endp
+   164
+   165 				//******************************************************************************************************************************************************
+   166
+   167 				///	Unsigned multiplication (u8xu8->u16).
+   168 				/**	@param .byte A	Unsigned multiplicand.
+   169 					@param .byte Y	Unsigned multiplier.
+   170 					@return .word X,A	Result: lower, higher byte.
+   171 				*/
+   171
+   172 				.macro	mul_u8xu8_r16_macro
+   173 					sta	tmp_mul_vct0+0
+   174 					sta	tmp_mul_vct1+0
+   175 					eor	#$ff
+   176 					sta	tmp_mul_vct2+0
+   177 					sta	tmp_mul_vct3+0
+   178 					sec
+   179 					lda	(tmp_mul_vct0),y
+   180 					sbc	(tmp_mul_vct2),y
+   181 					tax
+   182 					lda	(tmp_mul_vct1),y
+   183 					sbc	(tmp_mul_vct3),y
+   184 				.endm
+   185
+   186 				//******************************************************************************************************************************************************
+   187
+   188 				///	Unsigned multiplication (u8xu8->u16).
+   189 				/**	@param .byte A	Unsigned multiplicand.
+   190 					@param .byte Y	Unsigned multiplier.
+   191 					@return .word X,A	Result: lower, higher byte.
+   192 				*/
+   192
+   193 25FD			.proc	mul_u8_u8_r16
+   194 					mul_u8xu8_r16_macro
+   195 					rts
+   196 				.endp
+   197
+   198 				//******************************************************************************************************************************************************
+   199
+   200 				///	Unsigned multiplication (u16xu8->u24).
+   201 				/**	@param .word math_arg0	Unsigned multiplicand.
+   202 					@param .byte math_arg1	Unsigned multiplier.
+   203 					@return .long math_arg2	Result.
+   204 				*/
+   204
+   205 25FD			.proc	mul_u16_u8_r24
+   206 					lda	math_arg1
+   207 					ldy	math_arg0
+   208 					jsr	mul_u8_u8_r16
+   209 					stx	math_arg2+0
+   210 					sta	math_arg3+0
+   211 					
+   212 					lda	math_arg1
+   213 					ldy	math_arg0+1
+   214 					jsr	mul_u8_u8_r16
+   215 					stx	math_arg3+1
+   216 					sta	math_arg3+2
+   217 					
+   218 					lda	math_arg3+0
+   219 					clc
+   220 					adc	math_arg3+1
+   221 					sta	math_arg2+1
+   222 					lda	math_arg3+2
+   223 					adc	#0
+   224 					sta	math_arg2+2
+   225 					rts
+   226 				.endp
+   227
+   228 				//******************************************************************************************************************************************************
+   229
+   230 				///	Signed multiplication (u16xs8->s24).
+   231 				/**	@param .word math_arg0	Unsigned multiplicand.
+   232 					@param .byte math_arg1	Signed multiplier.
+   233 					@return .word math_arg2	Result.
+   234 				*/
+   234
+   235 25FD			.proc	mul_u16_s8_r24
+   236 25FD				.var	.byte	signum
+   237
+   238 					NUtils.movba	math_arg1, signum
+   239 					NUtils.absb		math_arg1
+   240 					jsr	mul_u16_u8_r24
+   241 					NUtils.sextl	math_arg2, signum
+   242 					rts
+   243 				.endp
+   244
+   245 				//******************************************************************************************************************************************************
+   246
+   247 				///	Signed multiplication (s16xu8->s24).
+   248 				/**	@param .word math_arg0	Signed multiplicand.
+   249 					@param .byte math_arg1	Unsigned multiplier.
+   250 					@return .long math_arg2	Result.
+   251 				*/
+   251
+   252 25FD			.proc	mul_s16_u8_r24
+   253 25FD				.var	.byte	signum
+   254
+   255 					NUtils.movba	math_arg0+1, signum
+   256 					NUtils.absw		math_arg0
+   257 					jsr	mul_u16_u8_r24
+   258 					NUtils.sextl	math_arg2, signum
+   259 					rts
+   260 				.endp
+   261
+   262 				//******************************************************************************************************************************************************
+   263
+   264 				///	Unsigned multiplication (u16xu16->u32).
+   265 				/**	@param .word math_arg0	Unsigned multiplicand.
+   266 					@param .word math_arg1	Unsigned multiplier.
+   267 					@return .dword math_arg2	Result.
+   268 				*/
+   268
+   269 25FD			.proc	mul_u16_u16_r32
+   270 					NUtils.lead	0, math_arg2
+   271 					NUtils.lead	0, math_arg3
+   272 					
+   273 					lda	math_arg0
+   274 					ldy	math_arg1
+   275 					jsr	mul_u8_u8_r16
+   276 					stx	math_arg2+0
+   277 					sta	math_arg2+1
+   278 					
+   279 					lda	math_arg0+1
+   280 					ldy	math_arg1
+   281 					jsr	mul_u8_u8_r16
+   282 					stx	math_arg3+1
+   283 					sta	math_arg3+2
+   284 					
+   285 					NUtils.addl		math_arg2+1, math_arg3+1, math_arg2+1
+   286 					
+   287 					lda	math_arg0
+   288 					ldy	math_arg1+1
+   289 					jsr	mul_u8_u8_r16
+   290 					stx	math_arg3+1
+   291 					sta	math_arg3+2
+   292
+   293 					NUtils.addl		math_arg2+1, math_arg3+1, math_arg2+1
+   294
+   295 					lda	math_arg0+1
+   296 					ldy	math_arg1+1
+   297 					jsr	mul_u8_u8_r16
+   298 					stx	math_arg3+2
+   299 					sta	math_arg3+3
+   300 					
+   301 					NUtils.addw	math_arg2+2, math_arg3+2, math_arg2+2
+   302 					rts
+   303 				.endp
+   304
+   305 				//******************************************************************************************************************************************************
+   306
+   307 				///	Multiplication (s16xs16->s32)
+   308 				/**	@param .word math_arg0	Signed multiplicand.
+   309 					@param .word math_arg1	Signed multiplier.
+   310 					@return .dword math_arg2	result.
+   311 				*/
+   311
+   312 25FD			.proc	mul_s16_s16_r32
+   313 25FD				.var	.byte	signum
+   314 					
+   315 					NUtils.eorba	math_arg0+1, math_arg1+1, signum
+   316 					NUtils.absw	math_arg0
+   317 					NUtils.absw	math_arg1
+   318 					jsr	mul_u16_u16_r32
+   319 					NUtils.sextd	math_arg2, signum
+   320 					rts
+   321 				.endp
+   322
+   323 				//******************************************************************************************************************************************************
+   324
+   325 				/// Division. Reference version.
+   326 				/**	@param .dword math_arg0	Divident (32-bits).
+   327 					@param .word math_arg1	Divisor (16-bits).
+   328 					@return	.dword math_arg0	Result (32-bits).
+   329 					@return	.dword math_arg2	Remainder (32-bits).
+   330 				*/
+   330
+   331 25FD			.proc	div_u32_by_u16
+   332 25FD				NUtils.lead	0, math_arg2
+Macro: NUtils.lead [Source: utils.as8]
+     1 25FD A9 00		    lda #<(0)
+     2 25FF 8D 77 26		    sta math_arg2
+     4 2602 A9 00		    lda #>(0)
+     5 2604 8D 78 26		    sta math_arg2+1
+     7 2607 A9 00		    lda #^(0)
+     8 2609 8D 79 26		    sta math_arg2+2
+    10 260C A9 00		    lda #((0) >> 24)
+    11 260E 8D 7A 26		    sta math_arg2+3
+Source: maths.as8
+   333 2611 A0 20			ldy	#$20
+   334 2613			loop
+   335 2613				NUtils.lsld	math_arg0, 1
+Macro: NUtils.lsld [Source: utils.as8]
+     2 2613 0E 6F 26		        asl math_arg0
+     3 2616 2E 70 26		        rol math_arg0+1
+     4 2619 2E 71 26		        rol math_arg0+2
+     5 261C 2E 72 26		        rol math_arg0+3
+Source: maths.as8
+   336 261F				NUtils.rold	math_arg2, 1
+Macro: NUtils.rold [Source: utils.as8]
+     2 261F 2E 77 26		        rol math_arg2
+     3 2622 2E 78 26		        rol math_arg2+1
+     4 2625 2E 79 26		        rol math_arg2+2
+     5 2628 2E 7A 26		        rol math_arg2+3
+Source: maths.as8
+   337 262B				NUtils.subwd	math_arg2, math_arg1, math_arg3
+Macro: NUtils.subwd [Source: utils.as8]
+     1 262B AD 77 26		    lda math_arg2+0
+     2 262E 38			    sec
+     3 262F ED 73 26		    sbc math_arg1+0
+     5 2632 8D 7B 26		        sta math_arg3+0
+     8 2635 AD 78 26		    lda math_arg2+1
+     9 2638 ED 74 26		    sbc math_arg1+1
+    11 263B 8D 7C 26		        sta math_arg3+1
+    14 263E AD 79 26		    lda math_arg2+2
+    15 2641 E9 00		    sbc #0
+    17 2643 8D 7D 26		        sta math_arg3+2
+    20 2646 AD 7A 26		    lda math_arg2+3
+    21 2649 E9 00		    sbc #0
+    23 264B 8D 7E 26		        sta math_arg3+3
+Source: maths.as8
+   338 264E 90 1B			bcc	skip
+   339 2650				NUtils.movd	math_arg3, math_arg2
+Macro: NUtils.movd [Source: utils.as8]
+     1 2650 AD 7B 26		    lda math_arg3
+     2 2653 8D 77 26		    sta math_arg2
+     4 2656 AD 7C 26		    lda math_arg3+1
+     5 2659 8D 78 26		    sta math_arg2+1
+     7 265C AD 7D 26		    lda math_arg3+2
+     8 265F 8D 79 26		    sta math_arg2+2
+    10 2662 AD 7E 26		    lda math_arg3+3
+    11 2665 8D 7A 26		    sta math_arg2+3
+Source: maths.as8
+   340 2668 EE 6F 26			inc	math_arg0+0
+   341 266B			skip
+   342 266B 88				dey
+   343 266C D0 A5			bne	loop
+   344 266E 60				rts
+   345 				.endp
+   346
+   347 				//******************************************************************************************************************************************************
+   348
+   349 				/// Fractional part.
+   350 				/**	@param .word math_arg0	Unsigned divident (16-bits).
+   351 					@param .word math_arg1	Unsigned divisor (16-bits).
+   352 					@return .word math_arg2	Unsigned result (16-bits).
+   353 					assert(Divident < Divisior)
+   354 				*/
+   354
+   355 266F			.proc	fract_u16_r16
+   356 					.macro	fract_u16_r16_macro
+   357 						txa	// 2
+   358 						asl	@ // 2
+   359 						rol math_arg0+1 // 5
+   360 						bcs	skip1 // 3, 2
+   361 				
+   362 						sta	math_arg0 // 3
+   363 						sbc	math_arg1+2 // 3
+   364 						tax // 2
+   365 						lda	math_arg0+1 // 3
+   366 						sbc	math_arg1+3 // 3
+   367 						bcs	skip2 // 3,2
+   368 						ldx	math_arg0 // 3
+   369 						bcc	skip3 // 3
+   370 				
+   371 					skip1:
+   372 						sbc	math_arg1 // 3
+   373 						tax // 2
+   374 						lda	math_arg0+1 // 3
+   375 						sbc	math_arg1+1 // 3
+   376 					skip2:
+   377 						sta	math_arg0+1 // 3
+   378 						tya // 2
+   379 						ora	%%1 //2
+   380 						tay // 2
+   381 					skip3:
+   382 					.endm
+   383
+   384 					NUtils.movw	math_arg1, math_arg1+2
+   385 					NUtils.decw		math_arg1+2
+   386 					
+   387 					ldx	math_arg0
+   388 					ldy	#0
+   389 					fract_u16_r16_macro	#$80
+   390 					fract_u16_r16_macro	#$40
+   391 					fract_u16_r16_macro	#$20
+   392 					fract_u16_r16_macro	#$10
+   393 					fract_u16_r16_macro	#$08
+   394 					fract_u16_r16_macro	#$04
+   395 					fract_u16_r16_macro	#$02
+   396 					fract_u16_r16_macro	#$01
+   397 					sty	math_arg2+1
+   398
+   399 					ldy	#0
+   400 					fract_u16_r16_macro #$80
+   401 					fract_u16_r16_macro	#$40
+   402 					fract_u16_r16_macro	#$20
+   403 					fract_u16_r16_macro	#$10
+   404 					fract_u16_r16_macro	#$08
+   405 					fract_u16_r16_macro	#$04
+   406 					fract_u16_r16_macro	#$02
+   407 					fract_u16_r16_macro	#$01
+   408 					sty	math_arg2
+   409 					
+   410 					rts
+   411 				.endp
+   412
+   413 				//******************************************************************************************************************************************************
+   414
+   415 = 008C			tmp_mul_vct0
+   415 = 008E			tmp_mul_vct1
+   415 = 0090			tmp_mul_vct2
+   415 = 0092			tmp_mul_vct3
+   415 = 0094			ptr
+   415 = 266F 00 00 00 00	math_arg0
+   415 = 2673 00 00 00 00	math_arg1
+   415 = 2677 00 00 00 00	math_arg2
+   415 = 267B 00 00 00 00	math_arg3
+   415 				.endl // NMaths
+   203 267F				icl	'Utils\fp.asm'
+     1
+     2 				/*
+     3 				   Przykladowa biblioteka wykorzystujaca pakiet matematyczny XE/XL
+     4
+     5 				   _ATOFP (ascii,fp)	- zamienia ciag znakow ASCII na liczbe FP, pierwszy parametr to adres ciagu ASCII ktory bedzie
+     6 							  zamieniany na FP, drugi parametr to adres pod którym odlozona zostanie liczba FP
+     7 				   			  zamieniany ciag ASCII musi byc zakonczony znakiem innym niz cyfra, np. EOL $9B
+     8
+     9 				   _FPTOA (fp,ascii)	- zamienia liczbe FP na ciag znakow ASCII, pierwszy parametr to adres pod którym znajduje
+    10 							  sie liczba FP, drugi parametr to adres pod ktory odlozony zostanie ciag znaków ASCII
+    11 							  ciag ASCII bedzie zakonczony znakiem EOL $9b
+    12
+    13 				   _ITOFP (int,fp)	- zamienia liczbe typu 'unsigned int' (word) na liczbe FP, pierwszym parametrem jest wartosc
+    14 							  bez znaku z zakresu 0..$FFFF, drugim parametrem jest adres pod którym zostanie zapisana
+    15 							  liczba FP
+    16
+    17 				   _FPTOI (fp)		- zamienia liczbe FP na liczbe typu 'unsigned int' (word), parametrem jest adres pod
+    18 							  ktorym znajduje sie liczba FP, wynik zwracany jest przez rejestry CPU X,Y
+    19 							  X - mlodszy bajt liczby WORD
+    20 							  Y - starszy bajt liczby WORD
+    21
+    22 				   _FPADD (fp0,fp1,fp2)	- FP2=FP0+FP1	suma dwóch liczb
+    23
+    24 				   _FPSUB (fp0,fp1,fp2)	- FP2=FP0-FP1	róznica dwóch liczb
+    25
+    26 				   _FPMUL (fp0,fp1,fp2)	- FP2=FP0*FP1	iloczyn dwóch liczb
+    27
+    28 				   _FPDIV (fp0,fp1,fp2)	- FP2=FP0/FP1	iloraz dwóch liczb
+    29
+    30 				   LOADFR0 (fp)		- przepisuje liczbe FP do rejestru pakietu zmiennoprzecinkowego FR0, parametrem
+    31 				   			  jest adres pod ktorym znajduje sie liczba FP do przepisania
+    32
+    33 				   LOADFR1 (fp)		- przepisuje liczbe FP do rejestru pakietu zmiennoprzecinkowego FR1, parametrem
+    34 				   			  jest adres pod ktorym znajduje sie liczba FP do przepisania
+    35
+    36 				*/
+    36
+    37
+    38 267F				icl 'global.asm'
+     1
+     2 = 00D0			ptr0	= $D0		; temporary bytes
+     3 = 00D2			ptr1	= $D2		; temporary bytes
+     4
+     5 = 00D4			fr0	= $D4		; float reg 0
+     6 = 00E0			fr1	= $E0		; float reg 1
+     7 = 00FC			flptr	= $FC		; pointer to a fp num
+     8 = 00F2			cix	= $F2		; index          
+     9 = 00F3			inbuff	= $F3		; pointer to ascii num
+    10 = 0580			lbuff	= $580
+    11
+    12 = DA44			zfr0	= $DA44		; fr0 = 0
+    13 = DD89			fld0r	= $DD89		; (X:Y) -> fr0
+    14 = DD98			fld1r	= $DD98		; (X:Y) -> fr1
+    15 = DDA7			fst0r	= $DDA7		; fr0 -> (X:Y)
+    16 = DDAB			fst0p	= $DDAB		; fr0 -> (FLPTR)
+    17
+    18 = D800			afp	= $D800		; ascii -> float
+    19 = D9AA			ifp	= $D9AA		; int in fr0 -> float in fr0
+    20 = D9D2			fpi	= $D9D2		; float in fr0 -> int in fr0
+    21 = D8E6			fasc	= $D8E6		; fr0 -> (inbuff)
+    22 = DA66			fadd	= $DA66		; fr0 + fr1  -> fr0
+    23 = DA60			fsub	= $DA60		; fr0 - fr1  -> fr0
+    24 = DADB			fmul	= $DADB		; fr0 * fr1  -> fr0
+    25 = DB28			fdiv	= $DB28		; fr0 / fr1  -> fr0
+    26 = DDC0			fexp	= $DDC0		; e ^ fr0    -> fr0
+    27 = DDCC			fexp10	= $DDCC		; 10 ^ fr0   -> fr0
+    28 = DECD			fln	= $DECD		; ln(fr0)    -> fr0
+    29 = DED1			flog10	= $DED1		; log10(fr0) -> fr0
+    39
+    40 = 00D0			loadfr0.adr	= ptr0
+    41 = 00D2			loadfr1.adr	= ptr1
+    42
+    43 					.public	loadfr1
+    44
+    45 					//.reloc
+    46
+    47 				;------------------------------------
+    48 					.globl _atofp
+    49 				;atofp(ascii,float)
+    50 267F			_atofp	.proc	(.word inbuff, flptr) .var
+    51
+    52 					lda     #0
+    53 					sta     cix
+    54 					jsr     afp
+    55
+    56 					jmp	fst0p
+    57
+    58 					.endp
+    59
+    60 				;------------------------------------
+    61 				       .globl _fptoa
+    62 				;      fptoa(float,ascii)
+    63 267F			_fptoa	.proc	(.word loadfr0.adr, ptr1) .var
+    64
+    65 267F 20 C8 26			jsr	loadfr0
+    66
+    67 2682 A9 00			lda     #0
+    68 2684 85 F2			sta     cix
+    69
+    70 2686 A9 80 85 F3 A9 05 + 	mwa	#lbuff	inbuff	; COPY ADDRESS OF LBUFF INTO INBUFF
+    71 					
+    72 268E 20 E6 D8			jsr     fasc
+    73 2691 A0 FF			ldy     #$FF
+    74 2693 C8			loop:	iny
+    75 2694 B1 F3			lda     (inbuff),y
+    76 2696 91 D2			sta     (ptr1),y
+    77 2698 10 F9			bpl     loop
+    78 269A 29 7F			and     #$7F
+    79 269C 91 D2			sta     (ptr1),y
+    80 269E C8				iny
+    81 269F A9 9B			lda     #$9b
+    82 26A1 91 D2			sta     (ptr1),y
+    83 26A3 60				rts
+    84
+    85 					.endp
+    86
+    87 				;------------------------------------
+    88 				       .globl _itofp
+    89 				;          itofp(int,float)
+    90 26A4			_itofp	.proc	(.word fr0, flptr) .var
+    91
+    92 26A4 20 AA D9			jsr     ifp
+    93 26A7 4C AB DD			jmp	fst0p
+    94
+    95 					.endp
+    96
+    97 				;------------------------------------
+    98 				       .globl _fptoi
+    99 				;      int=fptoi(float)
+   100 26AA			_fptoi	.proc	(.word yx) .reg
+   101
+   102 					jsr	fld0r
+   103
+   104 					jsr	fpi
+   105
+   106 					ldx	fr0
+   107 					ldy	fr0+1
+   108 					rts
+   109
+   110 					.endp
+   111
+   112 				;------------------------------------
+   113 				       .globl _fpadd
+   114 				;      fpadd(fp a,fp b,fp c)
+   115 				;              a+b=c
+   116 26AA			_fpadd	.proc	(.word loadfr0.adr, loadfr1.adr, flptr) .var
+   117
+   118 					jsr	loadfr0
+   119 					jsr	loadfr1
+   120
+   121 					jsr	fadd
+   122 					jmp	fst0p
+   123
+   124 				       .endp
+   125
+   126 				;------------------------------------
+   127 				       .globl _fpsub
+   128 				;      fpsub(fp a,fp b,fp c)
+   129 				;              a-b=c
+   130 26AA			_fpsub	.proc	(.word loadfr0.adr, loadfr1.adr, flptr) .var
+   131
+   132 					jsr	loadfr0
+   133 					jsr	loadfr1
+   134
+   135 					jsr     fsub
+   136 					jmp	fst0p
+   137
+   138 					.endp
+   139
+   140 				;------------------------------------
+   141 				       .globl _fpmul
+   142 				;      fpmul(fp a,fp b,fp c)
+   143 				;              a*b=c
+   144 26AA			_fpmul	.proc	(.word loadfr0.adr, loadfr1.adr, flptr) .var
+   145
+   146 					jsr	loadfr0
+   147 					jsr	loadfr1
+   148
+   149 					jsr     fmul
+   150 					jmp	fst0p
+   151
+   152 					.endp
+   153
+   154 				;------------------------------------
+   155 				       .globl _fpdiv
+   156 				;      fpdiv(fp a,fp b,fp c)
+   157 				;              a/b=c
+   158 26AA			_fpdiv	.proc	(.word loadfr0.adr, loadfr1.adr, flptr) .var
+   159
+   160 26AA 20 C8 26			jsr	loadfr0
+   161 26AD 20 D3 26			jsr	loadfr1
+   162
+   163 26B0 20 28 DB			jsr     fdiv
+   164 26B3 4C AB DD			jmp	fst0p
+   165
+   166 					.endp
+   167
+   168 				;------------------------------------
+   169 				       .globl _fpgrt, _fples, _fpneq, _fpleq, _fpgeq, _fpequ
+   170 				;
+   171 26B6			_fpgrt	.proc	(.word loadfr0.adr, loadfr1.adr) .var
+   172 					jsr	_cmpvar
+   173 					bmi	false	; >
+   174 					beq	false
+   175 					bpl	true
+   176 					.endp
+   177
+   178 26B6			_fples	.proc	(.word loadfr0.adr, loadfr1.adr) .var
+   179 					jsr	_cmpvar
+   180 					bmi	true	; <
+   181 					bpl	false
+   182 					.endp
+   183
+   184 26B6			_fpneq	.proc	(.word loadfr0.adr, loadfr1.adr) .var
+   185 					jsr	_cmpvar
+   186 					beq	false	; <>
+   187 					bne	true
+   188 					.endp
+   189
+   190 26B6			_fpleq	.proc	(.word loadfr0.adr, loadfr1.adr) .var
+   191 					jsr	_cmpvar
+   192 					bmi	true	; <=
+   193 					beq	true
+   194 					bpl	false
+   195 					.endp
+   196 					
+   197 26B6			_fpgeq	.proc	(.word loadfr0.adr, loadfr1.adr) .var
+   198 					jsr	_cmpvar
+   199 					bmi	false	; >=
+   200 					bpl	true
+   201 					.endp
+   202
+   203 26B6			_fpequ	.proc	(.word loadfr0.adr, loadfr1.adr) .var
+   204 					jsr	_cmpvar
+   205 					beq	true	; =
+   206 					.endp
+   207
+   208 26B6 A9 00		false	lda	#0
+   209 26B8 60				rts
+   210
+   211 26B9 A9 01		true	lda	#1
+   212 26BB 60				rts
+   213
+   214 26BC 20 C8 26		_cmpvar	jsr	loadfr0
+   215 26BF 20 D3 26			jsr	loadfr1
+   216
+   217 26C2 20 60 DA			jsr	fsub
+   218
+   219 26C5 A5 D4			lda	fr0
+   220 26C7 60				rts
+   221
+   222 				;------------------------------------
+   223 26C8			loadfr0	.proc	(.word loadfr0.adr) .var
+   224
+   225 26C8 A0 05			ldy	#5
+   226 26CA B1 D0 99 D4 00 88		mva	(loadfr0.adr),y		fr0,y-
+   227 26D0 10 F8			rpl
+   228
+   229 26D2 60				rts
+   230
+   231 					.endp
+   232
+   233 				;------------------------------------
+   234 26D3			loadfr1	.proc	(.word loadfr1.adr) .var
+   235
+   236 26D3 A0 05			ldy	#5
+   237 26D5 B1 D2 99 E0 00 88		mva	(loadfr1.adr),y		fr1,y-
+   238 26DB 10 F8			rpl
+   239
+   240 26DD 60				rts
+   241
+   242 					.endp
+   243
+   244 				;------------------------------------
+   245 					.globl	_fst0r
+   246 				;	fr0 -> fp
+   247 26DE			_fst0r	.proc	(.word yx) .reg
+   248
+   249 					jmp	fst0r
+   250
+   251 					.endp
+   252
+   253 				;------------------------------------
+   254 					.globl	_fld0r
+   255 				;	fp -> fr1
+   256 26DE			_fld0r	.proc	(.word yx) .reg
+   257
+   258 					jmp	fld0r
+   259
+   260 					.endp
+   261
+   262 				;------------------------------------
+   263 					.globl	_fld1r
+   264 				;	fp -> fr1
+   265 26DE			_fld1r	.proc	(.word yx) .reg
+   266
+   267 					jmp	fld1r
+   268
+   269 					.endp
+   204
+   205 				//******************************************************************************************************************************************************
+   206
+   207 					org	NSystem.RUNAD
+   208 02E0-02E1> 00 20			dta	a(NProgram.Startup_Ptr)

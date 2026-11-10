@@ -1,0 +1,108 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file BiosLoad.as8
+	@author Marek "Konop" Konopka
+	@date 15.05.2010
+*/
+
+//******************************************************************************************************************************************************
+
+	.zpvar	= NProgram.ZpgVars_Ptr
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'utils.as8'
+		icl	'stdbool.h8'
+		icl	'memory.h8'
+		icl	'system.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'cpu.h8'
+		icl	'antic.h8'
+		icl	'pokey.h8'
+		icl	'pia.h8'
+		icl	'gtia.h8'
+		icl	'API\Protocol.h8'
+		icl	'API\Bootstrap.h8'
+		icl	'API\Bios.h8'
+		icl	'BiosLoad.h8'
+	opt l+
+
+//******************************************************************************************************************************************************
+
+.local	NProgram
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+	org	Startup_Ptr
+	jmp	main
+
+//******************************************************************************************************************************************************
+	
+.proc	main
+	//	Echo.
+	NConsole.print	#echo_str
+	
+	NVeronica.NMaster.store_system
+
+	//	Enable both banks.
+	NVeronica.NMaster.set_rambanks	#NVeronica.NProtocol.EAtariRegisterStates.BANKS_ENABLED
+	NUtils.movba	#0, NSystem.SDMCTL
+	NUtils.movba	#0, NAntic.DMACTL
+	
+	//	Boot Veronica.
+	NVeronica.NMaster.boot_veronica	#BOOTSTRAP_BEGIN, #NVeronica.NBootstrap.Atari_Code_Ptr, #(BOOTSTRAP_END-BOOTSTRAP_BEGIN), #BIOS_BEGIN, #NVeronica.NBios.Bios_Atari_Ptr, #(BIOS_END-BIOS_BEGIN), #NVeronica.NBootstrap.Code_Ptr
+
+	NVeronica.NMaster.wait_for_veronica
+	NVeronica.NMaster.restore_system
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+	echo_str: dta c'Veronica BIOS uploader 1.0.0.0', NConsole.ATASCII_EOL, \
+		c'(C) 2010 by Marek Konopka', NConsole.ATASCII_EOL, 0
+	
+.endp
+
+//******************************************************************************************************************************************************
+
+.endl // NProgram
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'antic.as8'
+	icl	'memory.as8'
+	icl	'io.as8'
+	icl	'console.as8'
+	icl	'system.as8'
+	icl	'API\Master.as8'
+	icl	'API\Utils.as8'
+
+	TMP_ZPVAR = .zpvar
+		BOOTSTRAP_BEGIN = *
+			icl	'API\Bootstrap.as8'
+		BOOTSTRAP_END = *
+		
+		BIOS_BEGIN = *
+			icl	'API\Bios.as8'
+		BIOS_END = *
+	.zpvar = TMP_ZPVAR
+	
+	// Dummy label reference list ensures the code gets emitted.
+	NVeronica.NBios.main
+	NVeronica.NBootstrap.main
+
+//******************************************************************************************************************************************************
+	
+	org	NSystem.RUNAD
+	dta	a(NProgram.Startup_Ptr)
+	

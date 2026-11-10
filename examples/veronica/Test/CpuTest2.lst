@@ -1,0 +1,8 @@
+mads 1.9.5 build 59 (29 Sep 12)
+     1 					org	$8000
+     2 FFFF> 8000-8007> A9 22		lda	#$22
+     3 8002 8D 30 C0			sta	$c030
+     4 8005 4C 00 C0			jmp	$c000
+     5
+     6 8008				org	$bffc
+     7 BFFC-BFFD> 00 C0			dta	a($c000)

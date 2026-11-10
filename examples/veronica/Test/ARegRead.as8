@@ -1,0 +1,198 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file ARegRead.as8
+	@author Marek "Konop" Konopka
+	@date 05.06.2010
+*/
+
+//******************************************************************************************************************************************************
+
+	.zpvar	= NProgram.ZpgVars_Ptr
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'utils.as8'
+		icl	'stdbool.h8'
+		icl	'cpu.h8'
+		icl	'antic.h8'
+		icl	'gtia.h8'
+		icl	'pia.h8'
+		icl	'system.h8'
+		icl	'memory.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'API\protocol.h8'
+		icl	'ARegRead.h8'
+	opt l+
+	
+//******************************************************************************************************************************************************
+
+.local	NProgram
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+	org Startup_Ptr
+	jmp	main
+
+//******************************************************************************************************************************************************
+
+.proc	main
+	.var	.byte	cnt, value
+	
+	NConsole.println	#echo_str
+
+	NUtils.movba	#0, cnt
+loop
+	lda	cnt
+	asl	@
+	tay
+	NUtils.movba	"Strings,y",    NConsole.print.ptr
+	NUtils.movba	"Strings+1,y",  NConsole.print.ptr+1
+	jsr	NConsole.print
+
+	ldy	cnt
+	NUtils.movba	"Values,y", NVeronica.NProtocol.Atari_HW_Register
+	peek_reg	    #MemStart, #MEM_LENGTH
+    
+	ldy	cnt
+	NUtils.movba	"TestValues,y", value
+	strcmp	        #MemStart, #MEM_LENGTH, value, #REGISTER_READ_MASK
+    
+	jsr	print_status
+	NConsole.putc	#NConsole.ATASCII_EOL
+		
+	inc	cnt
+	NUtils.cmpba	cnt, #NUM_TESTS
+	bne	loop
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	Values:	    dta b(VALUE_0, VALUE_1)
+	TestValues:	dta b(TEST_VALUE_0, TEST_VALUE_1)
+
+	str0:	    dta c'%00001000 ', 0
+	str1:	    dta c'%10001000 ', 0
+	Strings:	dta a(str0, str1)
+
+	echo_str:	dta c'Atari Register Reader', NConsole.ATASCII_EOL, \
+		c'(C) 2010 by Marek Konopka', 0
+
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_status(.byte a) .reg
+	and	#1
+	asl	@
+	tax
+	NUtils.movba	"strings+0,x", NConsole.print.ptr+0
+	NUtils.movba	"strings+1,x", NConsole.print.ptr+1
+	jsr	NConsole.print
+	rts
+
+	strings:		dta a(failure_str, ok_str)
+	failure_str:	dta c'Failed', 0
+	ok_str:			dta c'Succeeded', 0
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	peek_reg(.word dst_ptr .word count) .var
+	.zpvar	.word	dst_ptr
+	.var	.word	count
+	
+	ldx	count+1
+	beq	skip
+	
+	ldy	#0
+loop
+	NUtils.movba	NVeronica.NProtocol.Atari_HW_Register, "(dst_ptr),y"
+	iny
+	bne	loop
+	inc	dst_ptr+1
+	dex
+	bne	loop
+	
+skip
+	ldx	count
+	beq	skip2
+
+	ldy	#0
+loop2
+	NUtils.movba	NVeronica.NProtocol.Atari_HW_Register, "(dst_ptr),y"
+	iny
+	cpy	count
+	bne	loop2
+	
+skip2	
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	strcmp(.word src_ptr .word size .byte value .byte mask) .var
+	.zpvar	.word	src_ptr
+	.var	.word	size
+	.var	.byte	value
+    .var    .byte   mask
+
+	ldx	size+1
+	beq	skip_pages
+	
+	ldy	#0
+loop
+	NUtils.andba    "(src_ptr),y", mask
+    cmp value
+	bne	_exit_with_error
+	iny
+	bne	loop
+	inc	src_ptr+1
+	dex
+	bne	loop
+	
+skip_pages
+	lda	size
+	beq	_exit_ok
+
+	ldy	#0
+loop2
+	NUtils.andba    "(src_ptr),y", mask
+    cmp value
+	bne	_exit_with_error
+	iny
+	cpy	size
+	bne	loop2
+	jmp	_exit_ok
+	
+_exit_with_error
+	lda	#NUtils.FALSE
+	rts
+	
+_exit_ok
+	lda	#NUtils.TRUE
+	rts
+.endp
+
+.endl // NBios
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'antic.as8'
+	icl	'system.as8'
+	icl	'memory.as8'
+	icl	'console.as8'
+
+//******************************************************************************************************************************************************
+
+	org	NSystem.RUNAD
+	dta	a(NProgram.Startup_Ptr)

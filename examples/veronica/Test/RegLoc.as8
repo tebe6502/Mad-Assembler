@@ -1,0 +1,203 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file RegLoc.as8
+	@author Marek "Konop" Konopka
+	@date 05.06.2010
+*/
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'utils.as8'
+		icl	'stdbool.h8'
+		icl	'cpu.h8'
+		icl	'pokey.h8'
+		icl	'antic.h8'
+		icl	'gtia.h8'
+		icl	'pia.h8'
+		icl	'memory.h8'
+		icl	'system.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'API\protocol.h8'
+		icl	'API\Bootstrap.h8'
+		icl	'RegLoc.h8'
+	opt l+
+	
+//******************************************************************************************************************************************************
+
+.local	NProgram
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+	org Startup_Ptr
+	jmp	main
+
+//******************************************************************************************************************************************************
+
+.proc	main
+	.using NVeronica.NProtocol
+	
+	NConsole.println	#echo_str
+	
+    // TODO: Dopisac test czy Weronika wogole jest dostepna, ale bez BIOSu!!!
+    
+	NVeronica.NMaster.store_system
+	NVeronica.NMaster.set_rambanks	#EAtariRegisterStates.BANKS_ENABLED
+	NUtils.movba	#0, NSystem.SDMCTL
+	NUtils.movba	#0, NAntic.DMACTL
+
+	NVeronica.NMaster.boot_veronica	#BOOTSTRAP_BEGIN, #Bootstrap_Ptr, #(BOOTSTRAP_END-BOOTSTRAP_BEGIN), #0, #0, #0, #NVeronica.NSlave.Bootstrap_Ptr
+
+	NVeronica.NMaster.wait_for_veronica
+	//NMemory.memset	#RegAddMap, #TBL_SIZE, #$FF
+	NVeronica.NMaster.swap_banks
+	
+	NMemory.memcpy	#TmpTbl, #RegAddMap, #TBL_SIZE
+	NVeronica.NMaster.restore_system
+	
+	print_map
+	rts
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	echo_str:	dta c'Veronica Register seeker', NConsole.ATASCII_EOL, \
+		c'(C) 2010 by Marek Konopka', 0
+	
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_map
+	.var	.byte	cnt
+	
+	NUtils.movba	#0, cnt
+loop
+	printhexbyte	cnt
+	NConsole.putc	#'='
+	
+	ldy	cnt
+	NUtils.andba	"TmpTbl,y", #1
+	asl	@
+	tax
+	NUtils.movba	"str_tbl,x", NConsole.print.ptr
+	NUtils.movba	"str_tbl+1,x", NConsole.print.ptr+1
+	jsr	NConsole.print
+	NConsole.putc	#32
+
+	NUtils.andba	cnt, #3
+	cmp	#3
+	bne	skip
+		NConsole.putc	#NConsole.ATASCII_EOL
+		NSystem.wait_for_vbl	#VBL_WAIT_CNT
+	
+skip
+	inc	cnt
+	bne	loop
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	str_tbl:	dta a(ram_str, reg_str)
+	reg_str:	dta c'REG', 0
+	ram_str:	dta c'RAM', 0
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+.proc	printhexbyte(.byte a) .reg
+	pha
+	NUtils.lsra	4
+	tay
+	lda	NConsole.hex_to_atascii_tbl,y
+	jsr	NConsole.putc
+	pla
+	and	#15
+	tay
+	lda	NConsole.hex_to_atascii_tbl,y
+	jsr	NConsole.putc
+	rts
+.endp
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+.endp
+
+//******************************************************************************************************************************************************
+
+.endl	// NProgram
+
+//******************************************************************************************************************************************************
+//	Veronica
+//******************************************************************************************************************************************************
+
+    BOOTSTRAP_BEGIN = *
+
+.local	NVeronica.NSlave, NVeronica.NSlave.Bootstrap_Ptr
+
+//******************************************************************************************************************************************************
+
+.proc	bootstrap_proc
+    .using NVeronica.NProtocol
+
+    NVeronica.NBootstrap.initialize_cpu
+
+    ldy #0
+loop
+    MASK0 = (1 << EVeronicaRegisterBits.WINDOW_LOCATION) | (1 << EVeronicaRegisterBits.SUBBANK_NUMBER)
+    MASK1 = (1 << EVeronicaRegisterBits.SEMAPHORE_WRITE) | (1 << EVeronicaRegisterBits.WINDOW_LOCATION) | (1 << EVeronicaRegisterBits.SUBBANK_NUMBER)
+
+    //NVeronica.NProtocol.set_or_switch_bits  "NVeronica.NProtocol.Veronica_HW_Register,y", ~MASK0, 0, (1 << EVeronicaRegisterBits.SEMAPHORE_WRITE)
+    NUtils.andba "NVeronica.NProtocol.Veronica_HW_Register,y", #MASK0, "NVeronica.NProtocol.Veronica_HW_Register,y"
+    
+    NUtils.andba "NVeronica.NProtocol.Veronica_HW_Register,y", #~MASK1
+    cmp #~MASK1
+    beq enabled
+        lda #0
+        jmp continue
+
+enabled
+    lda #1
+
+continue
+    //lda NVeronica.NProtocol.Veronica_HW_Register,y
+    sta RegAddMap,y
+    
+    iny
+    bne loop
+
+    NVeronica.NProtocol.unlock_veronica
+
+    jmp *
+.endp
+
+//******************************************************************************************************************************************************
+
+.endl	// NVeronica.NSlave
+
+	BOOTSTRAP_END = *
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'antic.as8'
+	icl	'memory.as8'
+	icl	'console.as8'
+	icl	'system.as8'
+	icl	'API\Master.as8'
+	icl	'API\Utils.as8'
+
+//******************************************************************************************************************************************************
+
+	jsr	NVeronica.NSlave.bootstrap_proc
+
+//******************************************************************************************************************************************************
+
+	org	NSystem.RUNAD
+	dta	a(NProgram.Startup_Ptr)

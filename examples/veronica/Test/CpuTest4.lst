@@ -1,0 +1,3180 @@
+mads 1.9.5 build 59 (29 Sep 12)
+     1 				//******************************************************************************************************************************************************
+     2 					icl	'antic.h8'
+Source: antic.h8
+     1 				.local NAntic
+     2
+     3 				//******************************************************************************************************************************************************
+     4 				//  Enumerations
+     5 				//******************************************************************************************************************************************************
+     6
+     7 				.enum   EDLIST
+     8 = 0080			    DLI = $80
+     9 = 0040			    LMS = $40
+    10 = 0041			    JVB = $41
+    11 				.ende
+    12
+    13 				.enum   EDMACTL
+    14 = 0000			    NO_PLAYFIELD        = 0
+    15 = 0001			    NARROW_PLAYFIELD    = 1
+    16 = 0002			    STANDARD_PLAYFIELD  = 2
+    17 = 0003			    WIDE_PLAYFIELD      = 3
+    18 = 0004			    MISSILE_DMA         = 4
+    19 = 0008			    PLAYER_DMA          = 8
+    20 = 0010			    ONE_LINE_PLAYER_RES = 16
+    21 = 0020			    ENABLE_DMA          = 32
+    22 				.ende
+    23
+    24 				.enum   ENMIEN
+    25 = 0080			    ENABLE_DLI  = $80
+    26 = 0040			    ENABLE_VBL  = $40
+    27 				.ende
+    28
+    29 				//******************************************************************************************************************************************************
+    30 				//  Constants
+    31 				//******************************************************************************************************************************************************
+    32
+    33 = 1000			    SCAN_COUNTER_LIMIT  = $1000
+    34 = 0400			    DL_LIMIT    = $0400
+    35 				    
+    36 = 0080			    NUM_CHARS_IN_CHARSET = 128
+    37 = 0008			    CHAR_HEIGHT = 8
+    38 = 0400			    CHARSET_SIZE    = NUM_CHARS_IN_CHARSET * CHAR_HEIGHT
+    39 = 0080			    CHAR_NEG_MASK   = 128
+    40 = 007F			    CHAR_CODE_MASK  = CHAR_NEG_MASK - 1
+    41 				    
+    42 = 0000			    DMACTL_OFF = EDMACTL.NO_PLAYFIELD
+    43 				    
+    44 				//******************************************************************************************************************************************************
+    45 				//  Pointers
+    46 				//******************************************************************************************************************************************************
+    47
+    48 = D400			    DMACTL  = $d400
+    49 				        ;Turn off the playfield                           0
+    50 				        ;Use narrow playfield                             1
+    51 				        ;Use normal playfield                             2
+    52 				        ;Use wide playfield                               3
+    53 				        ;Enable missile DMA                               4
+    54 				        ;Enable player DMA                                8
+    55 				        ;Enable both player and missile DMA              12
+    56 				        ;Single line player resolution                   16
+    57 				        ;Enable DMA Fetch instructions                   32
+    58 = D401			    CHRCTL  = $d401
+    59 = D402			    DLPTR   = $d402
+    60 = D407			    PMBASE  = $d407
+    61 = D409			    CHBASE  = $d409
+    62 = D40A			    WSYNC   = $d40a
+    63 = D40B			    VCOUNT  = $d40b
+    64 = D40E			    NMIEN   = $d40e
+    65 = D40F			    NMIST   = $d40f
+    66 = D40F			    NMIRES  = $d40f
+    67 				    
+    68 				//******************************************************************************************************************************************************
+    69
+    70 				.endl // NAntic
+     3 					icl	'memory.h8'
+Source: memory.h8
+     1 				//******************************************************************************************************************************************************
+     2 				//.ifndef	MEMORY_H_6f636864_783f_4ccc_b246_e12919423b
+     3 				//.def	MEMORY_H_6f636864_783f_4ccc_b246_e12919423b
+     4 				//******************************************************************************************************************************************************
+     5
+     6 				.local NMemory
+     7
+     8 				//******************************************************************************************************************************************************
+     9 				//	Enumerations
+    10 				//******************************************************************************************************************************************************
+    11
+    12 				.enum	EType
+    13 					NONE, BYTE, WORD
+    13 = 0000			NONE
+    13 = 0001			BYTE
+    13 = 0002			WORD
+    14 				.ende
+    15 					
+    16 				//******************************************************************************************************************************************************
+    17 				//	Macros
+    18 				//******************************************************************************************************************************************************
+    19
+    20 				///	Set memory. Uses code auto-modification.
+    21 				/**	@param .word %%1	Destination location.
+    22 					@param .word %%2	Count.
+    23 					@param .byte %%3	Value.
+    24 				*/
+    24
+    25 				.macro	memset_macro
+    26 					ldx	%%3
+    27 					ldy	#0
+    28 				loop
+    29 					//	Test, whether we are done or not.
+    30 					NUtils.tstzw	%%2
+    31 					beq	done
+    32 						txa
+    33 						sta	(%%1),y
+    34 					
+    35 					NUtils.decw	%%2
+    36 					iny
+    37 					bne	loop
+    38 					
+    39 					inc	%%1+1
+    40 					jmp	loop
+    41 				done
+    42 				.endm
+    43
+    44 				//******************************************************************************************************************************************************
+    45
+    46 				///	Copy data chunk from source into destination location.
+    47 				/**	@param %%1 .word	- Zero-page destination location pointer.
+    48 					@param %%2 .word	- Zero-page source location pointer.
+    49 					@param %%3 .word	- Count.
+    50 				*/
+    50
+    51 				.macro	memcpy_macro
+    52 					NUtils.subw	%%2, %%1
+    53 					bcs	forward
+    54 				
+    55 					.local	backward
+    56 						NUtils.addw	%%2, %%3, %%2
+    57 						NUtils.addw	%%1, %%3, %%1
+    58 						NUtils.decw	%%2
+    59 						NUtils.decw	%%1
+    60 				
+    61 						ldy	#0
+    62 					loop:
+    63 						//	Test, whether there are still any data to copy.
+    64 						NUtils.tstzw	%%3
+    65 						beq	done
+    66 					
+    67 						NUtils.movba	"(%%2),y", "(%%1),y"	//	Copy
+    68 					
+    69 						NUtils.decw	%%3
+    70 						NUtils.decw	%%2
+    71 						NUtils.decw	%%1
+    72 						jmp	loop
+    73 					.endl
+    74 					
+    75 					.local	forward
+    76 						ldy	#0
+    77 					loop:
+    78 						//	Test, whether there are still any data to copy.
+    79 						NUtils.tstzw	%%3
+    80 						beq	done
+    81 				
+    82 						NUtils.movba	"(%%2),y", "(%%1),y"	//	Copy
+    83 					
+    84 						NUtils.decw	%%3
+    85 						iny
+    86 						bne	loop
+    87 					
+    88 						inc	%%2+1
+    89 						inc	%%1+1
+    90 						jmp	loop
+    91 					.endl
+    92 				
+    93 				done
+    94 				.endm
+    95
+    96 				//******************************************************************************************************************************************************
+    97
+    98 				.macro	memcpyp2	dst, src, count
+    99 					ldy	%%count
+   100 					dey
+   101 				loop
+   102 					lda	(%%src),y
+   103 					sta	%%dst,y
+   104 					dey
+   105 					bpl	loop
+   106 				.endm
+   107
+   108 				//******************************************************************************************************************************************************
+   109
+   110 				.macro	memcpyp3	dst, src, count
+   111 					ldy	#(%%count-1)
+   112 				loop
+   113 					lda	(%%src),y
+   114 					sta	%%dst,y
+   115 					dey
+   116 					bpl	loop
+   117 				.endm
+   118
+   119 				//******************************************************************************************************************************************************
+   120
+   121 				///	Copy data chunk from source into destination location. Assumes no region overlapping.
+   122 				/**	@param %%1 .word	- Destination location pointer.
+   123 					@param %%2 .word	- Source location pointer.
+   124 					@param %%3 .word	- Count.
+   125 				*/
+   125
+   126 				.macro	memcpyno_macro
+   127 					NUtils.tstzw	%%3
+   128 					beq	skip
+   129 				
+   130 						NUtils.movw	%%2, full_pages_loop.src
+   131 						NUtils.movw	%%1, full_pages_loop.dst
+   132 						
+   133 						ldx	%%3+1
+   134 						beq	remains
+   135 				
+   136 							ldy	#0
+   137 						
+   138 							.local	full_pages_loop
+   139 							loop:
+   140 								src: = * + 1
+   141 								lda	$ffff,y
+   142 								dst: = * + 1
+   143 								sta	$ffff,y
+   144 								iny
+   145 								bne	loop
+   146 						
+   147 								inc	src+1
+   148 								inc	dst+1
+   149 						
+   150 								dex
+   151 								bne	loop
+   152 							.endl
+   153 						
+   154 					remains:
+   155 						lda	%%3
+   156 						beq	skip
+   157 						
+   158 							NUtils.movw	full_pages_loop.src, remains_loop.src
+   159 							NUtils.movw	full_pages_loop.dst, remains_loop.dst
+   160 						
+   161 							.local	remains_loop
+   162 							loop:
+   163 								src = * + 1
+   164 								lda	$ffff,y
+   165 								dst = * + 1
+   166 								sta	$ffff,y
+   167 								iny
+   168 								cpy	%%3
+   169 								bne	loop
+   170 							.endl
+   171 					
+   172 				skip
+   173 				.endm
+   174
+   175 				//******************************************************************************************************************************************************
+   176
+   177 				///	Compares two tables for equality.
+   178 				/**	@param .word %%1	First table pointer.
+   179 					@param .word %%2	Second table pointer.
+   180 					@param .word %%3	Table size.
+   181 					@return A	- Flag indicating comparison status.
+   182 						NUtils.TRUE		Equal.
+   183 						NUtils.FALSE	Different.
+   184 				*/
+   184
+   185 				.macro	strcmp_macro
+   186 					ldy	#0
+   187 					ldx	%%3+1
+   188 					beq	last_page
+   189 				
+   190 					.local	full_pages
+   191 					loop:
+   192 						lda	(%%1),y
+   193 						cmp	(%%2),y
+   194 						bne	unequal
+   195 						iny
+   196 						bne	loop
+   197 					
+   198 						inc	%%1+1
+   199 						inc	%%2+1
+   200 						dex
+   201 						bne	loop
+   202 					.endl
+   203 				
+   204 					.local	last_page
+   205 						lda	%%3
+   206 						beq	equal
+   207 					loop:
+   208 						lda	(%%1),y
+   209 						cmp	(%%2),y
+   210 						bne	unequal
+   211 						iny
+   212 						cpy	%%3
+   213 						bne	loop
+   214 					.endl	
+   215 					
+   216 				equal
+   217 					lda	#NUtils.TRUE
+   218 					jmp	_exit
+   219 					
+   220 				unequal
+   221 					lda	#NUtils.FALSE
+   222 				_exit
+   223 				.endm
+   224
+   225 				//******************************************************************************************************************************************************
+   226
+   227 				.endl // NMemory
+   228
+   229 				//******************************************************************************************************************************************************
+   230
+   231 				//.endif // MEMORY_H_6f636864_783f_4ccc_b246_e12919423b
+     4 					icl	'API\protocol.h8'
+     1 				//******************************************************************************************************************************************************
+     2 				//	Header
+     3 				//******************************************************************************************************************************************************
+     4
+     5 				/**	@file Protocol.h8
+     6 					@author Marek "Konop" Konopka
+     7 					@date 29.05.2010
+     8 				*/
+     8
+     9
+    10 				.local	NVeronica.NProtocol
+    11
+    12 				//******************************************************************************************************************************************************
+    13 				//	Constants
+    14 				//******************************************************************************************************************************************************
+    15
+    16 					///	Size of an array uniquely identifying Veronica's presence.
+    17 = 0010				VERONICA_UUID_SIZE	= 16
+    18
+    19 					///	Must be big enought to allow finishing execution of IDENTIFY command on Veronica.
+    20 = 00FF				IDENTIFY_CMD_TIMEOUT	= 255
+    21
+    22 				//******************************************************************************************************************************************************
+    23 				//	Pointers
+    24 				//******************************************************************************************************************************************************
+    25
+    26 					///	Location for the communication buffer in Veronica's address space.
+    27 = C000				Initial_Window_Location	= $C000 // TODO: Rename to StartupWindowLocation
+    28 = 4000				Final_Window_Location	= $4000 // TODO: Rename into RegularWindowLocation
+    29
+    30 					///	Location for the communication buffer in Atari address space.
+    31 = 8000				Atari_Window_Location	= $8000
+    32
+    33 					///	Location for Veronica's hardware register.
+    34 = 0200				Veronica_HW_Register	= $0200
+    35
+    36 					///	Location for Atari's register.
+    37 = D5C0				Atari_HW_Register	= $d5c0
+    38
+    39 					///	Free RAM starting address of the window in Veronica's address space.
+    40 = 4000				Veronica_Window_Ramlo	= Final_Window_Location
+    41
+    42 					///	Free RAM starting address of "the window" in Atari's address space.
+    43 = 8000				Atari_Window_Ramlo	= Atari_Window_Location
+    44
+    45 				//******************************************************************************************************************************************************
+    46 				//	Enumerations
+    47 				//******************************************************************************************************************************************************
+    48
+    49 				///	Enumeration of Atari hardware register bits.
+    50 				.enum	EAtariRegisterBits
+    51 = 0007				SEMAPHORE_READ	= 7
+    52 = 0007				SEMAPHORE_WRITE	= 7
+    53 					
+    54 = 0005				BANK1_ENABLE	= 5	// $A000-$BFFF -> $E000-$FFFF or $6000-$7FFF
+    55 = 0004				BANK0_ENABLE	= 4	// $8000-$9FFF -> $C000-$DFFF or $4000-$5FFF
+    56 				    
+    57 = 0003			    SUBBANK_NUMBER = 3
+    58 					
+    59 = 0001				RAMBANK_CFG	= 1
+    60 					
+    61 = 0000				VERONICA_CPU_RESET	= 0
+    62 				.ende
+    63
+    64 				//******************************************************************************************************************************************************
+    65
+    66 				///	Enumeration of Veronica hardware register bits.
+    67 				.enum	EVeronicaRegisterBits
+    68 = 0007			    SEMAPHORE_READ	= 7
+    69 = 0007			    SEMAPHORE_WRITE	= 7
+    70
+    71 = 0006			    WINDOW_LOCATION	= 6
+    72 				    
+    73 = 0005			    SUBBANK_NUMBER = 5
+    74 				.ende
+    75
+    76 				//******************************************************************************************************************************************************
+    77
+    78 				///	Enumeration of Atari hardware register bit combinations.
+    79 				.enum	EAtariRegisterStates
+    80 = 0080				UNLOCK_ATARI		= (1 << EAtariRegisterBits.SEMAPHORE_WRITE)
+    81 = 0000				LOCK_ATARI			= (0 << EAtariRegisterBits.SEMAPHORE_WRITE)
+    82 = 0080				VERONICA_UNLOCKED	= (1 << EAtariRegisterBits.SEMAPHORE_READ)
+    83 = 0080				SEMAPHORE_MASK		= (1 << EAtariRegisterBits.SEMAPHORE_READ)
+    84 					
+    85 = 0010				BANK0_ENABLED	= (1 << EAtariRegisterBits.BANK0_ENABLE)
+    86 = 0000				BANK0_DISABLED	= (0 << EAtariRegisterBits.BANK0_ENABLE)
+    87 = 0020				BANK1_ENABLED	= (1 << EAtariRegisterBits.BANK1_ENABLE)
+    88 = 0000				BANK1_DISABLED	= (0 << EAtariRegisterBits.BANK1_ENABLE)
+    89 = 0030				BANKS_ENABLED	= (BANK0_ENABLED | BANK1_ENABLED)
+    90 = 0000				BANKS_DISABLED	= 0
+    91
+    92 = 0010				BANK0_MASK	= (1 << EAtariRegisterBits.BANK0_ENABLE)
+    93 = 0020				BANK1_MASK	= (1 << EAtariRegisterBits.BANK1_ENABLE)
+    94 = 0030				BANKS_MASK	= (BANK0_MASK | BANK1_MASK)
+    95 					
+    96 = 0002				RAMBANK_CFG_MASK	= (1 << EAtariRegisterBits.RAMBANK_CFG)
+    97
+    98 = 0000				VER_CPU_RESET_PULSE_LOW		= (0 << EAtariRegisterBits.VERONICA_CPU_RESET)
+    99 = 0001				VER_CPU_RESET_PULSE_HIGH	= (1 << EAtariRegisterBits.VERONICA_CPU_RESET)
+   100 = 0001				VER_CPU_RESET_MASK	= (1 << EAtariRegisterBits.VERONICA_CPU_RESET)
+   101 				.ende
+   102
+   103 				//******************************************************************************************************************************************************
+   104
+   105 				///	Enumeration of Veronica hardware register bit combinations.
+   106 				.enum	EVeronicaRegisterStates
+   107 = 0080				UNLOCK_VERONICA	= (1 << EVeronicaRegisterBits.SEMAPHORE_WRITE)
+   108 = 0000				LOCK_VERONICA	= (0 << EVeronicaRegisterBits.SEMAPHORE_WRITE)
+   109 = 0080				ATARI_UNLOCKED	= (1 << EVeronicaRegisterBits.SEMAPHORE_READ)
+   110 = 0080				SEMAPHORE_MASK	= (1 << EVeronicaRegisterBits.SEMAPHORE_WRITE)
+   111
+   112 = 0000				WINDOW_LOCATION_C000	= (0 << EVeronicaRegisterBits.WINDOW_LOCATION)
+   113 = 0040				WINDOW_LOCATION_4000	= (1 << EVeronicaRegisterBits.WINDOW_LOCATION)
+   114 = 0040				WINDOW_LOCATION_MASK	= (1 << EVeronicaRegisterBits.WINDOW_LOCATION)
+   115 				.ende
+   116
+   117 				//******************************************************************************************************************************************************
+   118
+   119 				///	List of commands to execute by Veronica.
+   120 				.enum	ECommand
+   121 					IDLE, IDENTIFY, DATA_CHUNK_UPLOAD, PROCEDURE_CALL, DATA_CHUNK_DOWNLOAD
+   121 = 0000			IDLE
+   121 = 0001			IDENTIFY
+   121 = 0002			DATA_CHUNK_UPLOAD
+   121 = 0003			PROCEDURE_CALL
+   121 = 0004			DATA_CHUNK_DOWNLOAD
+   122 				.ende
+   123
+   124 				//******************************************************************************************************************************************************
+   125 				//	Structures
+   126 				//******************************************************************************************************************************************************
+   127
+   128 				///	Base structure describing common data for all commands.
+   129 				.struct	SCmdBase
+   130 = 0000				m_command	.byte	/// Command to be passed to and executed on the Veronica.
+   131 				.ends
+   132
+   133 				//******************************************************************************************************************************************************
+   134
+   135 				///	Describes idle command.
+   136 				.struct	SIdleCmd
+   137 					m_base	SCmdBase
+   138 				.ends
+   139
+   140 				//******************************************************************************************************************************************************
+   141
+   142 				///	Describes Veronica presence identifier.
+   143 				.struct	SIdentifyCmd
+   144 					m_base	SCmdBase
+   145 = 0001				m_uuid	:VERONICA_UUID_SIZE	.byte
+   146 				.ends
+   147
+   148 				//******************************************************************************************************************************************************
+   149
+   150 				///	Describes data upload command.
+   151 				.struct	SDataChunkUploadCmd
+   152 					m_base	SCmdBase
+   153 = 0001				m_chunk_dst_adr		.word
+   154 = 0003				m_chunk_dst_size	.word
+   155 				.ends
+   156
+   157 				//******************************************************************************************************************************************************
+   158
+   159 				///	Describes procedure execution command.
+   160 				.struct	SProcedureCallCmd
+   161 					m_base	SCmdBase
+   162 = 0001				m_proc_adr	.word
+   163 				.ends
+   164
+   165 				//******************************************************************************************************************************************************
+   166
+   167 				///	Describes data download command.
+   168 				.struct	SDataChunkDownloadCmd
+   169 					m_base	SCmdBase
+   170 = 0001				m_chunk_src_adr		.word
+   171 = 0003				m_chunk_src_size	.word
+   172 				.ends
+   173
+   174 				//******************************************************************************************************************************************************
+   175 				//	Macros
+   176 				//******************************************************************************************************************************************************
+   177
+   178 				///	Wait for bit flip.
+   179 				/**	@param %%1 .byte_ptr	- Memory location to test.
+   180 					@param %%2 .byte 		- Constant representing bit number.
+   181 					@param %%3 .byte		- Constant to test against.
+   182 				*/
+   182
+   183 				.macro	wait_for_bit_flip
+   184 				loop
+   185 					lda	%%1
+   186 					and	#(1 << (%%2))
+   187 					.if ((%%3) != 0)
+   188 						beq	loop
+   189 					.else
+   190 						bne	loop
+   191 					.endif
+   192 				.endm
+   193
+   194 				//******************************************************************************************************************************************************
+   195
+   196 				///	Wait for bit flip to occur within timeout restriction.
+   197 				///	Must take long enough for Veronica to respond to the IDENTIFY command.
+   198 				/**	@param .byte %%1	- Memory location to test.
+   199 					@param .byte %%2	- Constant representing bit number.
+   200 					@param .byte %%3	- Value to test against.
+   201 					@param .macro %%4	- Timeout macro.
+   202 					@param .byte X		- Maximal number of tests to perform.
+   203 					
+   204 					@return	.byte A	- Status flag indicating whether the test succeeded or not.
+   205 				*/
+   205
+   206 				.macro	wait_for_bit_flip_with_timeout
+   207 					loop:
+   208 						lda	%%1
+   209 						and	#(1 << (%%2))
+   210 						.if ((%%3) != 0)
+   211 							bne	matched
+   212 						.else
+   213 							beq	matched
+   214 						.endif
+   215 					
+   216 						%%4
+   217 						
+   218 						dex
+   219 						bne	loop
+   220 				
+   221 						//	Timeout elapsed.
+   222 						lda	#NUtils.FALSE
+   223 						jmp	done
+   224 					
+   225 					matched:
+   226 						lda	#NUtils.TRUE
+   227 					done:
+   228 				.endm
+   229
+   230 				//******************************************************************************************************************************************************
+   231
+   232 				.macro	timeout_macro
+   233 					//	at least 1282 cycles
+   234 					ldy	#0
+   235 				loop
+   236 					iny
+   237 					bne	loop
+   238 				.endm
+   239
+   240 				//******************************************************************************************************************************************************
+   241
+   242 				///	Set bit under provided memory location.
+   243 				/**	@param %%1 .byte_ptr	- Memory location.
+   244 					@param %%2 .byte		- Constant representing bit number.
+   245 					@param %%3 .byte		- Bit value (bit_value != 0).
+   246 					write_bit
+   247 				*/
+   247
+   248 				.macro	set_mem_bit
+   249 					lda	%%1
+   250 					.if	((%%3) == 0)
+   251 						and	#~(1 << (%%2))
+   252 					.else
+   253 						ora	#(1 << (%%2))
+   254 					.endif
+   255 					sta	%%1
+   256 				.endm
+   257
+   258 				//******************************************************************************************************************************************************
+   259
+   260 				///	Enable/disable specific bit under provided memory location.
+   261 				/**	@param %%1 .byte_ptr	- Memory location.
+   262 					@param %%2 .byte		- Constant representing bit mask.
+   263 					@param %%3 .byte		- Or mask.
+   264 				*/
+   264
+   265 				.macro	set_mem_bits
+   266 					lda	%%1
+   267 					and	#~(%%2)
+   268 					ora	%%3
+   269 					sta	%%1
+   270 				.endm
+   271
+   272 				//******************************************************************************************************************************************************
+   273
+   274 				///	Sets or switches memory location bits.
+   275 				/**	@param %%1 .byte	- Memory location to set.
+   276 					@param %%2 .byte	- Bit mask constant for setting.
+   277 					@param %%3 .byte	- Constant bit value for setting.
+   278 					@param %%4 .byte	- Bit mask constant for switching.
+   279 				*/
+   279
+   280 				.macro	set_or_switch_bits
+   281 					lda	%%1
+   282 					and	#~(%%2)
+   283 					.if	((%%3) != 0)
+   284 						ora	#(%%3)
+   285 					.endif
+   286 					.if	((%%4) != 0)
+   287 						eor	#(%%4)
+   288 					.endif
+   289 					sta	%%1
+   290 				.endm
+   291
+   292 				//******************************************************************************************************************************************************
+   293
+   294 				///	Clear memory location bits.
+   295 				/**	@param %%1 .byte    Memory location to clear bits in.
+   296 					@param %%2 .byte    Bit mask constant for clearing.
+   297 				*/
+   297
+   298 				.macro  clear_bits
+   299 				    lda %%1
+   300 				    and #~(%%2)
+   301 				    sta %%1
+   302 				.endm
+   303
+   304 				//******************************************************************************************************************************************************
+   305
+   306 				///	Sets or switches memory location bits.
+   307 				/**	@param %%1 .byte	- Memory location to set.
+   308 					@param %%2 .byte	- Bit mask constant for setting.
+   309 					@param %%3 .byte	- Bit mask constant for switching.
+   310 					@param %%4 .byte	- Temporary helper variable containing bit values.
+   311 				*/
+   311
+   312 				.macro	set_or_switch_mem_bits
+   313 					lda	%%4
+   314 					and	#(%%2)
+   315 					sta	%%4
+   316 				
+   317 					lda	%%1
+   318 					and	#~(%%2)
+   319 					.if	((%%3) != 0)
+   320 						eor	#(%%3)
+   321 					.endif
+   322 					ora	%%4
+   323 					sta	%%1
+   324 				.endm
+   325
+   326 				//******************************************************************************************************************************************************
+   327
+   328 				///	Wait for Atari to finish its task.
+   329 				.macro	wait_for_atari
+   330 				loop
+   331 					//	We can utilize negative flag flipping here since EVeronicaRegisterBits.SEMAPHORE_READ is D7.
+   332 					lda	Veronica_HW_Register
+   333 					bpl	loop
+   334 				.endm
+   335
+   336 				//******************************************************************************************************************************************************
+   337
+   338 				///	Wait for Veronica to finish its task.
+   339 				.macro	wait_for_veronica
+   340 				loop
+   341 					//	We can utilize negative flag here since EAtariRegisterBits.SEMAPHORE_READ is B7.
+   342 					lda	Atari_HW_Register
+   343 					bpl	loop
+   344 				.endm
+   345
+   346 				//******************************************************************************************************************************************************
+   347
+   348 				///	Wait for Veronica to finish its task within timeout restriction.
+   349 				/**	@param .byte X	- Timeout.
+   350 				*/
+   350
+   351 				.macro	wait_for_veronica_with_timeout
+   352 					wait_for_bit_flip_with_timeout	Atari_HW_Register, EAtariRegisterBits.SEMAPHORE_READ, EAtariRegisterStates.VERONICA_UNLOCKED, timeout_macro
+   353 				.endm
+   354
+   355 				//******************************************************************************************************************************************************
+   356
+   357 				///	Disable Atari occupation status. Modify single specific bit only. Leave the rest of them unchanged.
+   358 				.macro	unlock_atari
+   359 					set_mem_bit	Atari_HW_Register, EAtariRegisterBits.SEMAPHORE_WRITE, EAtariRegisterStates.UNLOCK_ATARI
+   360 				.endm
+   361
+   362 				//******************************************************************************************************************************************************
+   363
+   364 				///	Disable Veronica occupation status. Modify single specific bit only. Leave the rest of them unchanged.
+   365 				.macro	unlock_veronica
+   366 				    .using NVeronica.NProtocol
+   367 				    
+   368 					set_mem_bit	Veronica_HW_Register, EVeronicaRegisterBits.SEMAPHORE_WRITE, EVeronicaRegisterStates.UNLOCK_VERONICA
+   369 					//set_mem_bits	Veronica_HW_Register, (EVeronicaRegisterStates.SEMAPHORE_MASK | EVeronicaRegisterStates.WINDOW_LOCATION_MASK), #(EVeronicaRegisterStates.UNLOCK_VERONICA | EVeronicaRegisterStates.WINDOW_LOCATION_4000)
+   370 				.endm
+   371
+   372 				//******************************************************************************************************************************************************
+   373
+   374 				///	Disable Atari occupation status and swap window banks under cartridge memory location.
+   375 				.macro	unlock_and_swap
+   376 					set_or_switch_bits	Atari_HW_Register, EAtariRegisterStates.SEMAPHORE_MASK, EAtariRegisterStates.UNLOCK_ATARI, EAtariRegisterStates.RAMBANK_CFG_MASK
+   377 				.endm
+   378
+   379 				//******************************************************************************************************************************************************
+   380
+   381 				///	Swap rambanks.
+   382 				.macro	swap_banks
+   383 					NUtils.eorba	Atari_HW_Register, #(EAtariRegisterStates.UNLOCK_ATARI | EAtariRegisterStates.RAMBANK_CFG_MASK), Atari_HW_Register
+   384 				.endm
+   385
+   386 				//******************************************************************************************************************************************************
+   387
+   388 				///	Wait for Veronica, unlock Atari and swap banks.
+   389 				.macro	wait_swap_unlock
+   390 				loop
+   391 					lda	Atari_HW_Register
+   392 					bpl	loop
+   393 					
+   394 					eor	#EAtariRegisterStates.RAMBANK_CFG_MASK
+   395 					sta	Atari_HW_Register
+   396 				.endm
+   397
+   398 				//******************************************************************************************************************************************************
+   399
+   400 				.macro	reset_wait
+   401 					ldx	#0
+   402 				loop
+   403 					.rept	18
+   404 						nop
+   405 					.endr
+   406 				
+   407 					dex
+   408 					bne	loop
+   409 				.endm
+   410
+   411 				//******************************************************************************************************************************************************
+   412
+   413 				.endl // NVeronica.NProtocol
+     5 				//******************************************************************************************************************************************************
+     6
+     7 = A000				AtrProcPtr	= $a000
+     8 = E000				VerProcPtr	= $e000
+     9 = C000				VerWndPtr	= $c000
+    10 = 8000				WindowPtr	= $8000
+    11 = 2000				CodePtr		= $2000
+    12 = BFFC				AtrVerStartVct	= $bffc
+    13 					
+    14 				//******************************************************************************************************************************************************
+    15
+    16 					org CodePtr
+    17
+    18 2000				.using NVeronica.NProtocol
+    19 					
+    20 FFFF> 2000-211C> 78		sei
+    21 2001				NUtils.movba	#0, $d20e
+Macro: NUtils.movba [Source: utils.as8]
+     1 2001 A9 00		    lda #0
+     2 2003 8D 0E D2		    sta $d20e
+Source: CpuTest4.as8
+    22 2006				NUtils.movba	#0, $d40e
+Macro: NUtils.movba [Source: utils.as8]
+     1 2006 A9 00		    lda #0
+     2 2008 8D 0E D4		    sta $d40e
+Source: CpuTest4.as8
+    23
+    24 200B				NUtils.movba	#(EAtariRegisterStates.BANKS_ENABLED | EAtariRegisterStates.VER_CPU_RESET_PULSE_LOW), Atari_HW_Register
+Macro: NUtils.movba [Source: utils.as8]
+     1 200B A9 30		    lda #(EAtariRegisterStates.BANKS_ENABLED | EAtariRegisterStates.VER_CPU_RESET_PULSE_LOW)
+     2 200D 8D C0 D5		    sta Atari_HW_Register
+Source: CpuTest4.as8
+    25 					
+    26 2010				NUtils.leaw	VerProcPtr, AtrVerStartVct
+Macro: NUtils.leaw [Source: utils.as8]
+     1 2010 A9 00		    lda #<(VerProcPtr)
+     2 2012 8D FC BF		    sta AtrVerStartVct
+     4 2015 A9 E0		    lda #>(VerProcPtr)
+     5 2017 8D FD BF		    sta AtrVerStartVct+1
+Source: CpuTest4.as8
+    27 					NMemory.memcpy	#AtrProcPtr, #BEGIN, #(END-BEGIN)
+    27 				 MWA #AtrProcPtr NMemory.memcpy.dst_ptr\ MWA #BEGIN NMemory.memcpy.src_ptr\ MWA #(END-BEGIN) NMemory.memcpy.count\ JSR NMemory.memcpy
+    27 201A A9 00 85 80 A9 A0 +  MWA #AtrProcPtr NMemory.memcpy.dst_ptr
+    27 2022 A9 5E 85 82 A9 20 +  MWA #BEGIN NMemory.memcpy.src_ptr
+    27 202A A9 2C 8D 13 21 A9 +  MWA #(END-BEGIN) NMemory.memcpy.count
+    27 2034 20 8A 20		 JSR NMemory.memcpy
+    28
+    29 2037				NUtils.movba	#(EAtariRegisterStates.BANKS_ENABLED | EAtariRegisterStates.VER_CPU_RESET_PULSE_HIGH | (1 << EAtariRegisterBits.RAMBANK_CFG)), Atari_HW_Register	// swap + reset
+Macro: NUtils.movba [Source: utils.as8]
+     1 2037 A9 33		    lda #(EAtariRegisterStates.BANKS_ENABLED | EAtariRegisterStates.VER_CPU_RESET_PULSE_HIGH | (1 << EAtariRegisterBits.RAMBANK_CFG))
+     2 2039 8D C0 D5		    sta Atari_HW_Register
+Source: CpuTest4.as8
+    30 					wait	#0
+    30 				 LDx# 0\ JSR wait
+    30 203C A2 00		 LDx# 0
+    30 203E 20 57 20		 JSR wait
+    31 2041				NUtils.movba	#(EAtariRegisterStates.BANKS_DISABLED | EAtariRegisterStates.VER_CPU_RESET_PULSE_HIGH), Atari_HW_Register	// swap + reset
+Macro: NUtils.movba [Source: utils.as8]
+     1 2041 A9 01		    lda #(EAtariRegisterStates.BANKS_DISABLED | EAtariRegisterStates.VER_CPU_RESET_PULSE_HIGH)
+     2 2043 8D C0 D5		    sta Atari_HW_Register
+Source: CpuTest4.as8
+    32 					
+    33 2046				NUtils.movba	#$40, $d40e
+Macro: NUtils.movba [Source: utils.as8]
+     1 2046 A9 40		    lda #$40
+     2 2048 8D 0E D4		    sta $d40e
+Source: CpuTest4.as8
+    34 204B				NUtils.movba	#$40, $d40e
+Macro: NUtils.movba [Source: utils.as8]
+     1 204B A9 40		    lda #$40
+     2 204D 8D 0E D4		    sta $d40e
+Source: CpuTest4.as8
+    35 2050				NUtils.movba	$10, $d20e
+Macro: NUtils.movba [Source: utils.as8]
+     1 2050 A5 10		    lda $10
+     2 2052 8D 0E D2		    sta $d20e
+Source: CpuTest4.as8
+    36 2055 58				cli
+    37 2056 60				rts
+    38
+    39 				//******************************************************************************************************************************************************
+    40
+    41 2057			.proc	wait(.byte x) .reg
+    42 2057			loop
+    43 2057				NAntic.wait_for_raster_line
+Macro: NAntic.wait_for_raster_line [Source: antic.as8]
+     1 2057 8D 0A D4			sta	NAntic.WSYNC
+Source: CpuTest4.as8
+    44 205A CA				dex
+    45 205B D0 FA			bne	loop
+    46 205D 60				rts
+    47 				.endp
+    48
+    49 				//******************************************************************************************************************************************************
+    50 					
+    51 = 205E				BEGIN = *
+    52
+    53 E000			.local	namespace, VerProcPtr
+    54
+    55 E000			.proc	ver_proc
+    56 E000 A0 00			ldy	#0
+    57 E002			loop
+    58 E002 B9 1C E0			lda	uuid_template_tbl,y
+    59 E005 99 01 C0			sta	VerWndPtr+1,y
+    60 E008 C8				iny
+    61 E009 C0 10			cpy	#VERONICA_UUID_SIZE
+    62 E00B D0 F5			bne	loop
+    63
+    64 E00D				NUtils.movba	#{jmp $0000}, $0000
+Macro: NUtils.movba [Source: utils.as8]
+     1 E00D A9 4C		    lda #{jmp $0000}
+     2 E00F 85 00		    sta $0000
+Source: CpuTest4.as8
+    65 E011				NUtils.leaw	$0000, $0001
+Macro: NUtils.leaw [Source: utils.as8]
+     1 E011 A9 00		    lda #<($0000)
+     2 E013 85 01		    sta $0001
+     4 E015 A9 00		    lda #>($0000)
+     5 E017 85 02		    sta $0001+1
+Source: CpuTest4.as8
+    66 E019 4C 00 00			jmp	$0000	
+    67 				.endp
+    68
+    69 				//------------------------------------------------------------------------------------------------------------------------------------------------------
+    70
+    71 E01C				icl	'API\protocol.as8'
+     1 				//******************************************************************************************************************************************************
+     2 				//	Header
+     3 				//******************************************************************************************************************************************************
+     4
+     5 				/**	@file Protocol.as8
+     6 					@author Marek "Konop" Konopka
+     7 					@date 14.05.2010
+     8 				*/
+     8
+     9
+    10 				//.local	NVeronica.NProtocol
+    11
+    12 				//******************************************************************************************************************************************************
+    13 				//	Data
+    14 				//******************************************************************************************************************************************************
+    15
+    16 					///	UUID	{5aacf152-e397-4c48-b0ab-9060ca3e84a7}
+    17 E01C 5A AC F1 52 E3 97 + 	uuid_template_tbl:	dta $5a, $ac, $f1, $52, $e3, $97, $4c, $48, $b0, $ab, $90, $60, $ca, $3e, $84, $a7
+    18
+    19 				//******************************************************************************************************************************************************
+    20
+    21 				//.endl // NVeronica.NProtocol
+    72
+    73 				//------------------------------------------------------------------------------------------------------------------------------------------------------
+    74
+    75 				.endl
+    76
+    77 = 208A				END = *
+    78
+    79 				//******************************************************************************************************************************************************
+    80
+    81 208A				icl	'antic.as8'
+Source: antic.as8
+     1 208A			.local	NAntic
+     2
+     3 				//*************************************************************************************************************************************************
+     4 				//	Macros
+     5 				//*************************************************************************************************************************************************
+     6
+     7 				.macro	wait_for_raster_line
+     8 					sta	NAntic.WSYNC
+     9 				.endm
+    10
+    11 				//*************************************************************************************************************************************************
+    12 				//	Code
+    13 				//*************************************************************************************************************************************************
+    14
+    15 208A			.proc	wait_for_vcount(.byte a) .reg
+    16 208A			loop
+    17 					cmp	NAntic.VCOUNT
+    18 					bne	loop
+    19 					rts
+    20 				.endp
+    21
+    22 				//*************************************************************************************************************************************************
+    23
+    24 				.endl // NAntic
+    82 208A				icl	'memory.as8'
+Source: memory.as8
+     1 208A			.local	NMemory
+     2
+     3 				//******************************************************************************************************************************************************
+     4 				//	Variables
+     5 				//******************************************************************************************************************************************************
+     6
+     7 208A				.zpvar	.word	ptr, ptr2
+     8 208A				.var	.word	count, modulo
+     9 208A				.var	.byte	value, width, height
+    10
+    11 				//******************************************************************************************************************************************************
+    12 				//	Code
+    13 				//******************************************************************************************************************************************************
+    14
+    15 				///	Compares two tables for equality.
+    16 				/**	@param .word tbl0_ptr	First table pointer.
+    17 					@param .word tbl1_ptr	Second table pointer.
+    18 					@param .byte size		Table size. Must be greater than zero.
+    19 					@return A	- Flag indicating comparison status.
+    20 						NUtils.TRUE		Equal.
+    21 						NUtils.FALSE	Different.
+    22 				*/
+    22
+    23 208A			.proc	strcmp(.word tbl0_ptr .word tbl1_ptr .word count) .var
+    24 					tbl0_ptr = NMemory.ptr
+    25 					tbl1_ptr = NMemory.ptr2
+    26 					count = NMemory.count
+    27
+    28 					ldy	#0
+    29 					ldx	count+1
+    30 					beq	last_page
+    31
+    32 208A				.local	full_pages
+    33 208A				loop:
+    34 						lda	(tbl0_ptr),y
+    35 						cmp	(tbl1_ptr),y
+    36 						bne	unequal
+    37 						iny
+    38 						bne	loop
+    39 					
+    40 						inc	tbl0_ptr+1
+    41 						inc	tbl1_ptr+1
+    42 						dex
+    43 						bne	loop
+    44 					.endl
+    45
+    46 208A				.local	last_page
+    47 						lda	count
+    48 						beq	equal
+    49 208A				loop:
+    50 						lda	(tbl0_ptr),y
+    51 						cmp	(tbl1_ptr),y
+    52 						bne	unequal
+    53 						iny
+    54 						cpy	count
+    55 						bne	loop
+    56 					.endl	
+    57 					
+    58 208A			equal
+    59 					lda	#NUtils.TRUE
+    60 					rts
+    61 					
+    62 208A			unequal
+    63 					lda	#NUtils.FALSE
+    64 					rts
+    65 				.endp
+    66
+    67 				//******************************************************************************************************************************************************
+    68
+    69 				///	Compares two half-page sized tables for equality. Uses code auto-modification.
+    70 				/**	@param .word tbl0_ptr	First table pointer.
+    71 					@param .word tbl1_ptr	Second table pointer.
+    72 					@param .byte size		Table size.
+    73 					@return A	- Flag indicating comparison status.
+    74 						NUtils.TRUE		Equal.
+    75 						NUtils.FALSE	Different.
+    76 				*/
+    76
+    77 208A			.proc	strcmphp(.word tbl0_ptr .word tbl1_ptr .byte size) .var
+    78 					size = * + 1
+    79 						ldy	#$ff
+    80 					dey
+    81 208A			loop
+    82 					tbl0_ptr = *+1
+    83 						lda	$ffff,y
+    84 					tbl1_ptr = *+1
+    85 						cmp	$ffff,y
+    86 					bne	inequality
+    87 					
+    88 					dey
+    89 					bpl	loop
+    90 					
+    91 					//	equality
+    92 					lda	#NUtils.TRUE
+    93 					rts
+    94
+    95 208A			inequality
+    96 					lda	#NUtils.FALSE
+    97 					rts
+    98 				.endp
+    99
+   100 				//******************************************************************************************************************************************************
+   101
+   102 				///	Set memory. Uses code auto-modification.
+   103 				/**	@param .word %%1	Destination location.
+   104 					@param .word %%2	Count.
+   105 					@param .byte %%3	Value.
+   106 				*/
+   106
+   107 208A			.proc	memset(.word dst_ptr .word count .byte value) .var
+   108 					dst_ptr	= NMemory.ptr
+   109 					count	= NMemory.count
+   110 					value	= NMemory.value
+   111 					
+   112 					ldx	value
+   113 					ldy	#0
+   114 208A			loop
+   115 					//	Test, whether we are done or not.
+   116 					NUtils.tstzw	count
+   117 					beq	done
+   118 						txa
+   119 						sta	(dst_ptr),y
+   120 					
+   121 					NUtils.decw	count
+   122 					iny
+   123 					bne	loop
+   124 					
+   125 					inc	dst_ptr+1
+   126 					jmp	loop
+   127 208A			done
+   128 					rts
+   129 				.endp
+   130
+   131 				//******************************************************************************************************************************************************
+   132
+   133 				///	Set memory. Range restricted to one page only. Uses code auto-modification.
+   134 				/**	@param .word dst_ptr	Destination pointer. Should be page aligned to achieve best performance.
+   135 					@param .byte count	Count.
+   136 					@param .byte value	Value.
+   137 				*/
+   137
+   138 208A			.proc	memsetp(.word dst_ptr .byte count .byte value) .var
+   139 					value = * + 1
+   140 						lda	#0
+   141 					count = * + 1	// auto-modification
+   142 						ldy	#0
+   143 208A			loop
+   144 					dey
+   145 					dst_ptr	= * + 1
+   146 						sta	$ffff,y	// auto-modification
+   147 					bne	loop
+   148 					rts
+   149 				.endp
+   150
+   151 				//******************************************************************************************************************************************************
+   152
+   153 				///	Set 2D table. Uses code auto-modification.
+   154 				/**	@param .word %%1	- Destination location.
+   155 					@param .byte %%2	- Width.
+   156 					@param .word %%3	- Modulo.
+   157 					@param .byte %%4	- Height.
+   158 					@param .byte %%5	- Value.
+   159 				*/
+   159
+   160 208A			.proc	memsetm(.word dst_ptr .byte width .word modulo .byte height .byte value) .var
+   161 					dst_ptr = NMemory.ptr
+   162 					width = NMemory.width
+   163 					modulo = NMemory.modulo
+   164 					height = NMemory.height
+   165 					value	= NMemory.value
+   166
+   167 					ldx	height
+   168 208A			loop2
+   169 					ldy	#0
+   170 					lda	value
+   171 208A			loop
+   172 					sta	(dst_ptr),y
+   173 					iny
+   174 					cpy	width
+   175 					bne	loop
+   176 					
+   177 					NUtils.addw	dst_ptr, modulo, dst_ptr
+   178 					dex
+   179 					bne	loop2
+   180 					rts
+   181 				.endp
+   182
+   183 				//******************************************************************************************************************************************************
+   184
+   185 				/**	(byte*)	tmp_vct0	- destination
+   186 					.word tmp_vct1		- count
+   187 					.byte tmp_vct2		- value
+   188 				*/
+   188
+   189 				/*.proc	memsetf
+   190 					NUM_BITS = 4
+   191 					
+   192 					.var .word	cnt16s
+   193 					
+   194 					NUtils.movw	tmp_vct1, cnt16s
+   195 					NUtils.lsrw		cnt16s, NUM_BITS
+   196 				loop_16s
+   197 					NUtils.tstzw	cnt16s
+   198 					beq				done_16s
+   199
+   200 					ldy	#0
+   201 					lda	tmp_vct2
+   202 					.rept	(1<<NUM_BITS)-1
+   203 						sta	(tmp_vct0),y
+   204 						iny
+   205 					.endr
+   206 					sta	(tmp_vct0),y
+   207 					
+   208 					NUtils.addbwa	tmp_vct0, #(1<<NUM_BITS)
+   209 					NUtils.decw		cnt16s
+   210 					jmp				loop_16s
+   211
+   212 				done_16s
+   213 					.var .byte	rest, tmp
+   214 					
+   215 					NUtils.andb		tmp_vct1, #((1<<NUM_BITS)-1), rest
+   216 					beq	done
+   217 					
+   218 				cont_rest
+   219 					NUtils.subba	#((1<<NUM_BITS)-1), rest, tmp
+   220 					asl	@
+   221 					//clc
+   222 					adc	tmp
+   223 					adc	<rest_start
+   224 					sta	jmp_adr+1
+   225 					lda	>rest_start
+   226 					adc #0
+   227 					sta	jmp_adr+2
+   228
+   229 					lda	tmp_vct2
+   230 					ldy	#0
+   231 				jmp_adr
+   232 					jmp	$ffff	// auto-modification
+   233 						
+   234 				rest_start
+   235 					.rept	((1<<NUM_BITS)-2)
+   236 						sta	(tmp_vct0),y
+   237 						iny
+   238 					.endr
+   239 					sta	(tmp_vct0),y
+   240
+   241 				done
+   242 					rts
+   243 				.endp*/
+   243
+   244
+   245 				//******************************************************************************************************************************************************
+   246
+   247 				///	Copy data chunk from source into destination location.
+   248 				/**	@param .word dst_ptr	Destination location pointer.
+   249 					@param .word src_ptr	Source location pointer.
+   250 					@param .word count		Count.
+   251 				*/
+   251
+   252 208A			.proc	memcpy(.word dst_ptr .word src_ptr .word count) .var
+   253 = 0080				dst_ptr = NMemory.ptr
+   254 = 0082				src_ptr = NMemory.ptr2
+   255 = 2113				count = NMemory.count
+   256
+   257 208A				NMemory.memcpy_macro	NMemory.ptr, NMemory.ptr2, NMemory.count
+Macro: NMemory.memcpy_macro [Source: memory.h8]
+     1 208A A5 82		    lda NMemory.ptr2
+     2 208C 38			    sec
+     3 208D E5 80		    sbc NMemory.ptr
+     8 208F A5 83		    lda NMemory.ptr2+1
+     9 2091 E5 81		    sbc NMemory.ptr+1
+     2 2093 B0 5A			bcs	forward
+     1 2095 A5 82		    lda NMemory.ptr2
+     2 2097 18			    clc
+     3 2098 6D 13 21		    adc NMemory.count
+     5 209B 85 82		        sta NMemory.ptr2
+     8 209D A5 83		    lda NMemory.ptr2+1
+     9 209F 6D 14 21		    adc NMemory.count+1
+    11 20A2 85 83		        sta NMemory.ptr2+1
+     1 20A4 A5 80		    lda NMemory.ptr
+     2 20A6 18			    clc
+     3 20A7 6D 13 21		    adc NMemory.count
+     5 20AA 85 80		        sta NMemory.ptr
+     8 20AC A5 81		    lda NMemory.ptr+1
+     9 20AE 6D 14 21		    adc NMemory.count+1
+    11 20B1 85 81		        sta NMemory.ptr+1
+     1 20B3 A5 82		    lda NMemory.ptr2+0
+     2 20B5 D0 02		    bne skip
+     3 20B7 C6 83		    dec NMemory.ptr2+1
+     4 20B9			skip
+     5 20B9 C6 82		    dec NMemory.ptr2+0
+Source: memory.as8
+     1 20BB A5 80		    lda NMemory.ptr+0
+     2 20BD D0 02		    bne skip
+     3 20BF C6 81		    dec NMemory.ptr+1
+     4 20C1			skip
+     5 20C1 C6 80		    dec NMemory.ptr+0
+Source: memory.as8
+    10 20C3 A0 00				ldy	#0
+    11 20C5				loop:
+     1 20C5 AD 13 21		    lda NMemory.count
+     2 20C8 0D 14 21		    ora NMemory.count+1
+Source: memory.as8
+    14 20CB F0 45				beq	done
+     1 20CD B1 82		    lda (NMemory.ptr2),y
+     2 20CF 91 80		    sta (NMemory.ptr),y
+Source: memory.as8
+     1 20D1 AD 13 21		    lda NMemory.count+0
+     2 20D4 D0 03		    bne skip
+     3 20D6 CE 14 21		    dec NMemory.count+1
+     4 20D9			skip
+     5 20D9 CE 13 21		    dec NMemory.count+0
+Source: memory.as8
+     1 20DC A5 82		    lda NMemory.ptr2+0
+     2 20DE D0 02		    bne skip
+     3 20E0 C6 83		    dec NMemory.ptr2+1
+     4 20E2			skip
+     5 20E2 C6 82		    dec NMemory.ptr2+0
+Source: memory.as8
+     1 20E4 A5 80		    lda NMemory.ptr+0
+     2 20E6 D0 02		    bne skip
+     3 20E8 C6 81		    dec NMemory.ptr+1
+     4 20EA			skip
+     5 20EA C6 80		    dec NMemory.ptr+0
+Source: memory.as8
+    21 20EC 4C C5 20				jmp	loop
+    25 20EF A0 00				ldy	#0
+    26 20F1				loop:
+     1 20F1 AD 13 21		    lda NMemory.count
+     2 20F4 0D 14 21		    ora NMemory.count+1
+Source: memory.as8
+    29 20F7 F0 19				beq	done
+     1 20F9 B1 82		    lda (NMemory.ptr2),y
+     2 20FB 91 80		    sta (NMemory.ptr),y
+Source: memory.as8
+     1 20FD AD 13 21		    lda NMemory.count+0
+     2 2100 D0 03		    bne skip
+     3 2102 CE 14 21		    dec NMemory.count+1
+     4 2105			skip
+     5 2105 CE 13 21		    dec NMemory.count+0
+Source: memory.as8
+    34 2108 C8					iny
+    35 2109 D0 E6				bne	loop
+    37 210B E6 83				inc	NMemory.ptr2+1
+    38 210D E6 81				inc	NMemory.ptr+1
+    39 210F 4C F1 20				jmp	loop
+    42 2112			done
+Source: memory.as8
+   258 2112 60				rts
+   259 				.endp
+   260
+   261 				//******************************************************************************************************************************************************
+   262
+   263 				///	Copy data chunk from source into destination location in forward direction.
+   264 				/**	@param .word dst_ptr	Destination location pointer.
+   265 					@param .word src_ptr	Source location pointer.
+   266 					@param .word count		Count.
+   267 				*/
+   267
+   268 2113			.proc	fwdmemcpy(.word dst_ptr .word src_ptr .word count) .var
+   269 					dst_ptr = NMemory.ptr
+   270 					src_ptr = NMemory.ptr2
+   271 					count = NMemory.count
+   272
+   273 					ldy	#0
+   274
+   275 					ldx	count+1
+   276 					beq	copy_last_page
+   277 						
+   278 						sty	copy.count
+   279 						
+   280 2113					.local	copy_pages
+   281 							jsr	copy
+   282 							inc	src_ptr+1
+   283 							inc	dst_ptr+1
+   284 							dex
+   285 							bne	copy_pages
+   286 						.endl
+   287
+   288 2113			copy_last_page
+   289 					lda	count
+   290 					beq	copy._exit
+   291
+   292 						sta	copy.count
+   293
+   294 2113					.proc	copy(.byte count) .var
+   295 2113						.var	.byte	count
+   296
+   297 2113						.local	loop
+   298 								lda	(src_ptr),y
+   299 								sta	(dst_ptr),y
+   300 								iny
+   301 								cpy	count
+   302 								bne	loop
+   303 							.endl
+   304 					
+   305 2113					_exit:	rts
+   306 						.endp
+   307 				.endp
+   308
+   309 				//******************************************************************************************************************************************************
+   310
+   311 				///	Copy data chunk from source into destination location. Range restricted to one page only. Uses code auto-modification.
+   312 				/**	@param .word dst_ptr	Destination location pointer. Should be page aligned to achieve best performance.
+   313 					@param .word src_ptr	Source location pointer. Should be page aligned to achieve best performance.
+   314 					@param .byte count		Count.
+   315 				*/
+   315
+   316 2113			.proc	memcpyhp(.word dst_ptr .word src_ptr .byte count) .var
+   317 					count	= NMemory.count
+   318 					
+   319 					ldy	count
+   320 					bne	continue
+   321 					rts
+   322
+   323 2113			continue
+   324 					dey
+   325 2113			loop
+   326 					src_ptr = * + 1
+   327 						lda $ffff,y	// auto-modification
+   328 					dst_ptr = * + 1
+   329 						sta	$ffff,y	// auto-modification
+   330 					
+   331 					dey
+   332 					bpl	loop
+   333 					rts
+   334 				.endp
+   335
+   336 				//******************************************************************************************************************************************************
+   337
+   338 				///	Copy data chunk from source into destination location. Range restricted to one page only. Uses code auto-modification.
+   339 				/**	@param .word dst_ptr	Destination location pointer. Should be page aligned to achieve best performance.
+   340 					@param .word src_ptr	Source location pointer. Should be page aligned to achieve best performance.
+   341 					@param .byte count		Count (1-255).
+   342 				*/
+   342
+   343 2113			.proc	memcpyp(.word dst_ptr .word src_ptr .byte count) .var
+   344 					count	= NMemory.count
+   345
+   346 					ldy	#0	
+   347 2113			loop
+   348 					src_ptr = * + 1
+   349 						lda $ffff,y	// auto-modification
+   350 					dst_ptr = * + 1
+   351 						sta $ffff,y	// auto-modification
+   352 					
+   353 					iny
+   354 					cpy	count
+   355 					bne	loop
+   356 					rts
+   357 				.endp
+   358
+   359 				//******************************************************************************************************************************************************
+   360
+   361 				///	Copy data chunk from source into destination location.
+   362 				/**	@param .word dst_ptr	Destination location pointer.
+   363 					@param .word dst_modulo	Destination modulo.
+   364 					@param .word src_ptr	Source location pointer.
+   365 					@param .byte width		Width.
+   366 					@param .byte height		Height.
+   367 					@param .word src_modulo	Source modulo.
+   368 				*/
+   368
+   369 2113			.proc	memcpym(.word dst_ptr .word dst_modulo .word src_ptr .byte width .byte height .word src_modulo) .var
+   370 					dst_ptr = NMemory.ptr
+   371 2113				.var	.word	dst_modulo
+   372 					src_ptr = NMemory.ptr2
+   373 2113				.var	.word	src_modulo
+   374 					
+   375 2113			loop_y
+   376 					ldy	#0
+   377 2113			loop_x
+   378 					NUtils.movba	"(src_ptr),y", "(dst_ptr),y"
+   379 					iny
+   380 					cpy	width
+   381 					bne	loop_x
+   382 					
+   383 					NUtils.addw	src_ptr, src_modulo, src_ptr
+   384 					NUtils.addw	dst_ptr, dst_modulo, dst_ptr
+   385
+   386 					dec	height
+   387 					bne	loop_y
+   388 					rts
+   389 				.endp
+   390
+   391 				//******************************************************************************************************************************************************
+   392
+   393 				///	Backup memory locations.
+   394 				/**	@param .word tbl_ptr	Backup table pointer.
+   395 				*/
+   395
+   396 2113			.proc	backup(.word tbl_ptr) .var
+   397 					tbl_ptr = NMemory.ptr
+   398 					tmp_ptr = NMemory.ptr2
+   399 					
+   400 2113			loop
+   401 					ldy	#0
+   402 					NUtils.cmpba	"(tbl_ptr),y", #EType.NONE
+   403 					bne	cont
+   404 						//	Exit.
+   405 						rts
+   406 2113			cont
+   407 					ldy	#1
+   408 					NUtils.movba	"(tbl_ptr),y", tmp_ptr
+   409 					iny
+   410 					NUtils.movba	"(tbl_ptr),y", tmp_ptr+1
+   411
+   412 					//	Copy the first byte.
+   413 					ldy	#0
+   414 					lda	(tmp_ptr),y
+   415 					ldy	#3
+   416 					sta	(tbl_ptr),y
+   417 					
+   418 					//	if	(tbl_ptr[0] == EType.BYTE)
+   419 					ldy	#0
+   420 					NUtils.cmpba	"(tbl_ptr),y", #EType.BYTE
+   421 					bne	cont_2
+   422 						NUtils.addbw	tbl_ptr, #4, tbl_ptr
+   423 						jmp	loop
+   424 					
+   425 2113			cont_2
+   426 					//	if	(tbl_ptr[0] == EType.WORD)
+   427 					//ldy	#0
+   428 					NUtils.cmpba	"(tbl_ptr),y", #EType.WORD
+   429 					bne	cont_3
+   430 						//	Copy second byte.
+   431 						ldy	#1
+   432 						lda	(tmp_ptr),y
+   433 						ldy	#4
+   434 						sta	(tbl_ptr),y
+   435 						NUtils.addbw	tbl_ptr, #5, tbl_ptr
+   436 						jmp	loop
+   437 					
+   438 2113			cont_3
+   439 					jmp	loop
+   440 				.endp
+   441
+   442 				//******************************************************************************************************************************************************
+   443
+   444 				///	Restore memory locations.
+   445 				/**	@param .word tbl_ptr	Backup table pointer.
+   446 				*/
+   446
+   447 2113			.proc	restore(.word tbl_ptr) .var
+   448 					tbl_ptr = NMemory.ptr
+   449 					tmp_ptr = NMemory.ptr2
+   450 					
+   451 2113			loop
+   452 					ldy	#0
+   453 					NUtils.cmpba	"(tbl_ptr),y", #EType.NONE
+   454 					bne	cont
+   455 						//	Exit.
+   456 						rts
+   457 2113			cont
+   458 					ldy	#1
+   459 					NUtils.movba	"(tbl_ptr),y", tmp_ptr
+   460 					iny
+   461 					NUtils.movba	"(tbl_ptr),y", tmp_ptr+1
+   462
+   463 					//	Copy the first byte.
+   464 					ldy	#3
+   465 					lda	(tbl_ptr),y
+   466 					ldy	#0
+   467 					sta	(tmp_ptr),y
+   468 					
+   469 					//	if	(tbl_ptr[0] == EType.BYTE)
+   470 					//ldy	#0
+   471 					NUtils.cmpba	"(tbl_ptr),y", #EType.BYTE
+   472 					bne	cont_2
+   473 						NUtils.addbw	tbl_ptr, #4, tbl_ptr
+   474 						jmp	loop
+   475 					
+   476 2113			cont_2
+   477 					//	if	(tbl_ptr[0] == EType.WORD)
+   478 					//ldy	#0
+   479 					NUtils.cmpba	"(tbl_ptr),y", #EType.WORD
+   480 					bne	cont_3
+   481 						//	Copy second byte.
+   482 						ldy	#4
+   483 						lda	(tbl_ptr),y
+   484 						ldy	#1
+   485 						sta	(tmp_ptr),y
+   486 						
+   487 						NUtils.addbw	tbl_ptr, #5, tbl_ptr
+   488 						jmp	loop
+   489 					
+   490 2113			cont_3
+   491 					jmp	loop
+   492 				.endp
+   493
+   494 				//******************************************************************************************************************************************************
+   495
+   496 = 0080			ptr
+   496 = 0082			ptr2
+   496 = 2113 00 00		count
+   496 = 2115 00 00		modulo
+   496 = 2117 00		value
+   496 = 2118 00		width
+   496 = 2119 00		height
+   496 				.endl // NMemory
+    83 211A				icl	'utils.as8'
+Source: utils.as8
+     1 				//*************************************************************************************************************************************************
+     2 				//.ifndef   DEMOSYSTEM_H_6f636864_783f_4ccc_b246_e12919423b
+     3 				//.def      DEMOSYSTEM_H_6f636864_783f_4ccc_b246_e12919423b
+     4 				//*************************************************************************************************************************************************
+     5
+     6 211A			.local NUtils
+     7
+     8 				//******************************************************************************************************************************************************
+     9
+    10 				.macro stzba
+    11 				    lda #0
+    12 				    sta %%1
+    13 				.endm
+    14
+    15 				//******************************************************************************************************************************************************
+    16
+    17 				.macro stzwa
+    18 				    lda #0
+    19 				    sta %%1
+    20 				    sta %%1+1
+    21 				.endm
+    22
+    23 				//******************************************************************************************************************************************************
+    24
+    25 				.macro stzla
+    26 				    lda #0
+    27 				    sta %%1
+    28 				    sta %%1+1
+    29 				    sta %%1+2
+    30 				.endm
+    31
+    32 				//******************************************************************************************************************************************************
+    33
+    34 				///
+    35 				/** @param %%1 New location for the zero-page allocated variables.
+    36 				*/
+    36
+    37 				.macro  zpvaradr
+    38 				    .zpvar dummy_962f8a6d61d744bdb5d26406caf2125a .byte = %%1-1
+    39 				.endm
+    40
+    41 				//******************************************************************************************************************************************************
+    42
+    43 				.macro  lorg
+    44 				    .def ?OLD_PC_962f8a6d61d744bdb5d26406caf2125a = *
+    45 				    org %%1
+    46 				.endm
+    47
+    48 				//******************************************************************************************************************************************************
+    49
+    50 				.macro  end_lorg
+    51 				    org ?OLD_PC_962f8a6d61d744bdb5d26406caf2125a
+    52 				.endm
+    53
+    54 				//******************************************************************************************************************************************************
+    55
+    56 				.macro  store_pc
+    57 				    .def ?OLD_PC_962f8a6d61d744bdb5d26406caf2125a = *
+    58 				.endm
+    59
+    60 				//******************************************************************************************************************************************************
+    61
+    62 				.macro  restore_pc
+    63 				    ORG ?OLD_PC_962f8a6d61d744bdb5d26406caf2125a
+    64 				.endm
+    65
+    66 				//******************************************************************************************************************************************************
+    67
+    68 				/// Move byte from %%1 to %%2 using accumulator.
+    69 				/** @param %%1  Source.
+    70 				    @param %%2  Destination.
+    71 				*/
+    71
+    72 				.macro  movba
+    73 				    lda %%1
+    74 				    sta %%2
+    75 				.endm
+    76
+    77 				//******************************************************************************************************************************************************
+    78
+    79 				/// Move byte from %%1 to %%2 using X register.
+    80 				/** @param %%1  Source.
+    81 				    @param %%2  Destination.
+    82 				*/
+    82
+    83 				.macro  movbx
+    84 				    ldx %%1
+    85 				    stx %%2
+    86 				.endm
+    87
+    88 				//******************************************************************************************************************************************************
+    89
+    90 				/// Move byte from %%1 to %%2 using Y register.
+    91 				/** @param %%1  Source.
+    92 				    @param %%2  Destination.
+    93 				*/
+    93
+    94 				.macro  movby
+    95 				    ldy %%1
+    96 				    sty %%2
+    97 				.endm
+    98
+    99 				//******************************************************************************************************************************************************
+   100
+   101 				/// Move word from %%1 to %%2.
+   102 				/** @param %%1  Source.
+   103 				    @param %%2  Destination.
+   104 				*/
+   104
+   105 				.macro  movw
+   106 				    lda %%1
+   107 				    sta %%2
+   108 				    
+   109 				    lda %%1+1
+   110 				    sta %%2+1
+   111 				.endm
+   112
+   113 				//******************************************************************************************************************************************************
+   114
+   115 				/// Move long from %%1 to %%2.
+   116 				/** @param %%1  Source.
+   117 				    @param %%2  Destination.
+   118 				*/
+   118
+   119 				.macro  movl
+   120 				    lda %%1
+   121 				    sta %%2
+   122 				    
+   123 				    lda %%1+1
+   124 				    sta %%2+1
+   125 				    
+   126 				    lda %%1+2
+   127 				    sta %%2+2
+   128 				.endm
+   129
+   130 				//******************************************************************************************************************************************************
+   131
+   132 				/// Move dword from %%1 to %%2.
+   133 				/** @param %%1  Source.
+   134 				    @param %%2  Destination.
+   135 				*/
+   135
+   136 				.macro  movd
+   137 				    lda %%1
+   138 				    sta %%2
+   139 				    
+   140 				    lda %%1+1
+   141 				    sta %%2+1
+   142 				    
+   143 				    lda %%1+2
+   144 				    sta %%2+2
+   145 				    
+   146 				    lda %%1+3
+   147 				    sta %%2+3
+   148 				.endm
+   149
+   150 				//******************************************************************************************************************************************************
+   151
+   152 				/// Load effective word address/constant from %%1 to %%2.
+   153 				/** @param %%1  Source.
+   154 				    @param %%2  Destination.
+   155 				*/
+   155
+   156 				.macro  leaw
+   157 				    lda #<(%%1)
+   158 				    sta %%2
+   159 				    
+   160 				    lda #>(%%1)
+   161 				    sta %%2+1
+   162 				.endm
+   163
+   164 				//******************************************************************************************************************************************************
+   165
+   166 				/// Load effective long address/constant from %%1 to %%2.
+   167 				/** @param %%1  Source.
+   168 				    @param %%2  Destination.
+   169 				*/
+   169
+   170 				.macro  leal
+   171 				    lda #<(%%1)
+   172 				    sta %%2
+   173 				    
+   174 				    lda #>(%%1)
+   175 				    sta %%2+1
+   176 				    
+   177 				    lda #^(%%1)
+   178 				    sta %%2+2
+   179 				.endm
+   180
+   181 				//******************************************************************************************************************************************************
+   182
+   183 				/// Load effective dword address/constant from %%1 to %%2.
+   184 				/** @param %%1  Source.
+   185 				    @param %%2  Destination.
+   186 				*/
+   186
+   187 				.macro  lead
+   188 				    lda #<(%%1)
+   189 				    sta %%2
+   190 				    
+   191 				    lda #>(%%1)
+   192 				    sta %%2+1
+   193 				    
+   194 				    lda #^(%%1)
+   195 				    sta %%2+2
+   196 				    
+   197 				    lda #((%%1) >> 24)
+   198 				    sta %%2+3
+   199 				.endm
+   200
+   201 				//******************************************************************************************************************************************************
+   202
+   203 				.macro pusha
+   204 				    pha
+   205 				.endm
+   206
+   207 				//******************************************************************************************************************************************************
+   208
+   209 				.macro popa
+   210 				    pla
+   211 				.endm
+   212
+   213 				//******************************************************************************************************************************************************
+   214
+   215 				/// Push X register onto the stack.
+   216 				.macro  pushx
+   217 				    txa
+   218 				    pha
+   219 				.endm
+   220
+   221 				//******************************************************************************************************************************************************
+   222
+   223 				/// Pop X register from the stack.
+   224 				.macro  popx
+   225 				    pla
+   226 				    tax
+   227 				.endm
+   228
+   229 				//******************************************************************************************************************************************************
+   230
+   231 				/// Push Y register onto the stack.
+   232 				.macro  pushy
+   233 				    tya
+   234 				    pha
+   235 				.endm
+   236
+   237 				//******************************************************************************************************************************************************
+   238
+   239 				/// Pop Y register from the stack.
+   240 				.macro  popy
+   241 				    pla
+   242 				    tay
+   243 				.endm
+   244
+   245 				//******************************************************************************************************************************************************
+   246
+   247 				.macro push_registers
+   248 				    NUtils.pusha
+   249 				    NUtils.pushx
+   250 				    NUtils.pushy
+   251 				.endm
+   252
+   253 				//******************************************************************************************************************************************************
+   254
+   255 				.macro pop_registers
+   256 				    NUtils.popy
+   257 				    NUtils.popx
+   258 				    NUtils.popa
+   259 				.endm
+   260
+   261 				//******************************************************************************************************************************************************
+   262
+   263 				/// Push byte onto stack.
+   264 				/** @param .byte %%1    Value to push.
+   265 				*/
+   265
+   266 				.macro  pushb
+   267 				    lda %%1
+   268 				    pha
+   269 				.endm
+   270
+   271 				//******************************************************************************************************************************************************
+   272
+   273 				/// Pop byte from the stack.
+   274 				/** @param .byte %%1    Location to store the data to.
+   275 				*/
+   275
+   276 				.macro  popb
+   277 				    pla
+   278 				    sta %%1
+   279 				.endm
+   280
+   281 				//******************************************************************************************************************************************************
+   282
+   283 				/// Push word onto stack.
+   284 				/** @param .word %%1    Value to push.
+   285 				*/
+   285
+   286 				.macro  pushw
+   287 				    NUtils.pushb    %%1
+   288 				    NUtils.pushb    %%1+1
+   289 				.endm
+   290
+   291 				//******************************************************************************************************************************************************
+   292
+   293 				/// Pop word from the stack.
+   294 				/** @param .byte %%1    Location to store the data to.
+   295 				*/
+   295
+   296 				.macro  popw
+   297 				    NUtils.popb %%1+1
+   298 				    NUtils.popb %%1
+   299 				.endm
+   300
+   301 				//******************************************************************************************************************************************************
+   302
+   303 				/// Push long onto stack.
+   304 				/** @param .long %%1    Value to push.
+   305 				*/
+   305
+   306 				.macro  pushl
+   307 				    NUtils.pushb    %%1
+   308 				    NUtils.pushb    %%1+1
+   309 				    NUtils.pushb    %%1+2
+   310 				.endm
+   311
+   312 				//******************************************************************************************************************************************************
+   313
+   314 				/// Pop long from the stack.
+   315 				/** @param .long %%1    Location to store the data to.
+   316 				*/
+   316
+   317 				.macro  popl
+   318 				    NUtils.popb %%1+2
+   319 				    NUtils.popb %%1+1
+   320 				    NUtils.popb %%1
+   321 				.endm
+   322
+   323 				//******************************************************************************************************************************************************
+   324
+   325 				/// Push dword onto stack.
+   326 				/** @param .dword %%1   Value to push.
+   327 				*/
+   327
+   328 				.macro  pushd
+   329 				    NUtils.pushb    %%1
+   330 				    NUtils.pushb    %%1+1
+   331 				    NUtils.pushb    %%1+2
+   332 				    NUtils.pushb    %%1+3
+   333 				.endm
+   334
+   335 				//******************************************************************************************************************************************************
+   336
+   337 				/// Pop long from the stack.
+   338 				/** @param .dword %%1   Location to store the data to.
+   339 				*/
+   339
+   340 				.macro  popd
+   341 				    NUtils.popb %%1+3
+   342 				    NUtils.popb %%1+2
+   343 				    NUtils.popb %%1+1
+   344 				    NUtils.popb %%1
+   345 				.endm
+   346
+   347 				//******************************************************************************************************************************************************
+   348
+   349 				/// Increase word %%1.
+   350 				/** @param %%1  Parameter.
+   351 				*/
+   351
+   352 				.macro  incw
+   353 				    inc %%1
+   354 				    bne skip
+   355 				        inc %%1+1
+   356 				skip
+   357 				.endm
+   358
+   359 				//******************************************************************************************************************************************************
+   360
+   361 				/// Decrease word %%1.
+   362 				/** @param %%1  Parameter.
+   363 				*/
+   363
+   364 				.macro  decw
+   365 				    lda %%1+0
+   366 				    bne skip
+   367 				    dec %%1+1
+   368 				skip
+   369 				    dec %%1+0
+   370 				.endm
+   371
+   372 				//******************************************************************************************************************************************************
+   373
+   374 				/// Add byte %%2 to byte %%1 using accumulator.
+   375 				/** @param %%1  Source.
+   376 				    @param %%2  Value to add.
+   377 				    @param %%3  Destination.
+   378 				*/
+   378
+   379 				.macro  addba
+   380 				    lda %%1
+   381 				    clc
+   382 				    adc %%2
+   383 				    .if %%0 > 2
+   384 				        sta %%3
+   385 				    .endif
+   386 				.endm
+   387
+   388 				//******************************************************************************************************************************************************
+   389
+   390 				/// Add byte %%2 to byte %%1 using accumulator.
+   391 				/** @param %%1  Source.
+   392 				    @param %%2  Value to add.
+   393 				    @param %%3  Destination.
+   394 				*/
+   394
+   395 				.macro  adcba
+   396 				    lda %%1
+   397 				    adc %%2
+   398 				    .if %%0 > 2
+   399 				        sta %%3
+   400 				    .endif
+   401 				.endm
+   402
+   403 				//******************************************************************************************************************************************************
+   404
+   405 				/// Add %%1 to X register.
+   406 				/** @param %%1  Value to add.
+   407 				*/
+   407
+   408 				.macro  adcx
+   409 				    txa
+   410 				    clc
+   411 				    adc %%1
+   412 				    tax
+   413 				.endm
+   414
+   415 				//******************************************************************************************************************************************************
+   416
+   417 				/// Add %%1 to X register.
+   418 				/** @param %%1  Value to add.
+   419 				*/
+   419
+   420 				.macro  addx
+   421 				    txa
+   422 				    adc %%1
+   423 				    tax
+   424 				.endm
+   425
+   426 				//******************************************************************************************************************************************************
+   427
+   428 				/// Add %%1 to Y register.
+   429 				/** @param %%1  Value to add.
+   430 				*/
+   430
+   431 				.macro  adcy
+   432 				    tya
+   433 				    clc
+   434 				    adc %%1
+   435 				    tay
+   436 				.endm
+   437
+   438 				//******************************************************************************************************************************************************
+   439
+   440 				/// Add %%1 to Y register.
+   441 				/** @param %%1  Value to add.
+   442 				*/
+   442
+   443 				.macro  addy
+   444 				    tya
+   445 				    adc %%1
+   446 				    tay
+   447 				.endm
+   448
+   449 				//******************************************************************************************************************************************************
+   450
+   451 				/// Add byte %%2 to word %%1.
+   452 				/** @param %%1  Source.
+   453 				    @param %%2  Value to add.
+   454 				    @param %%3  Destination.
+   455 				*/
+   455
+   456 				.macro  addbw
+   457 				    lda %%1
+   458 				    clc
+   459 				    adc %%2
+   460 				    .if %%0 > 2
+   461 				        sta %%3
+   462 				    .endif
+   463 				    
+   464 				    .if (%%0 > 2) && (%%1 == %%3)
+   465 				        bcc skip
+   466 				            inc %%1+1
+   467 				        skip:
+   468 				    .else
+   469 				        lda %%1+1
+   470 				        adc #0
+   471 				        .if %%0 > 2
+   472 				            sta %%3+1
+   473 				        .endif
+   474 				    .endif  
+   475 				.endm
+   476
+   477 				//******************************************************************************************************************************************************
+   478
+   479 				/// Add word %%2 to word %%1. Store in %%3, if available.
+   480 				/** @param %%1  Source.
+   481 				    @param %%2  Value to add.
+   482 				    @param %%3  Destination.
+   483 				*/
+   483
+   484 				.macro  addw
+   485 				    lda %%1
+   486 				    clc
+   487 				    adc %%2
+   488 				    .if %%0 > 2
+   489 				        sta %%3
+   490 				    .endif
+   491 				    
+   492 				    lda %%1+1
+   493 				    adc %%2+1
+   494 				    .if %%0 > 2
+   495 				        sta %%3+1
+   496 				    .endif
+   497 				.endm
+   498
+   499 				//******************************************************************************************************************************************************
+   500
+   501 				/// Add constant word %%2 to word %%1. Store in %%3, if available.
+   502 				/** @param %%1  Source.
+   503 				    @param %%2  Constant value to add.
+   504 				    @param %%3  Destination.
+   505 				*/
+   505
+   506 				.macro  addwc
+   507 				    lda %%1
+   508 				    clc
+   509 				    adc #<(%%2)
+   510 				    .if %%0 > 2
+   511 				        sta %%3
+   512 				    .endif
+   513 				    
+   514 				    lda %%1+1
+   515 				    adc #>(%%2)
+   516 				    .if %%0 > 2
+   517 				        sta %%3+1
+   518 				    .endif
+   519 				.endm
+   520
+   521 				//******************************************************************************************************************************************************
+   522
+   523 				/// Add %%2 to %%1. Store in %%3 if available
+   524 				/** @param %%1  Source.
+   525 				    @param %%2  Value to add.
+   526 				*/
+   526
+   527 				.macro  addwl
+   528 				    lda %%1
+   529 				    clc
+   530 				    adc %%2
+   531 				    .if %%0 > 2
+   532 				        sta %%3
+   533 				    .endif
+   534 				    
+   535 				    lda %%1+1
+   536 				    adc %%2+1
+   537 				    .if %%0 > 2
+   538 				        sta %%3+1
+   539 				    .endif
+   540 				    
+   541 				    lda %%1+2
+   542 				    adc #0
+   543 				    .if %%0 > 2
+   544 				        sta %%3+2
+   545 				    .endif
+   546 				.endm
+   547
+   548 				//******************************************************************************************************************************************************
+   549
+   550 				/// Add long %%2 to long %%1. Store in %%3, if available.
+   551 				/** @param %%1  Source.
+   552 				    @param %%2  Value to add.
+   553 				    @param %%3  Destination.
+   554 				*/
+   554
+   555 				.macro  addl
+   556 				    lda %%1
+   557 				    clc
+   558 				    adc %%2
+   559 				    .if %%0 > 2
+   560 				        sta %%3
+   561 				    .endif
+   562 				    
+   563 				    lda %%1+1
+   564 				    adc %%2+1
+   565 				    .if %%0 > 2
+   566 				        sta %%3+1
+   567 				    .endif
+   568 				    
+   569 				    lda %%1+2
+   570 				    adc %%2+2
+   571 				    .if %%0 > 2
+   572 				        sta %%3+2
+   573 				    .endif
+   574 				.endm
+   575
+   576 				//******************************************************************************************************************************************************
+   577
+   578 				/// Add dword %%2 to dword %%1. Store in %%3, if available.
+   579 				/** @param %%1  Source.
+   580 				    @param %%2  Value to add.
+   581 				    @param %%3  Destination.
+   582 				*/
+   582
+   583 				.macro  addd
+   584 				    lda %%1
+   585 				    clc
+   586 				    adc %%2
+   587 				    .if %%0 > 2
+   588 				        sta %%3
+   589 				    .endif
+   590 				    
+   591 				    lda %%1+1
+   592 				    adc %%2+1
+   593 				    .if %%0 > 2
+   594 				        sta %%3+1
+   595 				    .endif
+   596 				    
+   597 				    lda %%1+2
+   598 				    adc %%2+2
+   599 				    .if %%0 > 2
+   600 				        sta %%3+2
+   601 				    .endif
+   602 				
+   603 				    lda %%1+3
+   604 				    adc %%2+3
+   605 				    .if %%0 > 2
+   606 				        sta %%3+3
+   607 				    .endif
+   608 				.endm
+   609
+   610 				//******************************************************************************************************************************************************
+   611
+   612 				/// Subtract byte %%2 from %%1. Store in %%3, if available.
+   613 				/** @param %%1  Source.
+   614 				    @param %%2  Value to subtract.
+   615 				    @param %%3  Destination.
+   616 				*/
+   616
+   617 				.macro  subba
+   618 				    lda %%1
+   619 				    sec
+   620 				    sbc %%2
+   621 				    .if %%0 > 2
+   622 				        sta %%3
+   623 				    .endif
+   624 				.endm
+   625
+   626 				//******************************************************************************************************************************************************
+   627
+   628 				/// Subtract byte %%2 from %%1. Store in %%3, if available.
+   629 				/** @param %%1  Source.
+   630 				    @param %%2  Value to subtract.
+   631 				    @param %%3  Destination.
+   632 				*/
+   632
+   633 				.macro  sbcba
+   634 				    lda %%1
+   635 				    sbc %%2
+   636 				    .if %%0 > 2
+   637 				        sta %%3
+   638 				    .endif
+   639 				.endm
+   640
+   641 				//******************************************************************************************************************************************************
+   642
+   643 				/// Subtract byte %%2 from word %%1. Store in %%3, if available.
+   644 				/** @param %%1  Source.
+   645 				    @param %%2  Value to subtract.
+   646 				    @param %%3  Destination.
+   647 				*/
+   647
+   648 				.macro  subbw
+   649 				    lda %%1
+   650 				    sec
+   651 				    sbc %%2
+   652 				    .if %%0 > 2
+   653 				        sta %%3
+   654 				    .endif
+   655 				
+   656 				    .if (%%0 > 2) && (%%1 == %%3)
+   657 				        bcs skip
+   658 				            dec %%1+1
+   659 				        skip:
+   660 				    .else
+   661 				        lda %%1+1
+   662 				        sbc #0
+   663 				        .if %%0 > 2
+   664 				            sta %%3+1
+   665 				        .endif
+   666 				    .endif  
+   667 				.endm
+   668
+   669 				//******************************************************************************************************************************************************
+   670
+   671 				/// Subtract word %%2 from word %%1. Store in %%3, if available.
+   672 				/** @param %%1  Source.
+   673 				    @param %%2  Value to subtract.
+   674 				    @param %%3  Destination.
+   675 				*/
+   675
+   676 				.macro  subw
+   677 				    lda %%1
+   678 				    sec
+   679 				    sbc %%2
+   680 				    .if %%0 > 2
+   681 				        sta %%3
+   682 				    .endif
+   683 				    
+   684 				    lda %%1+1
+   685 				    sbc %%2+1
+   686 				    .if %%0 > 2
+   687 				        sta %%3+1
+   688 				    .endif
+   689 				.endm
+   690
+   691 				//******************************************************************************************************************************************************
+   692
+   693 				/// Subtract constant word %%2 from word %%1. Store in %%3, if available.
+   694 				/** @param %%1  Source.
+   695 				    @param %%2  Constant value to subtract.
+   696 				    @param %%3  Destination.
+   697 				*/
+   697
+   698 				.macro  subwc
+   699 				    lda %%1
+   700 				    sec
+   701 				    sbc #<(%%2)
+   702 				    .if %%0 > 2
+   703 				        sta %%3
+   704 				    .endif
+   705 				    
+   706 				    lda %%1+1
+   707 				    sbc #>(%%2)
+   708 				    .if %%0 > 2
+   709 				        sta %%3+1
+   710 				    .endif
+   711 				.endm
+   712
+   713 				//******************************************************************************************************************************************************
+   714
+   715 				/// Subtract word %%2 from long %%1. Store in %%3, if available.
+   716 				/** @param %%1  Source.
+   717 				    @param %%2  Value to subtract.
+   718 				    @param %%3  Destination.
+   719 				*/
+   719
+   720 				.macro  subwl
+   721 				    lda %%1
+   722 				    sec
+   723 				    sbc %%2
+   724 				    .if %%0 > 2
+   725 				        sta %%3
+   726 				    .endif
+   727 				    
+   728 				    lda %%1+1
+   729 				    sbc %%2+1
+   730 				    .if %%0 > 2
+   731 				        sta %%3+1
+   732 				    .endif
+   733 				
+   734 				    lda %%1+2
+   735 				    sbc #0
+   736 				    .if %%0 > 2
+   737 				        sta %%3+2
+   738 				    .endif
+   739 				.endm
+   740
+   741 				//******************************************************************************************************************************************************
+   742
+   743 				/// Subtract long %%2 from long %%1. Store in %%3, if available.
+   744 				/** @param %%1  Source.
+   745 				    @param %%2  Value to subtract.
+   746 				    @param %%3  Destination.
+   747 				*/
+   747
+   748 				.macro  subl
+   749 				    lda %%1
+   750 				    sec
+   751 				    sbc %%2
+   752 				    .if %%0 > 2
+   753 				        sta %%3
+   754 				    .endif
+   755 				
+   756 				    lda %%1+1
+   757 				    sbc %%2+1
+   758 				    .if %%0 > 2
+   759 				        sta %%3+1
+   760 				    .endif
+   761 				
+   762 				    lda %%1+2
+   763 				    sbc %%2+2
+   764 				    .if %%0 > 2
+   765 				        sta %%3+2
+   766 				    .endif
+   767 				.endm
+   768
+   769 				//******************************************************************************************************************************************************
+   770
+   771 				/// Subtract dword %%2 from dword %%1. Store in %%3, if available.
+   772 				/** @param %%1  Source.
+   773 				    @param %%2  Value to subtract.
+   774 				    @param %%3  Destination.
+   775 				*/
+   775
+   776 				.macro  subd
+   777 				    lda %%1
+   778 				    sec
+   779 				    sbc %%2
+   780 				    .if %%0 > 2
+   781 				        sta %%3
+   782 				    .endif
+   783 				
+   784 				    lda %%1+1
+   785 				    sbc %%2+1
+   786 				    .if %%0 > 2
+   787 				        sta %%3+1
+   788 				    .endif
+   789 				
+   790 				    lda %%1+2
+   791 				    sbc %%2+2
+   792 				    .if %%0 > 2
+   793 				        sta %%3+2
+   794 				    .endif
+   795 				
+   796 				    lda %%1+3
+   797 				    sbc %%2+3
+   798 				    .if %%0 > 2
+   799 				        sta %%3+3
+   800 				    .endif
+   801 				.endm
+   802
+   803 				//******************************************************************************************************************************************************
+   804
+   805 				/// Subtract word %%2 from dword %%1. Store in %%3, if available.
+   806 				/** @param %%1  Source.
+   807 				    @param %%2  Value to subtract.
+   808 				    @param %%3  Destination.
+   809 				*/
+   809
+   810 				.macro  subwd
+   811 				    lda %%1+0
+   812 				    sec
+   813 				    sbc %%2+0
+   814 				    .if %%0 > 2
+   815 				        sta %%3+0
+   816 				    .endif
+   817 				
+   818 				    lda %%1+1
+   819 				    sbc %%2+1
+   820 				    .if %%0 > 2
+   821 				        sta %%3+1
+   822 				    .endif
+   823 				
+   824 				    lda %%1+2
+   825 				    sbc #0
+   826 				    .if %%0 > 2
+   827 				        sta %%3+2
+   828 				    .endif
+   829 				
+   830 				    lda %%1+3
+   831 				    sbc #0
+   832 				    .if %%0 > 2
+   833 				        sta %%3+3
+   834 				    .endif
+   835 				.endm
+   836
+   837 				//******************************************************************************************************************************************************
+   838
+   839 				/// Compare byte %%1 with byte %%2 using accumulator.
+   840 				/** @param %%1  Par1.
+   841 				    @param %%2  Par2.
+   842 				*/
+   842
+   843 				.macro  cmpba
+   844 				    lda %%1
+   845 				    cmp %%2
+   846 				.endm
+   847
+   848 				//******************************************************************************************************************************************************
+   849
+   850 				/// Compare byte %%1 with byte %%2 using X.
+   851 				/** @param %%1  Par1.
+   852 				    @param %%2  Par2.
+   853 				*/
+   853
+   854 				.macro  cmpbx
+   855 				    ldx %%1
+   856 				    cpx %%2
+   857 				.endm
+   858
+   859 				//******************************************************************************************************************************************************
+   860
+   861 				/// Compare byte %%1 with byte %%2 using Y.
+   862 				/** @param %%1  Par1.
+   863 				    @param %%2  Par2.
+   864 				*/
+   864
+   865 				.macro  cmpby
+   866 				    ldy %%1
+   867 				    cpy %%2
+   868 				.endm
+   869
+   870 				//******************************************************************************************************************************************************
+   871
+   872 				/// Push all registers onto the stack.
+   873 				.macro  pushregs
+   874 				    pha
+   875 				    txa
+   876 				    pha
+   877 				    tya
+   878 				    pha
+   879 				.endm
+   880
+   881 				//******************************************************************************************************************************************************
+   882
+   883 				/// Pop all registers from the stack.
+   884 				.macro  popregs
+   885 				    pla
+   886 				    tay
+   887 				    pla
+   888 				    tax
+   889 				    pla
+   890 				.endm
+   891
+   892 				//*************************************************************************************************************************************************
+   893
+   894 				/// And %%1 with %%2 and store in %%3.
+   895 				/** @param %%1  Source.
+   896 				    @param %%2  Mask.
+   897 				    @param %%3  Destination.
+   898 				*/
+   898
+   899 				.macro  andba
+   900 				    lda %%1
+   901 				    and %%2
+   902 				    .if %%0 > 2
+   903 				        sta %%3
+   904 				    .endif
+   905 				.endm
+   906
+   907 				//******************************************************************************************************************************************************
+   908
+   909 				/// Or %%1 with %%2 and store in %%3.
+   910 				/** @param %%1  Source.
+   911 				    @param %%2  Mask.
+   912 				    @param %%3  Destination.
+   913 				*/
+   913
+   914 				.macro  orba
+   915 				    lda %%1
+   916 				    ora %%2
+   917 				    .if %%0 > 2
+   918 				        sta %%3
+   919 				    .endif
+   920 				.endm
+   921
+   922 				//******************************************************************************************************************************************************
+   923
+   924 				/// Eor %%1 with %%2 and store in %%3.
+   925 				/** @param %%1  Source.
+   926 				    @param %%2  Mask.
+   927 				    @param %%3  Destination.
+   928 				*/
+   928
+   929 				.macro  eorba
+   930 				    lda %%1
+   931 				    eor %%2
+   932 				    .if %%0 > 2
+   933 				        sta %%3
+   934 				    .endif
+   935 				.endm
+   936
+   937 				//*************************************************************************************************************************************************
+   938
+   939 				/// Swap bytes %%1 with %%2 bytes.
+   940 				/** @param %%1  Par1.
+   941 				    @param %%2  Par2.
+   942 				*/
+   942
+   943 				.macro  swpb
+   944 				    ldx %%1
+   945 				    ldy %%2
+   946 				    stx %%2
+   947 				    sty %%1
+   948 				.endm
+   949
+   950 				//*************************************************************************************************************************************************
+   951
+   952 				/// Assign bits to memory location.
+   953 				/** @param %%1  Memory location.
+   954 				    @param %%2  Bit mask.
+   955 				    @param %%3  Assignment argument.
+   956 				*/
+   956
+   957 				.macro  assign_bits
+   958 				    lda %%1
+   959 				    and %%2
+   960 				    ora %%3
+   961 				    sta %%1
+   962 				.endm
+   963
+   964 				//*************************************************************************************************************************************************
+   965
+   966 				/// Swap words %%1 with %%2.
+   967 				/** @param %%1  Par1.
+   968 				    @param %%2  Par2.
+   969 				*/
+   969
+   970 				.macro  swpw
+   971 				    NUtils.swpb %%1+0, %%2+0
+   972 				    NUtils.swpb %%1+1, %%2+1
+   973 				.endm
+   974
+   975 				//*************************************************************************************************************************************************
+   976
+   977 				/// Swap longs %%1 with %%2.
+   978 				/** @param %%1  Par1.
+   979 				    @param %%2  Par2.
+   980 				*/
+   980
+   981 				.macro  swpl
+   982 				    NUtils.swpb %%1+0, %%2+0
+   983 				    NUtils.swpb %%1+1, %%2+1
+   984 				    NUtils.swpb %%1+2, %%2+2
+   985 				.endm
+   986
+   987 				//*************************************************************************************************************************************************
+   988
+   989 				/// Calculates absolute value of accumulator.
+   990 				/**
+   991 				*/
+   991
+   992 				.macro  absa
+   993 				    bpl skip
+   994 				        eor #$ff
+   995 				        clc
+   996 				        adc #1
+   997 				skip    
+   998 				.endm
+   999
+  1000 				//******************************************************************************************************************************************************
+  1001
+  1002 				/// Calculates absolute value of accumulator.
+  1003 				/**
+  1004 				*/
+  1004
+  1005 				.macro  absac
+  1006 				    bcs skip
+  1007 				        NUtils.nega
+  1008 				skip    
+  1009 				.endm
+  1010
+  1011 				//******************************************************************************************************************************************************
+  1012
+  1013 				/// Calculates absolute value of a byte.
+  1014 				/** @param .byte    Par.
+  1015 				*/
+  1015
+  1016 				.macro  absb
+  1017 				    lda %%1
+  1018 				    bpl skip
+  1019 				        eor #$ff
+  1020 				        clc
+  1021 				        adc #1
+  1022 				        sta %%1
+  1023 				skip    
+  1024 				.endm
+  1025
+  1026 				//******************************************************************************************************************************************************
+  1027
+  1028 				/// Calculates absolute value.
+  1029 				/** @param .word    Src or Dst.
+  1030 				    @param .word    Dst (optional).
+  1031 				*/
+  1031
+  1032 				.macro  absw
+  1033 				    lda %%1+1
+  1034 				    bpl skip
+  1035 				        
+  1036 				        lda #0
+  1037 				        sec
+  1038 				        sbc %%1
+  1039 				        .if %%0 == 1
+  1040 				            sta %%1
+  1041 				        .else
+  1042 				            sta %%2
+  1043 				        .endif
+  1044 				        
+  1045 				        lda #0
+  1046 				        sbc %%1+1
+  1047 				        .if %%0 == 1
+  1048 				            sta %%1+1
+  1049 				        .else
+  1050 				            sta %%2+1
+  1051 				        .endif
+  1052 				        
+  1053 				        .if %%0 == 2
+  1054 				            jmp _exit
+  1055 				        .endif
+  1056 				skip
+  1057 				    .if %%0 == 2
+  1058 				        sta %%2+1
+  1059 				        lda %%1
+  1060 				        sta %%2
+  1061 				    _exit:
+  1062 				    .endif
+  1063 				.endm
+  1064
+  1065 				//******************************************************************************************************************************************************
+  1066
+  1067 				/// Negates accumulator.
+  1068 				/** @param .byte A  Par.
+  1069 				*/
+  1069
+  1070 				.macro  nega
+  1071 				    eor #$ff
+  1072 				    clc
+  1073 				    adc #1
+  1074 				.endm
+  1075
+  1076 				//******************************************************************************************************************************************************
+  1077
+  1078 				/// Negates byte.
+  1079 				/** @param .byte    Par.
+  1080 				*/
+  1080
+  1081 				.macro  negb
+  1082 				    lda #0
+  1083 				    sec
+  1084 				    sbc %%1
+  1085 				    sta %%1
+  1086 				.endm
+  1087
+  1088 				//******************************************************************************************************************************************************
+  1089
+  1090 				/// Negates word.
+  1091 				/** @param .word    Par.
+  1092 				*/
+  1092
+  1093 				.macro  negw
+  1094 				    lda #0
+  1095 				    sec
+  1096 				    sbc %%1
+  1097 				    sta %%1
+  1098 				    
+  1099 				    lda #0
+  1100 				    sbc %%1+1
+  1101 				    sta %%1+1
+  1102 				.endm
+  1103
+  1104 				//******************************************************************************************************************************************************
+  1105
+  1106 				/// Negates long.
+  1107 				/** @param .long    Par.
+  1108 				*/
+  1108
+  1109 				.macro  negl
+  1110 				    lda #0
+  1111 				    sec
+  1112 				    sbc %%1
+  1113 				    sta %%1
+  1114 				    
+  1115 				    lda #0
+  1116 				    sbc %%1+1
+  1117 				    sta %%1+1
+  1118 				    
+  1119 				    lda #0
+  1120 				    sbc %%1+2
+  1121 				    sta %%1+2
+  1122 				.endm
+  1123
+  1124 				//******************************************************************************************************************************************************
+  1125
+  1126 				/// Negates dword.
+  1127 				/** @param .dword   Par.
+  1128 				*/
+  1128
+  1129 				.macro  negd
+  1130 				    lda #0
+  1131 				    sec
+  1132 				    sbc %%1
+  1133 				    sta %%1
+  1134 				    
+  1135 				    lda #0
+  1136 				    sbc %%1+1
+  1137 				    sta %%1+1
+  1138 				    
+  1139 				    lda #0
+  1140 				    sbc %%1+2
+  1141 				    sta %%1+2
+  1142 				    
+  1143 				    lda #0
+  1144 				    sbc %%1+3
+  1145 				    sta %%1+3
+  1146 				.endm
+  1147
+  1148 				//******************************************************************************************************************************************************
+  1149
+  1150 				/// Sign extension.
+  1151 				/** @param .word %%1    Par.
+  1152 				/** @param .byte %%2    Sign.
+  1153 				*/
+  1153
+  1154 				.macro  sextw
+  1155 				    lda %%2
+  1156 				    bpl skip
+  1157 				        NUtils.negw %%1
+  1158 				    skip:
+  1159 				.endm
+  1160
+  1161 				//******************************************************************************************************************************************************
+  1162
+  1163 				/// Sign extension.
+  1164 				/** @param .long %%1    Par.
+  1165 				/** @param .byte %%2    Sign.
+  1166 				*/
+  1166
+  1167 				.macro  sextl
+  1168 				    lda %%2
+  1169 				    bpl skip
+  1170 				        NUtils.negl %%1
+  1171 				    skip:
+  1172 				.endm
+  1173
+  1174 				//******************************************************************************************************************************************************
+  1175
+  1176 				/// Sign extension.
+  1177 				/** @param .dword %%1   Par.
+  1178 				/** @param .byte %%2    Sign.
+  1179 				*/
+  1179
+  1180 				.macro  sextd
+  1181 				    lda %%2
+  1182 				    bpl skip
+  1183 				        NUtils.negd %%1
+  1184 				    skip:
+  1185 				.endm
+  1186
+  1187 				//******************************************************************************************************************************************************
+  1188
+  1189 				/// for equality. Modifies: A, Flags.
+  1190 				/** @param .word %%1    Argument.
+  1191 				    @param .word %%2    Argument.
+  1192 				*/
+  1192
+  1193 				.macro  tstweq
+  1194 				    lda %%1
+  1195 				    cmp %%2
+  1196 				    bne _not
+  1197 				        lda %%1+1
+  1198 				        cmp %%2+1
+  1199 				        bne _not
+  1200 				            lda #NUtils.TRUE
+  1201 				            jmp _exit
+  1202 				_not
+  1203 				    lda #NUtils.FALSE
+  1204 				_exit
+  1205 				.endm
+  1206
+  1207 				//******************************************************************************************************************************************************
+  1208
+  1209 				/// Tests word for a zero. Modifies: A, Flags.
+  1210 				/** @param .word %%1    Argument.
+  1211 				*/
+  1211
+  1212 				.macro  tstzw
+  1213 				    lda %%1
+  1214 				    ora %%1+1
+  1215 				.endm
+  1216
+  1217 				//******************************************************************************************************************************************************
+  1218
+  1219 				/// Tests for zero. Modifies: A, Flags.
+  1220 				/** @param .long %%1    Argument.
+  1221 				*/
+  1221
+  1222 				.macro  tstzl
+  1223 				    lda %%1
+  1224 				    ora %%1+1
+  1225 				    ora %%1+2
+  1226 				.endm
+  1227
+  1228 				//******************************************************************************************************************************************************
+  1229
+  1230 				/// Logically shift left the accumulator.
+  1231 				/** @param .byte %%1    Number of shifts.
+  1232 				*/
+  1232
+  1233 				.macro  lsla
+  1234 				    .rept %%1
+  1235 				        asl @
+  1236 				    .endr
+  1237 				.endm
+  1238
+  1239 				//******************************************************************************************************************************************************
+  1240
+  1241 				/// Logically shift left byte.
+  1242 				/** @param .byte %%1    Argument.
+  1243 				    @param .byte %%2    Number of shifts.
+  1244 				*/
+  1244
+  1245 				.macro  lslb
+  1246 				    .rept %%2
+  1247 				        asl %%1
+  1248 				    .endr
+  1249 				.endm
+  1250
+  1251 				//******************************************************************************************************************************************************
+  1252
+  1253 				/// Logically shift left word.
+  1254 				/** @param .word %%1    Argument.
+  1255 				    @param .byte %%2    Number of shifts.
+  1256 				*/
+  1256
+  1257 				.macro  lslw
+  1258 				    .rept %%2
+  1259 				        asl %%1
+  1260 				        rol %%1+1
+  1261 				    .endr
+  1262 				.endm
+  1263
+  1264 				//******************************************************************************************************************************************************
+  1265
+  1266 				/// Logically shift left long.
+  1267 				/** @param .long %%1    Argument.
+  1268 				    @param .byte %%2    Number of shifts.
+  1269 				*/
+  1269
+  1270 				.macro  lsll
+  1271 				    .rept %%2
+  1272 				        asl %%1
+  1273 				        rol %%1+1
+  1274 				        rol %%1+2
+  1275 				    .endr
+  1276 				.endm
+  1277
+  1278 				//******************************************************************************************************************************************************
+  1279
+  1280 				/// Logically shift left dword.
+  1281 				/** @param .dword %%1   Argument.
+  1282 				    @param .byte %%2    Number of shifts.
+  1283 				*/
+  1283
+  1284 				.macro  lsld
+  1285 				    .rept %%2
+  1286 				        asl %%1
+  1287 				        rol %%1+1
+  1288 				        rol %%1+2
+  1289 				        rol %%1+3
+  1290 				    .endr
+  1291 				.endm
+  1292
+  1293 				//******************************************************************************************************************************************************
+  1294
+  1295 				/// Logically shift right the accumulator.
+  1296 				/** @param .byte %%1    Number of shifts.
+  1297 				*/
+  1297
+  1298 				.macro  lsra
+  1299 				    .rept %%1
+  1300 				        lsr @
+  1301 				    .endr
+  1302 				.endm
+  1303
+  1304 				//******************************************************************************************************************************************************
+  1305
+  1306 				/// Logically shift right byte.
+  1307 				/** @param .byte %%1    Argument.
+  1308 				    @param .byte %%2    Number of shifts.
+  1309 				*/
+  1309
+  1310 				.macro  lsrb
+  1311 				    .rept %%2
+  1312 				        lsr %%1
+  1313 				    .endr
+  1314 				.endm
+  1315
+  1316 				//******************************************************************************************************************************************************
+  1317
+  1318 				/// Logically shift right word.
+  1319 				/** @param .word %%1    Argument.
+  1320 				    @param .byte %%2    Number of shifts.
+  1321 				*/
+  1321
+  1322 				.macro  lsrw
+  1323 				    .rept %%2
+  1324 				        lsr %%1+1
+  1325 				        ror %%1
+  1326 				    .endr
+  1327 				.endm
+  1328
+  1329 				//******************************************************************************************************************************************************
+  1330
+  1331 				/// Logically shift right long.
+  1332 				/** @param .long %%1    Argument.
+  1333 				    @param .byte %%2    Number of shifts.
+  1334 				*/
+  1334
+  1335 				.macro  lsrl
+  1336 				    .rept %%2
+  1337 				        lsr %%1+2
+  1338 				        ror %%1+1
+  1339 				        ror %%1
+  1340 				    .endr
+  1341 				.endm
+  1342
+  1343 				//******************************************************************************************************************************************************
+  1344
+  1345 				/// Logically shift right dword.
+  1346 				/** @param .dword %%1   Argument.
+  1347 				    @param .byte %%2    Number of shifts.
+  1348 				*/
+  1348
+  1349 				.macro  lsrd
+  1350 				    .rept %%2
+  1351 				        lsr %%1+3
+  1352 				        ror %%1+2
+  1353 				        ror %%1+1
+  1354 				        ror %%1
+  1355 				    .endr
+  1356 				.endm
+  1357
+  1358 				//******************************************************************************************************************************************************
+  1359
+  1360 				/// Rotate left word.
+  1361 				/** @param .word %%1    Argument.
+  1362 				    @param .byte %%2    Number of rotations.
+  1363 				*/
+  1363
+  1364 				.macro  rolw
+  1365 				    .rept %%2
+  1366 				        rol %%1
+  1367 				        rol %%1+1
+  1368 				    .endr
+  1369 				.endm
+  1370
+  1371 				//******************************************************************************************************************************************************
+  1372
+  1373 				/// Rotate left long.
+  1374 				/** @param .long %%1    Argument.
+  1375 				    @param .byte %%2    Number of rotations.
+  1376 				*/
+  1376
+  1377 				.macro  roll
+  1378 				    .rept %%2
+  1379 				        rol %%1
+  1380 				        rol %%1+1
+  1381 				        rol %%1+2
+  1382 				    .endr
+  1383 				.endm
+  1384
+  1385 				//******************************************************************************************************************************************************
+  1386
+  1387 				/// Rotate left dword.
+  1388 				/** @param .dword %%1   Argument.
+  1389 				    @param .byte %%2    Number of rotations.
+  1390 				*/
+  1390
+  1391 				.macro  rold
+  1392 				    .rept %%2
+  1393 				        rol %%1
+  1394 				        rol %%1+1
+  1395 				        rol %%1+2
+  1396 				        rol %%1+3
+  1397 				    .endr
+  1398 				.endm
+  1399
+  1400 				//******************************************************************************************************************************************************
+  1401
+  1402 				/// Rotate right word.
+  1403 				/** @param .word %%1    Argument.
+  1404 				    @param .byte %%2    Number of rotations.
+  1405 				*/
+  1405
+  1406 				.macro  rorw
+  1407 				    .rept %%2
+  1408 				        ror %%1+1
+  1409 				        ror %%1
+  1410 				    .endr
+  1411 				.endm
+  1412
+  1413 				//******************************************************************************************************************************************************
+  1414
+  1415 				/// Rotate right long.
+  1416 				/** @param .long %%1    Argument.
+  1417 				    @param .byte %%2    Number of rotations.
+  1418 				*/
+  1418
+  1419 				.macro  rorl
+  1420 				    .rept %%2
+  1421 				        ror %%1+2
+  1422 				        ror %%1+1
+  1423 				        ror %%1
+  1424 				    .endr
+  1425 				.endm
+  1426
+  1427 				//******************************************************************************************************************************************************
+  1428
+  1429 				/// Rotate right dword.
+  1430 				/** @param .dword %%1   Argument.
+  1431 				    @param .byte %%2    Number of rotations.
+  1432 				*/
+  1432
+  1433 				.macro  rord
+  1434 				    .rept %%2
+  1435 				        ror %%1+3
+  1436 				        ror %%1+2
+  1437 				        ror %%1+1
+  1438 				        ror %%1
+  1439 				    .endr
+  1440 				.endm
+  1441
+  1442 				//******************************************************************************************************************************************************
+  1443
+  1444 				/// Calculates maximum of signed words %%1 and %%2 and stores it in %%3.
+  1445 				/** @param .sword %%1   Arg0.
+  1446 				    @param .sword %%2   Arg1.
+  1447 				    @return .sword %%3
+  1448 				*/
+  1448
+  1449 				.macro  max_sword
+  1450 				    lda %%1
+  1451 				    cmp %%2
+  1452 				    
+  1453 				    lda %%1+1
+  1454 				    sbc %%2+1
+  1455 				    
+  1456 				    bmi skip
+  1457 				        .if (%%1 != %%3) || (%%1+1 != %%3+1)
+  1458 				            NUtils.movw %%1, %%3
+  1459 				        .endif
+  1460 				        jmp     finish
+  1461 				skip
+  1462 				    .if (%%2 != %%3) || (%%2+1 != %%3+1)
+  1463 				        NUtils.movw %%2, %%3
+  1464 				    .endif
+  1465 				finish
+  1466 				.endm
+  1467
+  1468 				//******************************************************************************************************************************************************
+  1469
+  1470 				/// Calculates minimum of signed words %%1 and %%2 and stores it in %%3.
+  1471 				/** @param .sword %%1   Arg0.
+  1472 				    @param .sword %%2   Arg1.
+  1473 				    @return .sword %%3
+  1474 				*/
+  1474
+  1475 				.macro  min_sword
+  1476 				    lda %%1
+  1477 				    cmp %%2
+  1478 				    
+  1479 				    lda %%1+1
+  1480 				    sbc %%2+1
+  1481 				    
+  1482 				    bpl skip
+  1483 				        .if (%%1 != %%3) || (%%1+1 != %%3+1)
+  1484 				            NUtils.movw %%1, %%3
+  1485 				        .endif
+  1486 				        jmp     finish
+  1487 				skip
+  1488 				    .if (%%2 != %%3) || (%%2+1 != %%3+1)
+  1489 				        NUtils.movw %%2, %%3
+  1490 				    .endif
+  1491 				finish
+  1492 				.endm
+  1493
+  1494 				//******************************************************************************************************************************************************
+  1495
+  1496 				/// Calculates maximum of longs %%1 and %%2 and stores it in %%3.
+  1497 				/** @param .slong %%1   Arg0.
+  1498 				    @param .slong %%2   Arg1.
+  1499 				    @return .slong %%3
+  1500 				*/
+  1500
+  1501 				.macro  max_slong
+  1502 				    lda %%1
+  1503 				    cmp %%2
+  1504 				    
+  1505 				    lda %%1+1
+  1506 				    sbc %%2+1
+  1507 				    
+  1508 				    lda %%1+2
+  1509 				    sbc %%2+2
+  1510 				    
+  1511 				    bmi skip
+  1512 				        .if (%%1 != %%3) || (%%1+1 != %%3+1) || (%%1+2 != %%3+2)
+  1513 				            NUtils.movl %%1, %%3
+  1514 				        .endif
+  1515 				        jmp     finish
+  1516 				skip
+  1517 				    .if (%%2 != %%3) || (%%2+1 != %%3+1) || (%%2+2 != %%3+2)
+  1518 				        NUtils.movl %%2, %%3
+  1519 				    .endif
+  1520 				finish
+  1521 				.endm
+  1522
+  1523 				//******************************************************************************************************************************************************
+  1524
+  1525 				/// Calculates minimum of longs %%1 and %%2 and stores it in %%3.
+  1526 				/** @param .slong %%1   Arg0.
+  1527 				    @param .slong %%2   Arg1.
+  1528 				    @return .slong %%3
+  1529 				*/
+  1529
+  1530 				.macro  min_slong
+  1531 				    lda %%1
+  1532 				    cmp %%2
+  1533 				    
+  1534 				    lda %%1+1
+  1535 				    sbc %%2+1
+  1536 				    
+  1537 				    lda %%1+2
+  1538 				    sbc %%2+2
+  1539 				    
+  1540 				    bpl skip
+  1541 				        .if (%%1 != %%3) || (%%1+1 != %%3+1) || (%%1+2 != %%3+2)
+  1542 				            NUtils.movl %%1, %%3
+  1543 				        .endif
+  1544 				        jmp     finish
+  1545 				skip
+  1546 				    .if (%%2 != %%3) || (%%2+1 != %%3+1) || (%%2+2 != %%3+2)
+  1547 				        NUtils.movl %%2, %%3
+  1548 				    .endif
+  1549 				finish
+  1550 				.endm
+  1551
+  1552 				//******************************************************************************************************************************************************
+  1553
+  1554 				.endl // NUtils
+  1555
+  1556 				//.endif    // MACROS_AS8_6f636864_783f_4ccc_b246_e12919423b
+    84
+    85 				//******************************************************************************************************************************************************
+    86
+    87 211A 20 00 E0			namespace.ver_proc
+    88
+    89 				//******************************************************************************************************************************************************
+    90
+    91 					org	$2e0
+    92 02E0-02E1> 00 20			dta	a(CodePtr)

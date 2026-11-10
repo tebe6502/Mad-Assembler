@@ -1,0 +1,7 @@
+	org	$8000
+	lda	#$22
+	sta	$c030
+	jmp	$c000
+
+	org	$bffc
+	dta	a($c000)

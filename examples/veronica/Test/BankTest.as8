@@ -1,0 +1,197 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file BankTest.as8
+	@author Marek "Konop" Konopka
+	@date 05.06.2010
+*/
+
+//******************************************************************************************************************************************************
+
+	.zpvar	= NProgram.ZpgVars_Ptr
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'utils.as8'
+		icl	'antic.h8'
+		icl	'pokey.h8'
+		icl	'gtia.h8'
+		icl	'pia.h8'
+		icl	'system.h8'
+		icl	'memory.h8'
+		icl	'console.h8'
+		icl	'io.h8'
+		icl	'stdbool.h8'
+		icl	'API\Protocol.h8'
+		icl	'BankTest.h8'
+	opt l+
+
+//******************************************************************************************************************************************************
+
+.local	NProgram
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+	org	Startup_Ptr
+	jmp	main
+
+//******************************************************************************************************************************************************
+
+.proc	main
+	NConsole.println	#echo_str
+	
+key_loop
+	NConsole.get_key
+	cmp	#NConsole.KEYCODE_SPACE
+	beq	continue
+	cmp	#NConsole.KEYCODE_ESCAPE
+	bne	key_loop
+		NConsole.init_keycode
+		rts
+
+continue
+	NConsole.init_keycode
+
+	NVeronica.NMaster.store_system
+	NUtils.movba	#0, NSystem.SDMCTL
+	NUtils.movba	#0, NAntic.DMACTL
+	
+	NMemory.memcpy	#Backup_Ptr, #Backup_Src_Ptr, #BACKUP_SIZE
+	perform_tests
+	
+	NVeronica.NMaster.restore_system
+	NMemory.memcpy	#Backup_Src_Ptr, #Backup_Ptr, #BACKUP_SIZE
+	print_results
+	rts	
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	echo_str:	dta c'Ram bank memory tester', NConsole.ATASCII_EOL, \
+		c'(C) 2010 by Marek Konopka', NConsole.ATASCII_EOL, \
+		c'Press SPACE to continue', NConsole.ATASCII_EOL, \
+		c'or ESC to exit.', 0
+	
+.endp
+	
+//******************************************************************************************************************************************************
+
+.proc	perform_tests
+	.var	.byte	cnt, value
+	
+	NUtils.movba	#0, cnt
+loop
+	ldy cnt
+	NUtils.movba	"Banks,y", NVeronica.NProtocol.Atari_HW_Register
+	NUtils.movba	"Values,y", value
+	test	#PTR0, #PTR1, #COUNT, value
+    
+	ldy	cnt
+	sta	Statuses,y
+
+	inc	cnt
+	NUtils.cmpba	cnt, #NUM_TESTS
+	bne	loop
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	Banks:	dta b(VER_BANK0, VER_BANK1, VER_BANK0, VER_BANK1, VER_BANK0, VER_BANK1, VER_BANK0, VER_BANK1)
+	Values:	dta b(VALUE0, VALUE0, VALUE1, VALUE1, VALUE2, VALUE2, VALUE3, VALUE3)
+
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	test(.word ptr0 .word ptr1 .word count .byte value) .var
+	.zpvar	.word	ptr0, ptr1, count
+	.var	.byte	value
+
+	NMemory.memset	ptr0, count, value
+	NMemory.memset	ptr1, count, value
+	NMemory.strcmp	ptr0, ptr1, count
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_results
+	.var	.byte	cnt
+	
+	NUtils.movba	#0, cnt
+loop
+	lda	cnt
+	asl	@
+	tay
+	NUtils.movba	"Strings,y", NConsole.print.ptr
+	NUtils.movba	"Strings+1,y", NConsole.print.ptr+1
+	jsr	NConsole.print
+	ldy	cnt
+	lda	Statuses,y
+	jsr	print_status
+	
+	inc	cnt
+	NUtils.cmpba	cnt, #NUM_TESTS
+	bne	loop
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+	Strings:	dta a(test0_str, test1_str, test2_str, test3_str, test4_str, test5_str, test6_str, test7_str)
+	
+	test0_str:	dta c'Test0: %00000000 B0 ', 0
+	test1_str:	dta c'Test1: %00000000 B1 ', 0
+	test2_str:	dta c'Test2: %11111111 B0 ', 0
+	test3_str:	dta c'Test3: %11111111 B1 ', 0
+	test4_str:	dta c'Test4: %01010101 B0 ', 0
+	test5_str:	dta c'Test5: %01010101 B1 ', 0
+	test6_str:	dta c'Test6: %10101010 B0 ', 0
+	test7_str:	dta c'Test7: %10101010 B1 ', 0
+	
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_status(.byte a) .reg
+	and	#1
+	asl	@
+	tax
+	NUtils.movba	"strings+0,x", NConsole.println.ptr+0
+	NUtils.movba	"strings+1,x", NConsole.println.ptr+1
+	jsr	NConsole.println
+	rts
+
+	strings:		dta a(failure_str, ok_str)
+	failure_str:	dta c'Failed', 0
+	ok_str:			dta c'OK', 0
+.endp
+
+//******************************************************************************************************************************************************
+//	Data
+//******************************************************************************************************************************************************
+
+	.array	Statuses [NUM_TESTS-1]	.byte
+	.enda
+
+.endl // NProgram
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'memory.as8'
+	icl	'console.as8'
+	icl	'system.as8'
+	icl	'API\Utils.as8'
+	icl	'API\Master.as8'
+	icl	'API\Messages.as8'
+
+//******************************************************************************************************************************************************
+
+	org	NSystem.RUNAD
+	dta	a(NProgram.Startup_Ptr)

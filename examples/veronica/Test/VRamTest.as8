@@ -1,0 +1,297 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file VRamTest.as8
+	@author Marek "Konop" Konopka
+	@date 05.06.2010
+*/
+
+//******************************************************************************************************************************************************
+
+	.zpvar	= NProgram.ZpgVars_Ptr
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'utils.as8'
+		icl	'stdbool.h8'
+		icl	'cpu.h8'
+		icl	'antic.h8'
+		icl	'gtia.h8'
+		icl	'pia.h8'
+		icl	'memory.h8'
+		icl	'system.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'API\protocol.h8'
+		icl	'API\Bootstrap.h8'
+		icl	'VRamTest.h8'
+	opt l+
+
+//******************************************************************************************************************************************************
+
+.local	NProgram
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+	
+	org Startup_Ptr
+	jmp	main
+
+//******************************************************************************************************************************************************
+
+.proc	main
+	.using NVeronica.NProtocol
+	
+	NConsole.println	#echo_str
+	
+	NVeronica.NMaster.store_system
+	NVeronica.NMaster.set_rambanks	#EAtariRegisterStates.BANKS_ENABLED
+	NUtils.movba	#0, NSystem.SDMCTL
+	NUtils.movba	#0, NAntic.DMACTL
+
+	NVeronica.NMaster.boot_veronica	#BOOTSTRAP_BEGIN, #Bootstrap_Ptr, #(BOOTSTRAP_END-BOOTSTRAP_BEGIN), #0, #0, #0, #NVeronica.NSlave.Bootstrap_Ptr
+
+	NVeronica.NMaster.wait_for_veronica
+	NMemory.memsetp	#ProcStat, #NVeronica.NSlave.NUM_TESTS, #0
+	NMemory.memsetp	#ErrPtrs, #(NVeronica.NSlave.NUM_TESTS*2), #0
+	
+	NVeronica.NMaster.swap_banks
+	NUtils.movd	ProcStat, Statuses
+	
+	NVeronica.NMaster.restore_system
+	print_statuses	status
+	rts
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	echo_str:	dta c'Veronica Ram tester', NConsole.ATASCII_EOL, \
+		c'(C) 2010 by Marek Konopka', 0
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_statuses
+	.var	.byte	cnt, cnt2
+
+	NUtils.movba	#0, cnt
+loop
+	lda	cnt
+	asl	@
+	sta	cnt2
+	tay
+	NUtils.movba	"Strings,y", NConsole.print.ptr
+	NUtils.movba	"Strings+1,y", NConsole.print.ptr+1
+	jsr	NConsole.print
+
+	ldy	cnt
+	lda	Statuses,y	
+	jsr	print_status
+	
+	ldy	cnt
+	NUtils.cmpba	"Statuses,y", #NUtils.TRUE
+	beq	continue	
+	
+	NConsole.putc	#' '
+	
+	ldy	cnt2
+	lda	ErrPtrs+1,y
+	jsr	printhexbyte
+	ldy	cnt2
+	lda	ErrPtrs,y
+	jsr	printhexbyte
+	
+continue
+	NConsole.putc	#NConsole.ATASCII_EOL
+
+	inc	cnt
+	NUtils.cmpba	cnt, #NVeronica.NSlave.NUM_TESTS
+	bne	loop
+	rts
+	
+	str0:	    dta c'%00000000 ', 0
+	str1:	    dta c'%01010101 ', 0
+	str2:	    dta c'%10101010 ', 0
+	str3:	    dta c'%11111111 ', 0
+	Strings:	dta a(str0, str1, str2, str3)
+	
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_status(.byte a) .reg
+	and	#1
+	asl	@
+	tax
+	NUtils.movba	"strings+0,x", NConsole.print.ptr+0
+	NUtils.movba	"strings+1,x", NConsole.print.ptr+1
+	jsr	NConsole.print
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	strings:		dta a(failure_str, ok_str)
+	failure_str:	dta c'Failed', 0
+	ok_str:			dta c'Succeeded', 0
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	printhexbyte(.byte a) .reg
+	pha
+	NUtils.lsra	4
+	tay
+	lda	NConsole.hex_to_atascii_tbl,y
+	jsr	NConsole.putc
+	pla
+	and	#15
+	tay
+	lda	NConsole.hex_to_atascii_tbl,y
+	jsr	NConsole.putc
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.endl	// NProgram
+
+//******************************************************************************************************************************************************
+//	Veronica
+//******************************************************************************************************************************************************
+	
+	BOOTSTRAP_BEGIN = *
+
+//******************************************************************************************************************************************************
+
+.local	NVeronica.NSlave, NVeronica.NSlave.Bootstrap_Ptr
+
+//******************************************************************************************************************************************************
+
+	TMP_ZPVAR = .zpvar
+	.zpvar	= ZpgVars_Ptr
+	.nowarn	.zpvar	.word	src_ptr, dst_ptr
+
+//******************************************************************************************************************************************************
+
+.proc	ver_proc
+	NVeronica.NBootstrap.initialize_cpu
+	//NVeronica.NBootstrap.initial_cpu_wait
+	
+	memset	#MemStart, #MEM_LENGTH, #TEST_VALUE_0
+	strcmp	#MemStart, #MEM_LENGTH, #TEST_VALUE_0
+	sta	ProcStat+0
+	NUtils.movw	src_ptr, ErrPtrs+0
+	
+	memset	#MemStart, #MEM_LENGTH, #TEST_VALUE_1
+	strcmp	#MemStart, #MEM_LENGTH, #TEST_VALUE_1
+	sta	ProcStat+1
+	NUtils.movw	src_ptr, ErrPtrs+2
+	
+	memset	#MemStart, #MEM_LENGTH, #TEST_VALUE_2
+	strcmp	#MemStart, #MEM_LENGTH, #TEST_VALUE_2
+	sta	ProcStat+2
+	NUtils.movw	src_ptr, ErrPtrs+4
+	
+	memset	#MemStart, #MEM_LENGTH, #TEST_VALUE_3
+	strcmp	#MemStart, #MEM_LENGTH, #TEST_VALUE_3
+	sta	ProcStat+3
+	NUtils.movw	src_ptr, ErrPtrs+6
+
+	NUtils.movba	#{jmp SafeLocPtr}, SafeLocPtr
+	NUtils.leaw	SafeLocPtr, SafeLocPtr+1
+	
+	NUtils.movba	#NVeronica.NProtocol.EVeronicaRegisterStates.UNLOCK_VERONICA, NVeronica.NProtocol.Veronica_HW_Register
+	
+	jmp	SafeLocPtr
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	memset(.word dst_ptr .word count .byte value) .var
+	.var	.word	count
+	.var	.byte	value
+
+	NMemory.memset_macro	dst_ptr, count, value
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	strcmp(.word src_ptr .word size .byte value) .var
+	.var	.word	size
+	.var	.byte	value
+
+	ldx	size+1
+	beq	skip_pages
+	
+	ldy	#0
+loop
+	NUtils.cmpba	"(src_ptr),y", value
+	bne	_exit_with_error
+	iny
+	bne	loop
+	inc	src_ptr+1
+	dex
+	bne	loop
+	
+skip_pages
+	lda	size
+	beq	_exit_ok
+
+	ldy	#0
+loop2
+	NUtils.cmpba	"(src_ptr),y", value
+	bne	_exit_with_error
+	iny
+	cpy	size
+	bne	loop2
+	jmp	_exit_ok
+	
+_exit_with_error
+	lda	#NUtils.FALSE
+	rts
+	
+_exit_ok
+	lda	#NUtils.TRUE
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+	
+	.zpvar = TMP_ZPVAR
+
+.endl // NVeronica.NSlave
+
+	BOOTSTRAP_END = *
+
+//******************************************************************************************************************************************************
+//	Data
+//******************************************************************************************************************************************************
+
+	.array	Statuses [NVeronica.NSlave.NUM_TESTS-1]	.byte
+	.enda
+		
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'antic.as8'
+	icl	'system.as8'
+	icl	'memory.as8'
+	icl	'console.as8'
+	icl	'API\Master.as8'
+	icl	'API\Utils.as8'
+	icl	'API\Messages.as8'
+
+//******************************************************************************************************************************************************
+
+	jsr	NVeronica.NSlave.ver_proc
+
+//******************************************************************************************************************************************************
+
+	org	NSystem.RUNAD
+	dta	a(NProgram.Startup_Ptr)

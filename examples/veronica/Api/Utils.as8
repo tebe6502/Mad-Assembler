@@ -1,0 +1,91 @@
+.local	NVeronica.NMaster
+
+//******************************************************************************************************************************************************
+//	Variables
+//******************************************************************************************************************************************************
+
+	.var	.byte	gintlk_backup
+	.var	.word	prev_vvblki, prev_vvblkd
+	.var	.byte	rambank_cfg_backup, basic_backup, sdmctl_backup
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+///	Prevent system VBL interrupt from blocking.
+.proc	attach_vbl_override
+	NUtils.movw	NSystem.VVBLKI, prev_vvblki
+	NUtils.movw	NSystem.VVBLKD, prev_vvblkd
+	NSystem.set_vbv	#pre_vbl_override, #6
+	NSystem.set_vbv	#post_vbl_override, #7
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Prevent system VBL interrupt from blocking.
+.proc	detach_vbl_override
+	NSystem.set_vbv	prev_vvblkd, #7
+	NSystem.set_vbv	prev_vvblki, #6
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	pre_vbl_override
+	NUtils.movba	NSystem.GINTLK, gintlk_backup
+	NUtils.movba	NGtia.TRIG3, NSystem.GINTLK
+	jmp	NSystem.SYSVBV
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	post_vbl_override
+	NUtils.movba	gintlk_backup, NSystem.GINTLK
+	jmp	NSystem.XITVBV
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	store_system
+	//	Backup Antic DMA
+	NUtils.movba	NSystem.SDMCTL, sdmctl_backup
+	attach_vbl_override
+	//	Backup Veronica rambank configuration
+	NUtils.andba	NVeronica.NProtocol.Atari_HW_Register, #NVeronica.NProtocol.EAtariRegisterStates.BANKS_MASK, rambank_cfg_backup
+	//	Backup PORTB Basic configuration
+	NUtils.andba	NPia.PORTB, #NPia.EPORTB.BASIC_MASK, basic_backup
+	//	Disable Basic
+	NVeronica.NProtocol.set_mem_bits	NPia.PORTB, NPia.EPORTB.BASIC_MASK, #NPia.EPORTB.BASIC_OFF
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	restore_system
+	//	Restore Basic
+	NVeronica.NProtocol.set_mem_bits	NPia.PORTB, NPia.EPORTB.BASIC_MASK, basic_backup
+	//	Restore rambank configuration
+	set_rambanks	rambank_cfg_backup
+	detach_vbl_override
+	//	Restore Antic DMA
+	NUtils.movba	sdmctl_backup, NSystem.SDMCTL
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_status(.byte a) .reg
+	and	#1
+	asl	@
+	tax
+	NUtils.movba	"strings+0,x", NConsole.print.ptr+0
+	NUtils.movba	"strings+1,x", NConsole.print.ptr+1
+	jmp	NConsole.print
+	
+	strings:	dta a(NVeronica.no_detection_str, NVeronica.detected_str)
+.endp
+
+//******************************************************************************************************************************************************
+
+.endl // NVeronica.NMaster

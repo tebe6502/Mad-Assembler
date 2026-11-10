@@ -1,0 +1,69 @@
+	//opt h-
+	icl	'memory.h8'
+	icl	'console.h8'
+	icl	'io.h8'
+	icl	'stdbool.h8'
+
+	VALUE0 = %00000000
+	VALUE1 = %11111111
+	VALUE2 = %01010101
+	VALUE3 = %10101010
+
+	PTR0	= $2000
+	PTR1	= $8000
+	COUNT	= $2000
+
+	org $4000
+	NConsole.print	#test0_str
+	test	#PTR0, #PTR1, #COUNT, #VALUE0
+	println
+
+	NConsole.print	#test1_str
+	test	#PTR0, #PTR1, #COUNT, #VALUE1
+	println
+
+	NConsole.print	#test2_str
+	test	#PTR0, #PTR1, #COUNT, #VALUE2
+	println
+
+	NConsole.print	#test3_str
+	test	#PTR0, #PTR1, #COUNT, #VALUE3
+	println
+	rts
+
+.proc	println
+	and	#1
+	asl	@
+	tax
+	NUtils.movba	"strings+0,x", NConsole.println.ptr+0
+	NUtils.movba	"strings+1,x", NConsole.println.ptr+1
+	jsr	NConsole.print
+	NConsole.println	#dot_str
+	rts
+
+	strings:	dta a(failure_str, ok_str)
+	failure_str:	dta c'Failed', 0
+	ok_str:	dta c'Ok', 0
+	dot_str:	dta c'.', 0
+.endp
+
+.proc	test(.word ptr0 .word ptr1 .word count .byte value) .var
+	.zpvar	.word	ptr0, ptr1, count
+	.var	.byte	value
+
+	NMemory.memset	ptr0, count, value
+	NMemory.memset	ptr1, count, value
+	NMemory.strcmp	ptr0, ptr1, count
+	rts
+.endp
+
+	test0_str:	dta c'Test0: %00000000, %00000000 ', 0
+	test1_str:	dta c'Test1: %11111111, %11111111 ', 0
+	test2_str:	dta c'Test2: %01010101, %01010101 ', 0
+	test3_str:	dta c'Test3: %10101010, %10101010 ', 0
+	test4_str:	dta c'Test4: %01010101, %10101010 ', 0
+	test5_str:	dta c'Test5: %10101010, %01010101 ', 0
+
+	icl	'utils.as8'
+	icl	'memory.as8'
+	icl	'console.as8'

@@ -1,0 +1,78 @@
+	icl	'memory.h8'
+
+	VerProcPtr	= $c000
+	WindowPtr	= $8000
+	CodePtr		= $2000
+
+	org CodePtr
+
+	sei
+	NUtils.movba	#0, $d20e
+	NUtils.movba	#0, $d40e
+
+	NUtils.movba	#%00110000, $d5c0
+	NUtils.leaw	VerProcPtr, $bffc
+
+	NMemory.memcpy	#WindowPtr, #BEGIN, #(END-BEGIN)
+
+	NUtils.movba	#%00110011, $D5C0	// swap + reset
+	wait	#0
+	NUtils.movba	#%00000001, $D5C0	//
+	
+	NUtils.movba	#$40, $d40e
+	NUtils.movba	#$40, $d40e
+	NUtils.movba	$10, $d20e
+	cli
+	rts
+
+.proc	wait(.byte x) .reg
+loop
+	sta	$d40a
+	dex
+	bne	loop
+	rts
+.endp
+	
+	BEGIN = *
+
+.local	namespace, VerProcPtr
+
+.proc	ver_proc
+/*loop
+	lda	#$aa
+	ldy	#0
+loop2	
+	.rept	32
+		sta	$c100+256*#,y
+	.endr
+	iny
+	bne	loop2
+	
+	NUtils.movba	"#{jmp $2000}", $2000
+	NUtils.leaw	$2000, $2001
+	jmp	$2000*/
+	NUtils.movba	#$00, $2000
+	NUtils.movba	#$aa, $2000
+	
+	NUtils.cmpba	$2000, #$aa
+	beq	pod_zero
+		jmp	*
+	
+pod_zero	
+	NUtils.movba	#{jmp $0000}, $0000
+	NUtils.leaw	$0000, $0001
+	jmp	$0000	
+.endp
+
+.endl
+
+	END = *
+
+	icl	'memory.as8'
+	icl	'utils.as8'
+
+	namespace.ver_proc
+
+	org	$2e0
+	dta	a(CodePtr)
+	

@@ -1,0 +1,133 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file Bios.as8
+	@author Marek "Konop" Konopka
+	@date 15.05.2010
+*/
+
+//******************************************************************************************************************************************************
+
+.local	NVeronica.NBios, NVeronica.NBios.Bios_Ptr
+
+//******************************************************************************************************************************************************
+//	Zero-page variables
+//******************************************************************************************************************************************************
+
+	.zpvar	= Zpg_Variables_Ptr
+	.nowarn	.zpvar	.word	src_ptr
+	.nowarn	.zpvar	.word	dst_ptr
+
+//******************************************************************************************************************************************************
+//	Data
+//******************************************************************************************************************************************************
+
+	BEGIN = *
+
+	bios_header:	dta SBIOSHeader[0] (main/*m_code_ptr*/, END-BEGIN/*m_size*/, END/*m_ramlo*/, 0/*m_major*/, 5/*m_minor*/, 0/*m_maintenance*/, 0/*m_build*/)
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+		
+	//	Veronica UUID
+	icl	'API\Protocol.as8'
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+///	Assuming hardware register is initialized on startup with #%00000000, meaning Veronica is ready to accept commands.
+.proc	main
+	.using NVeronica.NProtocol
+
+	//	Change window location from $c000 to $4000.
+	NVeronica.NProtocol.set_mem_bits	NVeronica.NProtocol.Veronica_HW_Register, NVeronica.NProtocol.EVeronicaRegisterStates.SEMAPHORE_MASK|NVeronica.NProtocol.EVeronicaRegisterStates.WINDOW_LOCATION_MASK, #(NVeronica.NProtocol.EVeronicaRegisterStates.UNLOCK_VERONICA|NVeronica.NProtocol.EVeronicaRegisterStates.WINDOW_LOCATION_4000)
+
+message_loop
+	NVeronica.NProtocol.wait_for_atari
+	
+	//	Deal with data passed to us from Atari.
+	communication_protocol_management	NVeronica.NProtocol.Final_Window_Location+NVeronica.NProtocol.SCmdBase.m_command
+	
+	//	Unlock Veronica so that Atari could continue.
+	NVeronica.NProtocol.unlock_veronica
+	
+	//	Let's go again for another turn.
+	jmp	message_loop
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	communication_protocol_management(.byte a) .reg
+	asl	@
+	tay
+	NUtils.movba	"vectors,y", jsr_vct+0
+	NUtils.movba	"vectors+1,y", jsr_vct+1
+	jsr_vct = * + 1
+	jmp	$ffff
+	
+	//	Must place procedure vectors in accordance to the ECommand enumeration type.
+	vectors:	dta a(execute_idle_cmd, execute_identify_cmd, execute_data_chunk_upload_cmd, execute_run_procedure_cmd, execute_data_chunk_download_cmd)
+.endp
+	
+//******************************************************************************************************************************************************
+
+.proc	execute_idle_cmd
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	execute_identify_cmd
+	memcpy	#(NVeronica.NProtocol.Veronica_Window_Ramlo+NVeronica.NProtocol.SIdentifyCmd.m_uuid), #uuid_template_tbl, #NVeronica.NProtocol.VERONICA_UUID_SIZE
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	execute_data_chunk_upload_cmd
+	memcpy	NVeronica.NProtocol.Veronica_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_adr, #(NVeronica.NProtocol.Veronica_Window_Ramlo+.len(NVeronica.NProtocol.SDataChunkUploadCmd)), NVeronica.NProtocol.Veronica_Window_Ramlo+NVeronica.NProtocol.SDataChunkUploadCmd.m_chunk_dst_size
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	execute_run_procedure_cmd
+	jmp	(NVeronica.NProtocol.Veronica_Window_Ramlo+NVeronica.NProtocol.SProcedureCallCmd.m_proc_adr)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	execute_data_chunk_download_cmd
+	.var	.word	chunk_src_adr, chunk_src_size
+	
+	//	Make sure m_chunk_src_adr and m_chunk_src_size don't get overwritten.
+	NUtils.movw	NVeronica.NProtocol.Veronica_Window_Ramlo+NVeronica.NProtocol.SDataChunkDownloadCmd.m_chunk_src_adr, chunk_src_adr
+	NUtils.movw	NVeronica.NProtocol.Veronica_Window_Ramlo+NVeronica.NProtocol.SDataChunkDownloadCmd.m_chunk_src_size, chunk_src_size
+	
+	memcpy	#NVeronica.NProtocol.Veronica_Window_Ramlo, chunk_src_adr, chunk_src_size
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+///	Copy data chunk from source into destination location.
+/**	@param .word dst_ptr	Destination location pointer.
+	@param .word src_ptr	Source location pointer.
+	@param .word count		Count.
+*/
+.proc	memcpy(.word dst_ptr .word src_ptr .word count) .var
+	.var	.word	/*dst_ptr, src_ptr, */count
+	
+	NMemory.memcpy_macro	dst_ptr, src_ptr, count
+	//NMemory.memcpyno_macro	dst_ptr, src_ptr, count
+	rts	
+.endp
+
+//******************************************************************************************************************************************************
+	
+	END = *
+
+.endl // NVeronica.NBios

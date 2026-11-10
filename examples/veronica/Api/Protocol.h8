@@ -1,0 +1,413 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file Protocol.h8
+	@author Marek "Konop" Konopka
+	@date 29.05.2010
+*/
+
+.local	NVeronica.NProtocol
+
+//******************************************************************************************************************************************************
+//	Constants
+//******************************************************************************************************************************************************
+
+	///	Size of an array uniquely identifying Veronica's presence.
+	VERONICA_UUID_SIZE	= 16
+
+	///	Must be big enought to allow finishing execution of IDENTIFY command on Veronica.
+	IDENTIFY_CMD_TIMEOUT	= 255
+
+//******************************************************************************************************************************************************
+//	Pointers
+//******************************************************************************************************************************************************
+
+	///	Location for the communication buffer in Veronica's address space.
+	Initial_Window_Location	= $C000 // TODO: Rename to StartupWindowLocation
+	Final_Window_Location	= $4000 // TODO: Rename into RegularWindowLocation
+
+	///	Location for the communication buffer in Atari address space.
+	Atari_Window_Location	= $8000
+
+	///	Location for Veronica's hardware register.
+	Veronica_HW_Register	= $0200
+
+	///	Location for Atari's register.
+	Atari_HW_Register	= $d5c0
+
+	///	Free RAM starting address of the window in Veronica's address space.
+	Veronica_Window_Ramlo	= Final_Window_Location
+
+	///	Free RAM starting address of "the window" in Atari's address space.
+	Atari_Window_Ramlo	= Atari_Window_Location
+
+//******************************************************************************************************************************************************
+//	Enumerations
+//******************************************************************************************************************************************************
+
+///	Enumeration of Atari hardware register bits.
+.enum	EAtariRegisterBits
+	SEMAPHORE_READ	= 7
+	SEMAPHORE_WRITE	= 7
+	
+	BANK1_ENABLE	= 5	// $A000-$BFFF -> $E000-$FFFF or $6000-$7FFF
+	BANK0_ENABLE	= 4	// $8000-$9FFF -> $C000-$DFFF or $4000-$5FFF
+    
+    SUBBANK_NUMBER = 3
+	
+	RAMBANK_CFG	= 1
+	
+	VERONICA_CPU_RESET	= 0
+.ende
+
+//******************************************************************************************************************************************************
+
+///	Enumeration of Veronica hardware register bits.
+.enum	EVeronicaRegisterBits
+    SEMAPHORE_READ	= 7
+    SEMAPHORE_WRITE	= 7
+
+    WINDOW_LOCATION	= 6
+    
+    SUBBANK_NUMBER = 5
+.ende
+
+//******************************************************************************************************************************************************
+
+///	Enumeration of Atari hardware register bit combinations.
+.enum	EAtariRegisterStates
+	UNLOCK_ATARI		= (1 << EAtariRegisterBits.SEMAPHORE_WRITE)
+	LOCK_ATARI			= (0 << EAtariRegisterBits.SEMAPHORE_WRITE)
+	VERONICA_UNLOCKED	= (1 << EAtariRegisterBits.SEMAPHORE_READ)
+	SEMAPHORE_MASK		= (1 << EAtariRegisterBits.SEMAPHORE_READ)
+	
+	BANK0_ENABLED	= (1 << EAtariRegisterBits.BANK0_ENABLE)
+	BANK0_DISABLED	= (0 << EAtariRegisterBits.BANK0_ENABLE)
+	BANK1_ENABLED	= (1 << EAtariRegisterBits.BANK1_ENABLE)
+	BANK1_DISABLED	= (0 << EAtariRegisterBits.BANK1_ENABLE)
+	BANKS_ENABLED	= (BANK0_ENABLED | BANK1_ENABLED)
+	BANKS_DISABLED	= 0
+
+	BANK0_MASK	= (1 << EAtariRegisterBits.BANK0_ENABLE)
+	BANK1_MASK	= (1 << EAtariRegisterBits.BANK1_ENABLE)
+	BANKS_MASK	= (BANK0_MASK | BANK1_MASK)
+	
+	RAMBANK_CFG_MASK	= (1 << EAtariRegisterBits.RAMBANK_CFG)
+
+	VER_CPU_RESET_PULSE_LOW		= (0 << EAtariRegisterBits.VERONICA_CPU_RESET)
+	VER_CPU_RESET_PULSE_HIGH	= (1 << EAtariRegisterBits.VERONICA_CPU_RESET)
+	VER_CPU_RESET_MASK	= (1 << EAtariRegisterBits.VERONICA_CPU_RESET)
+.ende
+
+//******************************************************************************************************************************************************
+
+///	Enumeration of Veronica hardware register bit combinations.
+.enum	EVeronicaRegisterStates
+	UNLOCK_VERONICA	= (1 << EVeronicaRegisterBits.SEMAPHORE_WRITE)
+	LOCK_VERONICA	= (0 << EVeronicaRegisterBits.SEMAPHORE_WRITE)
+	ATARI_UNLOCKED	= (1 << EVeronicaRegisterBits.SEMAPHORE_READ)
+	SEMAPHORE_MASK	= (1 << EVeronicaRegisterBits.SEMAPHORE_WRITE)
+
+	WINDOW_LOCATION_C000	= (0 << EVeronicaRegisterBits.WINDOW_LOCATION)
+	WINDOW_LOCATION_4000	= (1 << EVeronicaRegisterBits.WINDOW_LOCATION)
+	WINDOW_LOCATION_MASK	= (1 << EVeronicaRegisterBits.WINDOW_LOCATION)
+.ende
+
+//******************************************************************************************************************************************************
+
+///	List of commands to execute by Veronica.
+.enum	ECommand
+	IDLE, IDENTIFY, DATA_CHUNK_UPLOAD, PROCEDURE_CALL, DATA_CHUNK_DOWNLOAD
+.ende
+
+//******************************************************************************************************************************************************
+//	Structures
+//******************************************************************************************************************************************************
+
+///	Base structure describing common data for all commands.
+.struct	SCmdBase
+	m_command	.byte	/// Command to be passed to and executed on the Veronica.
+.ends
+
+//******************************************************************************************************************************************************
+
+///	Describes idle command.
+.struct	SIdleCmd
+	m_base	SCmdBase
+.ends
+
+//******************************************************************************************************************************************************
+
+///	Describes Veronica presence identifier.
+.struct	SIdentifyCmd
+	m_base	SCmdBase
+	m_uuid	:VERONICA_UUID_SIZE	.byte
+.ends
+
+//******************************************************************************************************************************************************
+
+///	Describes data upload command.
+.struct	SDataChunkUploadCmd
+	m_base	SCmdBase
+	m_chunk_dst_adr		.word
+	m_chunk_dst_size	.word
+.ends
+
+//******************************************************************************************************************************************************
+
+///	Describes procedure execution command.
+.struct	SProcedureCallCmd
+	m_base	SCmdBase
+	m_proc_adr	.word
+.ends
+
+//******************************************************************************************************************************************************
+
+///	Describes data download command.
+.struct	SDataChunkDownloadCmd
+	m_base	SCmdBase
+	m_chunk_src_adr		.word
+	m_chunk_src_size	.word
+.ends
+
+//******************************************************************************************************************************************************
+//	Macros
+//******************************************************************************************************************************************************
+
+///	Wait for bit flip.
+/**	@param %%1 .byte_ptr	- Memory location to test.
+	@param %%2 .byte 		- Constant representing bit number.
+	@param %%3 .byte		- Constant to test against.
+*/
+.macro	wait_for_bit_flip
+loop
+	lda	%%1
+	and	#(1 << (%%2))
+	.if ((%%3) != 0)
+		beq	loop
+	.else
+		bne	loop
+	.endif
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Wait for bit flip to occur within timeout restriction.
+///	Must take long enough for Veronica to respond to the IDENTIFY command.
+/**	@param .byte %%1	- Memory location to test.
+	@param .byte %%2	- Constant representing bit number.
+	@param .byte %%3	- Value to test against.
+	@param .macro %%4	- Timeout macro.
+	@param .byte X		- Maximal number of tests to perform.
+	
+	@return	.byte A	- Status flag indicating whether the test succeeded or not.
+*/
+.macro	wait_for_bit_flip_with_timeout
+	loop:
+		lda	%%1
+		and	#(1 << (%%2))
+		.if ((%%3) != 0)
+			bne	matched
+		.else
+			beq	matched
+		.endif
+	
+		%%4
+		
+		dex
+		bne	loop
+
+		//	Timeout elapsed.
+		lda	#NUtils.FALSE
+		jmp	done
+	
+	matched:
+		lda	#NUtils.TRUE
+	done:
+.endm
+
+//******************************************************************************************************************************************************
+
+.macro	timeout_macro
+	//	at least 1282 cycles
+	ldy	#0
+loop
+	iny
+	bne	loop
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Set bit under provided memory location.
+/**	@param %%1 .byte_ptr	- Memory location.
+	@param %%2 .byte		- Constant representing bit number.
+	@param %%3 .byte		- Bit value (bit_value != 0).
+	write_bit
+*/
+.macro	set_mem_bit
+	lda	%%1
+	.if	((%%3) == 0)
+		and	#~(1 << (%%2))
+	.else
+		ora	#(1 << (%%2))
+	.endif
+	sta	%%1
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Enable/disable specific bit under provided memory location.
+/**	@param %%1 .byte_ptr	- Memory location.
+	@param %%2 .byte		- Constant representing bit mask.
+	@param %%3 .byte		- Or mask.
+*/
+.macro	set_mem_bits
+	lda	%%1
+	and	#~(%%2)
+	ora	%%3
+	sta	%%1
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Sets or switches memory location bits.
+/**	@param %%1 .byte	- Memory location to set.
+	@param %%2 .byte	- Bit mask constant for setting.
+	@param %%3 .byte	- Constant bit value for setting.
+	@param %%4 .byte	- Bit mask constant for switching.
+*/
+.macro	set_or_switch_bits
+	lda	%%1
+	and	#~(%%2)
+	.if	((%%3) != 0)
+		ora	#(%%3)
+	.endif
+	.if	((%%4) != 0)
+		eor	#(%%4)
+	.endif
+	sta	%%1
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Clear memory location bits.
+/**	@param %%1 .byte    Memory location to clear bits in.
+	@param %%2 .byte    Bit mask constant for clearing.
+*/
+.macro  clear_bits
+    lda %%1
+    and #~(%%2)
+    sta %%1
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Sets or switches memory location bits.
+/**	@param %%1 .byte	- Memory location to set.
+	@param %%2 .byte	- Bit mask constant for setting.
+	@param %%3 .byte	- Bit mask constant for switching.
+	@param %%4 .byte	- Temporary helper variable containing bit values.
+*/
+.macro	set_or_switch_mem_bits
+	lda	%%4
+	and	#(%%2)
+	sta	%%4
+
+	lda	%%1
+	and	#~(%%2)
+	.if	((%%3) != 0)
+		eor	#(%%3)
+	.endif
+	ora	%%4
+	sta	%%1
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Wait for Atari to finish its task.
+.macro	wait_for_atari
+loop
+	//	We can utilize negative flag flipping here since EVeronicaRegisterBits.SEMAPHORE_READ is D7.
+	lda	Veronica_HW_Register
+	bpl	loop
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Wait for Veronica to finish its task.
+.macro	wait_for_veronica
+loop
+	//	We can utilize negative flag here since EAtariRegisterBits.SEMAPHORE_READ is B7.
+	lda	Atari_HW_Register
+	bpl	loop
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Wait for Veronica to finish its task within timeout restriction.
+/**	@param .byte X	- Timeout.
+*/
+.macro	wait_for_veronica_with_timeout
+	wait_for_bit_flip_with_timeout	Atari_HW_Register, EAtariRegisterBits.SEMAPHORE_READ, EAtariRegisterStates.VERONICA_UNLOCKED, timeout_macro
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Disable Atari occupation status. Modify single specific bit only. Leave the rest of them unchanged.
+.macro	unlock_atari
+	set_mem_bit	Atari_HW_Register, EAtariRegisterBits.SEMAPHORE_WRITE, EAtariRegisterStates.UNLOCK_ATARI
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Disable Veronica occupation status. Modify single specific bit only. Leave the rest of them unchanged.
+.macro	unlock_veronica
+    .using NVeronica.NProtocol
+    
+	set_mem_bit	Veronica_HW_Register, EVeronicaRegisterBits.SEMAPHORE_WRITE, EVeronicaRegisterStates.UNLOCK_VERONICA
+	//set_mem_bits	Veronica_HW_Register, (EVeronicaRegisterStates.SEMAPHORE_MASK | EVeronicaRegisterStates.WINDOW_LOCATION_MASK), #(EVeronicaRegisterStates.UNLOCK_VERONICA | EVeronicaRegisterStates.WINDOW_LOCATION_4000)
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Disable Atari occupation status and swap window banks under cartridge memory location.
+.macro	unlock_and_swap
+	set_or_switch_bits	Atari_HW_Register, EAtariRegisterStates.SEMAPHORE_MASK, EAtariRegisterStates.UNLOCK_ATARI, EAtariRegisterStates.RAMBANK_CFG_MASK
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Swap rambanks.
+.macro	swap_banks
+	NUtils.eorba	Atari_HW_Register, #(EAtariRegisterStates.UNLOCK_ATARI | EAtariRegisterStates.RAMBANK_CFG_MASK), Atari_HW_Register
+.endm
+
+//******************************************************************************************************************************************************
+
+///	Wait for Veronica, unlock Atari and swap banks.
+.macro	wait_swap_unlock
+loop
+	lda	Atari_HW_Register
+	bpl	loop
+	
+	eor	#EAtariRegisterStates.RAMBANK_CFG_MASK
+	sta	Atari_HW_Register
+.endm
+
+//******************************************************************************************************************************************************
+
+.macro	reset_wait
+	ldx	#0
+loop
+	.rept	18
+		nop
+	.endr
+
+	dex
+	bne	loop
+.endm
+
+//******************************************************************************************************************************************************
+
+.endl // NVeronica.NProtocol

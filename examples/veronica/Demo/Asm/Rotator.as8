@@ -1,0 +1,766 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file BiosLoad.as8
+	@author Marek "Konop" Konopka
+	@date 15.05.2010
+	TODO:
+	- Change: edge fractional precision from 16 to 24 bits.
+*/
+
+//******************************************************************************************************************************************************
+
+	.zpvar	= NProgram.ZpgVars_Ptr
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'utils.as8'
+		icl	'stdbool.h8'
+		icl	'stddef.h8'
+		icl	'memory.h8'
+		icl	'system.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'pia.h8'
+		icl	'gtia.h8'
+		icl	'antic.h8'
+		icl	'API\Protocol.h8'
+		icl	'API\Bios.h8'
+		icl	'ver_rotator.h8'
+		icl	'rotator.h8'
+	opt l+
+
+//******************************************************************************************************************************************************
+
+.local	NProgram
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+	org Startup_Ptr
+	jmp	main
+
+//******************************************************************************************************************************************************
+	
+.proc	main
+	.var	.byte	veronica_status
+
+	.using	NRotator
+
+	NVeronica.NMaster.store_system
+	
+	//	Enable first bank only.
+	NVeronica.NMaster.set_rambanks	#NVeronica.NProtocol.EAtariRegisterStates.BANK0_ENABLED
+	NVeronica.NMaster.identify	#NVeronica.NProtocol.IDENTIFY_CMD_TIMEOUT
+	sta	veronica_status
+	
+	NConsole.println	#title_str
+	NVeronica.NMaster.print_status	veronica_status
+	NConsole.putc	#NConsole.ATASCII_EOL
+	NConsole.println	#any_key_str
+	NConsole.wait_for_key_pressed
+	NConsole.init_keycode
+	
+	backup_screen
+	init	veronica_status
+	
+	NSystem.wait_for_vbl	#1
+loop
+	set_initial_frame_counter
+	set_animation_params
+	set_screen_buffer_ptr
+	parallel_rotator	angle, #INITIAL_ZOOM, veronica_status
+	
+	change_screen_buffer
+	set_dl	veronica_status
+	print_info	NAntic.VCOUNT, #21
+	NSystem.wait_for_vbl	#1
+	print_fps
+
+	NConsole.get_key
+	cmp	#NConsole.KEYCODE_ESCAPE
+	bne	loop
+
+	deinit
+	restore_screen
+	NVeronica.NMaster.restore_system
+	rts
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	title_str:	dta c'Veronica Rotator Demo', 0
+	any_key_str:	dta c'Press any key to continue.', 0
+	
+.endp
+
+//******************************************************************************************************************************************************
+	
+.proc	set_initial_frame_counter
+	NUtils.movba	NSystem.RTCLOK+2, starting_frame_cnt
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_fps
+	.var	.byte	frame_counter
+	
+	NUtils.subba	NSystem.RTCLOK+2, starting_frame_cnt, frame_counter
+	print_info	frame_counter, #9
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+	
+.proc	print_info(.byte a .byte y) .reg
+	pha
+	NUtils.lsra	4
+	tax
+	NUtils.movba	"NConsole.hex_to_internal_tbl,x", "InfoLine,y"
+
+	pla
+	and	#15
+	tax
+	NUtils.movba	"NConsole.hex_to_internal_tbl,x", "InfoLine+1,y"
+	rts
+.endp
+	
+//******************************************************************************************************************************************************
+
+.proc	set_animation_params
+	NUtils.movba	NSystem.RTCLOK+2, angle
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	parallel_rotator(.byte angle .word zoom .byte vstatus) .var
+	.using	NVeronica.NProtocol, NRotator
+	
+	.var	.byte	angle
+	.var	.word	zoom
+	.var	.byte	vstatus
+	.var	SRotatorParams	params
+
+	calculate_steps	angle, zoom, #params
+	calculate_start	#params
+    
+	NUtils.movba	#RENDER_HEIGHT, params.m_num_rows	//	Assume for a moment, rendering will take part on Atari side only.
+
+	//	Is Veronica available?	
+	NUtils.cmpba	vstatus, #NUtils.TRUE
+	bne	skip
+		//	Yes, it is.
+		NUtils.movba	#A8_RENDER_HEIGHT, params.m_num_rows // set reduced number of rows for Atari rendering.
+        
+		NMemory.memcpyhp	#ParamsPtr, #params, #.len(SRotatorParams)
+		jsr	calculate_vstart
+		NUtils.movba	#VER_RENDER_HEIGHT, ParamsPtr+SRotatorParams.m_num_rows
+		NVeronica.NMaster.execute_procedure_call_cmd	#NVeronica.NSlave.CodePtr	// wait for Veronica and execute
+	
+skip
+    NUtils.movba NSystem.RTCLOK+2, tmp
+    NUtils.movba $d40b, tmp2
+    
+	rotator	#params, a8_scrn_buf_ptr
+    
+	
+	NUtils.cmpba	vstatus, #NUtils.TRUE
+	bne	skip2
+		jsr	NVeronica.NMaster.wait_for_veronica
+        
+            NUtils.subba NSystem.RTCLOK+2, tmp, $fe
+            NUtils.subba $d40b, tmp2, $ff
+            NProgram.print_info	$fe, #24
+            NProgram.print_info	$ff, #27
+	
+skip2
+	rts
+    
+    .var .byte tmp, tmp2
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+calculate_vstart
+	NUtils.movw	params.m_edge_step_x, NMaths.math_arg0
+	NUtils.movba	#A8_RENDER_HEIGHT, NMaths.math_arg1
+	jsr	NMaths.mul_s16_u8_r24
+	NUtils.addw	params.m_start_x, NMaths.math_arg2, ParamsPtr+SRotatorParams.m_start_x
+
+	NUtils.movw	params.m_edge_step_y, NMaths.math_arg0
+	NUtils.movba	#A8_RENDER_HEIGHT, NMaths.math_arg1
+	jsr	NMaths.mul_s16_u8_r24
+	NUtils.addw	params.m_start_y, NMaths.math_arg2, ParamsPtr+SRotatorParams.m_start_y
+	rts
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+.endp
+	
+//******************************************************************************************************************************************************
+
+.proc	calculate_steps(.byte angle .word zoom .word params_ptr) .var
+	.var	.byte	angle
+	.var	.word	zoom
+	.zpvar	.word	params_ptr
+	
+	.var	.word	pixel_step_x, pixel_step_y, edge_step_x, edge_step_y
+	.var	.byte	cos_angle
+
+	.using	NRotator
+	
+	NUtils.addba	angle, #COSINE_OFFSET, cos_angle
+	
+	// y_pixel_step = Sinus[angle & 127];
+	NUtils.andba	angle, #127
+	tax
+	NUtils.movba	"SinusL,x", NMaths.math_arg0
+	NUtils.movba	"SinusH,x", NMaths.math_arg0+1
+	NUtils.movw	zoom, NMaths.math_arg1
+	jsr	NMaths.mul_u16_u16_r32
+	NUtils.lsll	NMaths.math_arg2+1, 5
+	NUtils.movw	NMaths.math_arg2+2, pixel_step_y
+	NUtils.sextw	pixel_step_y, angle
+	
+	// x_pixel_step = Sinus[(angle + COSINE_OFFSET) & 127];
+	NUtils.andba	cos_angle, #127
+	tax
+	NUtils.movba	"SinusL,x", NMaths.math_arg0
+	NUtils.movba	"SinusH,x", NMaths.math_arg0+1
+	NUtils.movw	zoom, NMaths.math_arg1
+	jsr	NMaths.mul_u16_u16_r32
+	NUtils.lsll	NMaths.math_arg2+1, 5
+	NUtils.movw	NMaths.math_arg2+2, pixel_step_x
+	NUtils.sextw	pixel_step_x, cos_angle
+
+	NUtils.movw	pixel_step_y, edge_step_x
+	NUtils.negw		edge_step_x
+	NUtils.movw	pixel_step_x, edge_step_y
+	
+	//	params->m_pixel_step_x = pixel_step_x
+	ldy	#SRotatorParams.m_pixel_step_x
+	NUtils.movba	pixel_step_x, "(params_ptr),y"
+	iny
+	NUtils.movba	pixel_step_x+1, "(params_ptr),y"
+	
+	//	params->m_pixel_step_y = pixel_step_y
+	ldy	#SRotatorParams.m_pixel_step_y
+	NUtils.movba	pixel_step_y, "(params_ptr),y"
+	iny
+	NUtils.movba	pixel_step_y+1, "(params_ptr),y"
+	
+	//	params->m_edge_step_x = edge_step_x
+	ldy	#SRotatorParams.m_edge_step_x
+	NUtils.movba	edge_step_x, "(params_ptr),y"
+	iny
+	NUtils.movba	edge_step_x+1, "(params_ptr),y"
+	
+	//	params->m_edge_step_y = edge_step_y
+	ldy	#SRotatorParams.m_edge_step_y
+	NUtils.movba	edge_step_y, "(params_ptr),y"
+	iny
+	NUtils.movba	edge_step_y+1, "(params_ptr),y"
+	rts
+.endp
+	
+//******************************************************************************************************************************************************
+
+.proc	calculate_start(.word params_ptr) .var
+	.zpvar	.word	params_ptr
+	.var	.long	tmp
+	
+	.using	NRotator
+	
+	//	edge_x = -(step_x*X_OFFSET) - (-step_y*Y_OFFSET)
+	ldy	#SRotatorParams.m_pixel_step_x
+	NUtils.movba	"(params_ptr),y", NMaths.math_arg0
+	iny
+	NUtils.movba	"(params_ptr),y", NMaths.math_arg0+1
+	NUtils.movba	#X_OFFSET, NMaths.math_arg1
+	jsr	NMaths.mul_s16_u8_r24
+	NUtils.movl	NMaths.math_arg2, tmp
+	NUtils.negl	tmp
+	
+	ldy	#SRotatorParams.m_pixel_step_y
+	NUtils.movba	"(params_ptr),y", NMaths.math_arg0
+	iny
+	NUtils.movba	"(params_ptr),y", NMaths.math_arg0+1
+	NUtils.movba	#Y_OFFSET, NMaths.math_arg1
+	jsr	NMaths.mul_s16_u8_r24
+	NUtils.addl	tmp, NMaths.math_arg2, tmp
+	
+	ldy	#SRotatorParams.m_start_x
+	NUtils.movba	tmp, "(params_ptr),y"
+	iny
+	NUtils.movba	tmp+1, "(params_ptr),y"
+
+	//	edge_y = -(step_y*X_OFFSET) - (step_x*Y_OFFSET)
+	ldy	#SRotatorParams.m_pixel_step_y
+	NUtils.movba	"(params_ptr),y", NMaths.math_arg0
+	iny
+	NUtils.movba	"(params_ptr),y", NMaths.math_arg0+1
+	NUtils.movba	#X_OFFSET, NMaths.math_arg1
+	jsr	NMaths.mul_s16_u8_r24
+	NUtils.movl	NMaths.math_arg2, tmp
+	NUtils.negl	tmp
+	
+	ldy	#SRotatorParams.m_pixel_step_x
+	NUtils.movba	"(params_ptr),y", NMaths.math_arg0
+	iny
+	NUtils.movba	"(params_ptr),y", NMaths.math_arg0+1
+	NUtils.movba	#Y_OFFSET, NMaths.math_arg1
+	jsr	NMaths.mul_s16_u8_r24
+	NUtils.subl	tmp, NMaths.math_arg2, tmp
+	
+	ldy	#SRotatorParams.m_start_y
+	NUtils.movba	tmp, "(params_ptr),y"
+	iny
+	NUtils.movba	tmp+1, "(params_ptr),y"
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	init_tables(.byte vstatus) .var
+	.var	.byte	vstatus
+	
+	prepare_texture
+	
+	NUtils.cmpba	vstatus, #NUtils.TRUE
+	bne	skip
+		//	Calculate tables for Veronica address space.
+		init_coord_tbl	#>NVeronica.NSlave.TexturePtr
+		//	Copy tables into Veronica.
+		NVeronica.NMaster.execute_data_upload_cmd	#XCoordTbl, #XCOORD_TBL_SIZE, #NVeronica.NSlave.XCoordTbl
+		NVeronica.NMaster.execute_data_upload_cmd	#YCoordTbl, #YCOORD_TBL_SIZE, #NVeronica.NSlave.YCoordTbl
+		//	Copy destination texture into Veronica.
+		NVeronica.NMaster.execute_data_upload_cmd	#DstTexturePtr, #DST_TEXTURE_SIZE, #NVeronica.NSlave.TexturePtr
+
+skip
+	//	Calculate tables for Atari address space.
+	init_coord_tbl	#>DstTexturePtr
+	NMaths.init_mul	#>MulTables
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	upload_code(.byte vstatus) .var
+	.var	.byte	vstatus
+	
+	NUtils.cmpba	vstatus, #NUtils.TRUE
+	bne	skip
+		NVeronica.NMaster.execute_data_upload_cmd	#NVeronica.NSlave.CODE_BEGIN, #(NVeronica.NSlave.CODE_END-NVeronica.NSlave.CODE_BEGIN), #NVeronica.NSlave.CodePtr
+skip
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	init_buffers(.byte vstatus) .var
+	.var	.byte	vstatus
+
+	NMemory.memset	#A8ScreenBuffer0, #SCRN_BUFFER_SIZE, #0
+	NMemory.memset	#A8ScreenBuffer1, #SCRN_BUFFER_SIZE, #0
+	
+	NUtils.cmpba	vstatus, #NUtils.TRUE
+	bne	skip
+		//	Clear screen buffer in Veronica's adress space.
+		NMemory.memset	#A8VerScreenBuffer, #SCRN_BUFFER_SIZE, #0
+		NVeronica.NMaster.execute_data_upload_cmd	#A8VerScreenBuffer, #SCRN_BUFFER_SIZE, #NVeronica.NSlave.ScreenBuffer
+		NMemory.memset	#A8VerScreenBuffer, #SCRN_BUFFER_SIZE, #0
+		NVeronica.NMaster.execute_data_upload_cmd	#A8VerScreenBuffer, #SCRN_BUFFER_SIZE, #NVeronica.NSlave.ScreenBuffer
+	
+skip
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	write_display_lists
+	.using	NRotator
+
+	write_dl_prolog	#A8DisplayList0, #A8ScreenBuffer0
+	write_dl	#(A8DisplayList0+DL_PROLOG_CHUNK_SIZE), #(A8ScreenBuffer0+SCREEN_WIDTH_BYTES), #(SCREEN_HEIGHT-1)
+	write_dl_epilog	#(A8DisplayList0+DL_PROLOG_CHUNK_SIZE+(SCREEN_HEIGHT-1)*DL_CHUNK_SIZE), #A8DisplayList0
+	
+	write_dl_prolog	#A8DisplayList1, #A8ScreenBuffer1
+	write_dl	#(A8DisplayList1+DL_PROLOG_CHUNK_SIZE), #(A8ScreenBuffer1+SCREEN_WIDTH_BYTES), #(SCREEN_HEIGHT-1)
+	write_dl_epilog	#(A8DisplayList1+DL_PROLOG_CHUNK_SIZE+(SCREEN_HEIGHT-1)*DL_CHUNK_SIZE), #A8DisplayList1
+	
+	write_dl_prolog	#MixDisplayList0, #A8ScreenBuffer0
+	write_dl	#(MixDisplayList0+DL_PROLOG_CHUNK_SIZE), #(A8ScreenBuffer0+SCREEN_WIDTH_BYTES), #(A8_SCREEN_HEIGHT-1)
+	write_dl_prolog	#(MixDisplayList0+DL_PROLOG_CHUNK_SIZE+(A8_SCREEN_HEIGHT-1)*DL_CHUNK_SIZE), #A8VerScreenBuffer
+	write_dl	#(MixDisplayList0+(DL_PROLOG_CHUNK_SIZE*2)+(A8_SCREEN_HEIGHT-1)*DL_CHUNK_SIZE), #(A8VerScreenBuffer+SCREEN_WIDTH_BYTES), #(VER_SCREEN_HEIGHT-1)
+	write_dl_epilog	#(MixDisplayList0+(DL_PROLOG_CHUNK_SIZE*2)+(A8_SCREEN_HEIGHT+VER_SCREEN_HEIGHT-2)*DL_CHUNK_SIZE), #MixDisplayList0
+		
+	write_dl_prolog	#MixDisplayList1, #A8ScreenBuffer1
+	write_dl	#(MixDisplayList1+DL_PROLOG_CHUNK_SIZE), #(A8ScreenBuffer1+SCREEN_WIDTH_BYTES), #(A8_SCREEN_HEIGHT-1)
+	write_dl_prolog	#(MixDisplayList1+DL_PROLOG_CHUNK_SIZE+(A8_SCREEN_HEIGHT-1)*DL_CHUNK_SIZE), #A8VerScreenBuffer
+	write_dl	#(MixDisplayList1+(DL_PROLOG_CHUNK_SIZE*2)+(A8_SCREEN_HEIGHT-1)*DL_CHUNK_SIZE), #(A8VerScreenBuffer+SCREEN_WIDTH_BYTES), #(VER_SCREEN_HEIGHT-1)
+	write_dl_epilog	#(MixDisplayList1+(DL_PROLOG_CHUNK_SIZE*2)+(A8_SCREEN_HEIGHT+VER_SCREEN_HEIGHT-2)*DL_CHUNK_SIZE), #MixDisplayList1
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	write_dl_prolog(.word dst_ptr .word scrn_buf_ptr) .var
+	.zpvar	.word	dst_ptr
+	.var	.word	scrn_buf_ptr
+	
+	ldy	#0
+	NUtils.movba	#$4f, "(dst_ptr),y"
+	ldy	#4
+	sta	(dst_ptr),y
+	
+	ldy	#1
+	NUtils.movba	scrn_buf_ptr+0, "(dst_ptr),y"
+	ldy	#5
+	sta	(dst_ptr),y
+
+	ldy	#2
+	NUtils.movba	scrn_buf_ptr+1, "(dst_ptr),y"
+	ldy	#6
+	sta	(dst_ptr),y
+	
+	ldy	#3
+	NUtils.movba	#0, "(dst_ptr),y"
+	ldy	#7
+	sta	(dst_ptr),y
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	write_dl(.word dst_ptr .word scrn_buf_ptr .byte num_lines) .var
+	.zpvar	.word	dst_ptr
+	.var	.word	scrn_buf_ptr
+	.var	.byte	num_lines
+	
+	.using	NRotator
+	
+	ldx	#0
+loop
+	put_chunk	dst_ptr, scrn_buf_ptr
+	NUtils.addbw	dst_ptr, #DL_CHUNK_SIZE, dst_ptr
+	NUtils.addbw	scrn_buf_ptr, #SCREEN_WIDTH_BYTES, scrn_buf_ptr
+	
+	inx
+	cpx	num_lines
+	bne	loop
+	rts
+	
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+.proc	put_chunk
+	ldy	#0
+	NUtils.movba	#$0f, "(dst_ptr),y"
+	iny
+	NUtils.movba	#0, "(dst_ptr),y"
+	iny
+	NUtils.movba	#$4f, "(dst_ptr),y"
+	iny
+	NUtils.movba	scrn_buf_ptr, "(dst_ptr),y"
+	iny
+	NUtils.movba	scrn_buf_ptr+1, "(dst_ptr),y"
+	iny
+	NUtils.movba	#0, "(dst_ptr),y"
+	rts
+.endp
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+.endp // write_dl
+
+//******************************************************************************************************************************************************
+
+.proc	write_dl_epilog(.word dst_ptr .word dl_ptr) .var
+	.zpvar	.word	dst_ptr
+	.var	.word	dl_ptr
+	
+	//	Info line
+	ldy	#0
+	NUtils.movba	#$80, "(dst_ptr),y"
+	iny	
+	NUtils.movba	#$42, "(dst_ptr),y"
+	iny
+	NUtils.movba	#<InfoLine, "(dst_ptr),y"
+	iny
+	NUtils.movba	#>InfoLine, "(dst_ptr),y"
+
+	//ldy	#0
+	iny
+	NUtils.movba	#NAntic.EDLIST.JVB, "(dst_ptr),y"
+	iny
+	NUtils.movba	dl_ptr, "(dst_ptr),y"
+	iny
+	NUtils.movba	dl_ptr+1, "(dst_ptr),y"
+	rts
+.endp
+	
+//******************************************************************************************************************************************************
+
+.proc	init(.byte vstatus) .var
+	.var	.byte	vstatus
+
+	init_tables	vstatus
+	upload_code	vstatus
+	write_display_lists
+	init_buffers	vstatus
+	NConsole.init_keycode
+	init_variables
+	init_screen	vstatus
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	deinit
+	NConsole.init_keycode
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+	
+.proc	init_variables
+	.using	NRotator
+
+	NUtils.movba	#STARTING_ANGLE, angle
+	NUtils.movba	#0, render_buffer_num
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	prepare_texture
+	.var	.word	dst_ptr
+	.var	.byte	cnt
+	
+	.using	NRotator
+		
+	//	Copy source texture to the destination location several times
+	NUtils.leaw	DstTexturePtr, dst_ptr
+	NUtils.movba	#0, cnt
+loop
+	NMemory.memcpym	dst_ptr, #DST_TEXTURE_MODULO, #SrcTexturePtr, #<TEXTURE_WIDTH, #<TEXTURE_HEIGHT, #TEXTURE_WIDTH
+	NUtils.addbw	dst_ptr, #TEXTURE_WIDTH, dst_ptr
+	inc	cnt
+	NUtils.cmpba	cnt, #((256/TEXTURE_WIDTH)/2)
+	bne	loop
+	
+	//	Calculate texture for high order nibble.
+	NMemory.memcpym	#(DstTexturePtr+$0080), #DST_TEXTURE_MODULO, #SrcTexturePtr, #TEXTURE_WIDTH, #TEXTURE_HEIGHT, #TEXTURE_WIDTH
+	premultiply_texture	#DstTexturePtr+$0080, #TEXTURE_WIDTH, #TEXTURE_HEIGHT, #DST_TEXTURE_MODULO
+	
+	//	Copy premultiplied texture to the destination location several times
+	NUtils.leaw	(DstTexturePtr+$0080+TEXTURE_WIDTH), dst_ptr
+	NUtils.movba	#0, cnt
+loop2
+	NMemory.memcpym	dst_ptr, #DST_TEXTURE_MODULO, #(DstTexturePtr+$0080), #TEXTURE_WIDTH, #TEXTURE_HEIGHT, #DST_TEXTURE_MODULO
+	NUtils.addbw	dst_ptr, #TEXTURE_WIDTH, dst_ptr
+	inc	cnt
+	NUtils.cmpba	cnt, #(((256/TEXTURE_WIDTH)/2)-1)
+	bne	loop2
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	premultiply_texture(.word ptr .byte width .byte height .word modulo) .var
+	.zpvar	.word	ptr
+	.var	.byte	width, height
+	.var	.word	modulo
+	
+loop_y
+	ldy	#0
+loop_x
+	lda	(ptr),y
+	NUtils.lsla	4
+	sta	(ptr),y
+	iny
+	cpy	width
+	bne	loop_x
+	
+	NUtils.addw	ptr, modulo, ptr
+
+	dec	height
+	bne	loop_y
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	init_coord_tbl(.byte texture_hptr) .var
+	.var	.byte	texture_hptr
+	
+	.using	NRotator
+	
+	ldy	#0
+loop
+	tya
+	NUtils.lsra	4
+	and	#(TEXTURE_WIDTH-1)
+	sta	XCoordTbl,y
+	
+	tya
+	NUtils.lsra	4
+	eor	#$ff
+	and	#(TEXTURE_HEIGHT-1)
+	clc
+	adc	texture_hptr
+	sta	YCoordTbl,y
+	
+	iny
+	bne	loop
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	init_screen(.byte vstatus) .var
+	.var	.byte	vstatus
+	
+	set_dl	vstatus
+	NUtils.movba	#$40, NSystem.GPRIOR
+	NUtils.movba	#BKG_COL, NSystem.COLOR4
+	NUtils.movba	#(NAntic.EDMACTL.ENABLE_DMA|NAntic.EDMACTL.NARROW_PLAYFIELD), NSystem.SDMCTL
+	NUtils.movba	#(NAntic.ENMIEN.ENABLE_DLI | NAntic.ENMIEN.ENABLE_VBL), NAntic.NMIEN
+	NUtils.leaw		dli_proc, NSystem.VDSLST
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	backup_screen
+	NUtils.movw		NSystem.SDLSTL, old_dl_ptr
+	NUtils.movw		NSystem.VDSLST, old_dli_ptr
+	NUtils.movba	NSystem.GPRIOR, old_gprior
+	NUtils.movba	NSystem.COLOR4, old_bkg_col
+	NUtils.movba	NSystem.SDMCTL, old_dmactls
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	restore_screen
+	NUtils.movba	#NAntic.ENMIEN.ENABLE_VBL, NAntic.NMIEN
+	NUtils.movba	old_dmactls, NSystem.SDMCTL
+	NUtils.movba	old_bkg_col, NSystem.COLOR4
+	NUtils.movba	old_gprior, NSystem.GPRIOR
+	NUtils.movw		old_dli_ptr, NSystem.VDSLST
+	NUtils.movw		old_dl_ptr, NSystem.SDLSTL
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	change_screen_buffer
+	NUtils.eorba	render_buffer_num, #1, render_buffer_num
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	set_screen_buffer_ptr
+	.using	NRotator
+
+	lda	render_buffer_num
+	and	#1
+	asl	@
+	tay
+	NUtils.movba	"Screen_Buffers_Ptr_Tbl+0,y", a8_scrn_buf_ptr+0
+	NUtils.movba	"Screen_Buffers_Ptr_Tbl+1,y", a8_scrn_buf_ptr+1
+	rts
+	
+	Screen_Buffers_Ptr_Tbl:	dta a(A8ScreenBuffer0+(RENDER_STARTING_ROW*SCREEN_WIDTH_BYTES), A8ScreenBuffer1+(RENDER_STARTING_ROW*SCREEN_WIDTH_BYTES))
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	set_dl(.byte vstatus) .var
+	.var	.byte	vstatus, tmp
+	
+	lda	vstatus
+	and	#1
+	asl	@
+	sta	tmp
+
+	lda	render_buffer_num
+	and	#1
+	eor	#1
+	ora	tmp
+	asl	@
+	tay
+	NUtils.movba	"Display_List_Ptr_Tbl+0,y", NSystem.SDLSTL
+	NUtils.movba	"Display_List_Ptr_Tbl+1,y", NSystem.SDLSTL+1
+	rts
+
+	Display_List_Ptr_Tbl:	dta a(A8DisplayList0, A8DisplayList1, MixDisplayList0, MixDisplayList1)
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	dli_proc
+	pha
+	NUtils.movba	#TEXT_FOR_COL, NGtia.COLPF1
+	NUtils.movba	#TEXT_BKG_COL, NGtia.COLPF2
+	NUtils.movba	#TEXT_BKG_COL, NGtia.GTIACTL
+	pla
+	rti
+.endp
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	//	Code for Atari part.
+	icl	'rotator_proc.as8'
+
+//******************************************************************************************************************************************************
+//	Variables
+//******************************************************************************************************************************************************
+
+	.var	.byte	angle
+	.var	.byte	render_buffer_num
+	.var	.byte	starting_frame_cnt
+	.var	.word	a8_scrn_buf_ptr
+
+	.var	.word	old_dl_ptr, old_dli_ptr
+	.var	.byte	old_gprior, old_bkg_col, old_dmactls
+
+//******************************************************************************************************************************************************
+//	Data
+//******************************************************************************************************************************************************
+
+	NUtils.lorg	InfoLine
+		dta d'Frames: $xx VCount: $xx         '
+	NUtils.end_lorg
+	
+.endl // NProgram
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'memory.as8'
+	icl	'maths.as8'
+	icl	'system.as8'
+	icl	'io.as8'
+	icl	'console.as8'
+	icl	'API\master.as8'
+	icl	'API\Protocol.as8'
+	icl	'API\Messages.as8'
+	icl	'API\Utils.as8'
+	
+	TMP_ZPVAR = .zpvar
+		.zpvar	= NVeronica.NSlave.ZpgVariables
+		icl	'ver_rotator.as8'
+	.zpvar = TMP_ZPVAR
+
+	org	NSystem.RUNAD
+	dta	a(NProgram.Startup_Ptr)

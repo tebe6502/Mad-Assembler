@@ -1,0 +1,327 @@
+//******************************************************************************************************************************************************
+//	Header
+//******************************************************************************************************************************************************
+
+/**	@file VRegRead.as8
+	@author Marek "Konop" Konopka
+	@date 05.06.2010
+*/
+
+//******************************************************************************************************************************************************
+
+	.zpvar	= NProgram.ZpgVars_Ptr
+
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	opt l-
+		icl	'utils.as8'
+		icl	'stdbool.h8'
+		icl	'cpu.h8'
+		icl	'antic.h8'
+		icl	'gtia.h8'
+		icl	'pia.h8'
+		icl	'pokey.h8'
+		icl	'system.h8'
+		icl	'memory.h8'
+		icl	'io.h8'
+		icl	'console.h8'
+		icl	'API\protocol.h8'
+		icl	'API\Bootstrap.h8'
+		icl	'VRegRead.h8'
+	opt l+
+	
+//******************************************************************************************************************************************************
+
+.local	NProgram
+
+//******************************************************************************************************************************************************
+//	Code
+//******************************************************************************************************************************************************
+
+	org Startup_Ptr
+	jmp	main
+
+//******************************************************************************************************************************************************
+
+.proc	main
+	.using NVeronica.NProtocol
+	
+	NConsole.println	#echo_str
+
+	NVeronica.NMaster.store_system
+	NUtils.movba	#0, NSystem.SDMCTL
+	NUtils.movba	#0, NAntic.DMACTL
+
+	NVeronica.NMaster.set_rambanks	#EAtariRegisterStates.BANKS_ENABLED
+
+    //	Initialize
+	NUtils.lead	$00000000, ProcStat
+    
+	NVeronica.NMaster.boot_veronica	#BOOTSTRAP_BEGIN, #Bootstrap_Ptr, #(BOOTSTRAP_END-BOOTSTRAP_BEGIN), #0, #0, #0, #NVeronica.NSlave.Bootstrap_Ptr
+    NVeronica.NMaster.wait_for_veronica
+	NVeronica.NMaster.swap_banks
+	NUtils.movd	ProcStat, Statuses
+	NVeronica.NMaster.restore_system
+	print_statuses
+	rts
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	echo_str:	dta c'Veronica Register Reader', NConsole.ATASCII_EOL, \
+		c'(C) 2010 by Marek Konopka', 0
+
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_statuses
+	.var	.byte	cnt
+
+	NUtils.movba	#0, cnt
+loop
+	lda	cnt
+	asl	@
+	tay
+	NUtils.movba	"Strings,y", NConsole.print.ptr
+	NUtils.movba	"Strings+1,y", NConsole.print.ptr+1
+	jsr	NConsole.print
+
+	ldy	cnt
+	lda	Statuses,y	
+	jsr	print_status
+	NConsole.putc	#NConsole.ATASCII_EOL
+	
+	inc	cnt
+	NUtils.cmpba	cnt, #NVeronica.NSlave.NUM_TESTS
+	bne	loop
+	rts
+	
+	str0:	dta c'%00100000 ', 0
+	str1:	dta c'%01100000 ', 0
+	str2:	dta c'%10100000 ', 0
+	str3:	dta c'%11100000 ', 0
+	Strings:	dta a(str0, str1, str2, str3)
+	
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	print_status(.byte a) .reg
+	and	#1
+	asl	@
+	tax
+	NUtils.movba	"strings+0,x", NConsole.print.ptr+0
+	NUtils.movba	"strings+1,x", NConsole.print.ptr+1
+	jsr	NConsole.print
+	rts
+
+	strings:		dta a(failure_str, ok_str)
+	failure_str:	dta c'Failed', 0
+	ok_str:			dta c'Succeeded', 0
+.endp
+
+//******************************************************************************************************************************************************
+//	Data
+//******************************************************************************************************************************************************
+
+	.array	Statuses [NVeronica.NSlave.NUM_TESTS-1]	.byte
+	.enda
+
+.endl // NProgram
+
+//******************************************************************************************************************************************************
+//	Veronica
+//******************************************************************************************************************************************************
+	
+	BOOTSTRAP_BEGIN = *
+
+//******************************************************************************************************************************************************
+
+.local	NVeronica.NSlave, NVeronica.NSlave.Bootstrap_Ptr
+
+//******************************************************************************************************************************************************
+
+	TMP_ZPVAR = .zpvar
+	.zpvar	= ZpgVars_Ptr
+	.zpvar	.word	src_ptr, dst_ptr
+
+//******************************************************************************************************************************************************
+
+.proc	bootstrap_proc
+	NVeronica.NBootstrap.initialize_cpu
+	//NVeronica.NBootstrap.initial_cpu_wait
+	memcpy	#Bios_Ptr, #BEGIN_BIOS, #(END_BIOS-BEGIN_BIOS)
+	jmp	Bios_Ptr
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	memcpy(.word dst_ptr .word src_ptr .word count) .var
+	.var	.word	count
+	
+	NMemory.memcpy_macro	dst_ptr, src_ptr, count
+	rts	
+.endp
+
+//******************************************************************************************************************************************************
+//	BIOS
+//******************************************************************************************************************************************************
+
+	BEGIN_BIOS = *
+
+.local	NBios, Bios_Ptr
+
+//******************************************************************************************************************************************************
+
+.proc	bios_proc
+	NUtils.movba	#VALUE_0, NVeronica.NProtocol.Veronica_HW_Register
+	peek_reg	#MemStart, #MEM_LENGTH
+	strcmp	#MemStart, #MEM_LENGTH, #TEST_VALUE_0, #REGISTER_READ_MASK
+	sta	statuses+0
+	
+	NUtils.movba	#VALUE_1, NVeronica.NProtocol.Veronica_HW_Register
+	peek_reg	#MemStart, #MEM_LENGTH
+	strcmp	#MemStart, #MEM_LENGTH, #TEST_VALUE_1, #REGISTER_READ_MASK
+	sta	statuses+1
+
+	NUtils.movba	#VALUE_2, NVeronica.NProtocol.Veronica_HW_Register
+	peek_reg	#MemStart, #MEM_LENGTH
+	strcmp	#MemStart, #MEM_LENGTH, #TEST_VALUE_2, #REGISTER_READ_MASK
+	sta	statuses+2
+	
+	NUtils.movba	#VALUE_3, NVeronica.NProtocol.Veronica_HW_Register
+	peek_reg	#MemStart, #MEM_LENGTH
+	strcmp	#MemStart, #MEM_LENGTH, #TEST_VALUE_3, #REGISTER_READ_MASK
+	sta	statuses+3
+	
+	NVeronica.NProtocol.set_mem_bits	NVeronica.NProtocol.Veronica_HW_Register,\
+        NVeronica.NProtocol.EVeronicaRegisterStates.WINDOW_LOCATION_MASK,\
+        #NVeronica.NProtocol.EVeronicaRegisterStates.WINDOW_LOCATION_4000
+	
+    NUtils.movd	statuses, ProcStat
+    
+	NVeronica.NProtocol.set_mem_bits	NVeronica.NProtocol.Veronica_HW_Register,\
+        NVeronica.NProtocol.EVeronicaRegisterStates.SEMAPHORE_MASK,\
+        #NVeronica.NProtocol.EVeronicaRegisterStates.UNLOCK_VERONICA
+	
+	jmp *
+	
+	.array	statuses [NUM_TESTS-1]	.byte
+	.enda
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	peek_reg(.word dst_ptr .word count) .var
+	.var	.word	count
+	
+	ldx	count+1
+	beq	skip
+	
+	ldy	#0
+loop
+	NUtils.movba	NVeronica.NProtocol.Veronica_HW_Register, "(dst_ptr),y"
+	iny
+	bne	loop
+	inc	dst_ptr+1
+	dex
+	bne	loop
+	
+skip
+	ldx	count
+	beq	skip2
+
+	ldy	#0
+loop2
+	NUtils.movba	NVeronica.NProtocol.Veronica_HW_Register, "(dst_ptr),y"
+	iny
+	cpy	count
+	bne	loop2
+	
+skip2	
+	rts
+.endp
+
+//******************************************************************************************************************************************************
+
+.proc	strcmp(.word src_ptr .word size .byte value .byte mask) .var
+	.var	.word	size
+	.var	.byte	value
+    .var    .byte   mask
+
+	ldx	size+1
+	beq	skip_pages
+	
+	ldy	#0
+loop
+    NUtils.andba    "(src_ptr),y", mask
+    cmp value
+	bne	_exit_with_error
+	iny
+	bne	loop
+    
+	inc	src_ptr+1
+	dex
+	bne	loop
+	
+skip_pages
+	lda	size
+	beq	_exit_ok
+
+	ldy	#0
+loop2
+	NUtils.andba	"(src_ptr),y", mask
+    cmp value
+	bne	_exit_with_error
+	iny
+	cpy	size
+	bne	loop2
+    
+	jmp	_exit_ok
+	
+_exit_with_error
+	lda	#NUtils.FALSE
+	rts
+	
+_exit_ok
+	lda	#NUtils.TRUE
+	rts
+.endp
+
+.endl // NBios
+
+//******************************************************************************************************************************************************
+
+	 END_BIOS = *
+
+//******************************************************************************************************************************************************
+
+	.zpvar = TMP_ZPVAR
+
+.endl	// NVeronica.NSlave
+
+	BOOTSTRAP_END = *
+	
+//******************************************************************************************************************************************************
+//	Inclusions
+//******************************************************************************************************************************************************
+
+	icl	'antic.as8'
+	icl	'system.as8'
+	icl	'memory.as8'
+	icl	'console.as8'
+	icl	'API\Master.as8'
+	icl	'API\Utils.as8'
+	icl	'API\Messages.as8'
+
+//******************************************************************************************************************************************************
+
+	jsr	NVeronica.NSlave.bootstrap_proc
+	jsr	NVeronica.NSlave.NBios.bios_proc
+
+//******************************************************************************************************************************************************
+
+	org	NSystem.RUNAD
+	dta	a(NProgram.Startup_Ptr)
