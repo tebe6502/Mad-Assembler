@@ -6,7 +6,7 @@
 (*  .LOCAL, .MACRO, .PROC, .STRUCT, .ARRAY, .REPT, .PAGES, .ENUM              *)
 (*  #WHILE, #IF, #ELSE, #END, #CYCLE                                          *)
 (*                                                                            *)
-(*  last change: 2026-11-10                                                   *)
+(*  last change: 2026-11-17                                                   *)
 (*----------------------------------------------------------------------------*)
 
 //  Compile using Free Pascal Compiler https://www.freepascal.org/
@@ -1130,17 +1130,24 @@ procedure oblicz_dane(var i:integer; var a,old:string; const typ: byte); forward
 
 
 
-procedure omin_spacje (var i:integer; var a:string);
+procedure omin_spacje(var i:integer; var a:string);
 (*----------------------------------------------------------------------------*)
 (*  omijamy tzw. "biale spacje" czyli spacje, tabulatory, komentarze /* */    *)
 (*----------------------------------------------------------------------------*)
 var txt: string;
 begin
 
- if a<>'' then begin
-  while (i<=length(a)) and (a[i] in AllowWhiteSpaces) do inc(i);
+ if a <> '' then begin
+  while (i <= length(a)) and (a[i] in AllowWhiteSpaces) do inc(i);
 
-  if (i<length(a)) and ( (a[i]='/') and (a[i+1]='*') ) then begin
+  if (a[i] = '*') and (a[i+1] = '/') then begin
+    komentarz:=false;
+    inc(i,2);
+
+    while (i <= length(a)) and (a[i] in AllowWhiteSpaces) do inc(i);
+  end;
+
+  if (i < length(a)) and ( (a[i] = '/') and (a[i+1] = '*') ) then begin
    txt:=''; search_comment_block(i,a, txt);
 
    if not(komentarz) then omin_spacje(i,a);
@@ -2800,29 +2807,10 @@ begin
 
    txt:=''; search_comment_block(i,a, txt);
 
-{   inc(i,2);
-   while i<=length(a) do begin
-
-    if a[i]='*' then
-     if a[i+1]='/' then begin
-
-      inc(i);
-      if i=length(a) then begin
-       Result:=true;
-       exit
-      end else begin
-       __inc(i,a);
-       Break
-      end;
-
-     end;
-
-    __inc(i,a);
-   end;}
-
   end;
 
- Result := (a[i] in [#0,#9,'\',';',sep,sep2]) or ((a[i]='/') and (a[i+1] in ['/'{,'*'}]));
+  Result := (a[i] in [#0,#9,'\',';',sep,sep2]) or ((a[i]='/') and (a[i+1] in ['/'{,'*'}]));
+
 end;
 
 
@@ -15462,7 +15450,7 @@ begin
    if zm<>'' then begin
     omin_spacje(i,zm);
 
-    if not((zm[i] in [';','*']) or ((zm[i]='|') and (zm[i+1]<>'|'))  or komentarz) then ok:=true;
+    if not((zm[i] in [';','*']) or ((zm[i]='|') and (zm[i+1]<>'|')) or komentarz) then ok:=true;
 
     str:=''; search_comment_block(i,zm, str);
    end;
