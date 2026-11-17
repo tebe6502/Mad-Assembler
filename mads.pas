@@ -11299,7 +11299,11 @@ JUMP:
    _doo:=integer( oblicz_wartosc_noSPC(zm,zm,i,',','A') );
 
 
-  _odd:=-1;
+  if raw.use or (org_ofset <> 0) then 
+   _odd := fvalue
+  else
+   _odd:=-1;    
+
 
   if zm[i]=',' then begin
    __inc(i,zm);
